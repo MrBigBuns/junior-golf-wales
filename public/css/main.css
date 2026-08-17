@@ -197,6 +197,22 @@ body {
 .tour-name { font-weight: 600; margin: 0.5rem 0 4px; }
 .tour-desc { color: var(--text-secondary); font-size: 0.9rem; margin: 0 0 0.75rem; }
 
+.course-stats-summary { display: flex; gap: 2rem; margin: 0.75rem 0 1.25rem; }
+.course-stats-summary > div { display: flex; flex-direction: column; }
+.stat-value { font-size: 1.5rem; font-weight: 500; }
+.stat-label { font-size: 0.8rem; color: var(--text-secondary); }
+
+.par-stat-row { margin-bottom: 1.25rem; }
+.par-stat-row:last-child { margin-bottom: 0; }
+.par-stat-label { font-weight: 500; margin: 0 0 8px; font-size: 0.95rem; }
+.par-stat-count { font-weight: 400; color: var(--text-secondary); font-size: 0.8rem; margin-left: 6px; }
+.par-stat-track { position: relative; height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 6px; }
+.par-stat-marker { position: absolute; top: -4px; width: 4px; height: 12px; background: var(--wales-green); border-radius: 2px; transform: translateX(-50%); }
+.par-stat-endpoints { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-secondary); }
+.par-stat-endpoints strong { display: block; color: var(--text-primary); font-weight: 500; font-size: 0.9rem; }
+.par-stat-avg { text-align: center; }
+.par-stat-long { text-align: right; }
+
 .calendar-link { color: var(--wales-green); text-decoration: none; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 6px; }
 .cal-icon { font-style: normal; }
 

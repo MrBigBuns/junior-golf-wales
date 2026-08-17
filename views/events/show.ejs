@@ -77,6 +77,37 @@
       </table>
     </div>
 
+    <% if (event.scorecard && event.scorecard.length) { %>
+      <% const primaryTee = event.scorecard[0].yards ? Object.keys(event.scorecard[0].yards)[0] : null; %>
+      <% const byPar = { 3: [], 4: [], 5: [] }; %>
+      <% event.scorecard.forEach(function(h) { if (byPar[h.par] && primaryTee && h.yards && h.yards[primaryTee] != null) byPar[h.par].push(h.yards[primaryTee]); }); %>
+      <div class="detail-card">
+        <h3 class="detail-card-heading">Course stats</h3>
+        <div class="course-stats-summary">
+          <div><span class="stat-value"><%= event.par || '' %></span><span class="stat-label">par</span></div>
+          <div><span class="stat-value"><%= event.yardage || '' %></span><span class="stat-label">yards<% if (primaryTee) { %> (<%= primaryTee %>)<% } %></span></div>
+        </div>
+        <% [3, 4, 5].forEach(function(p) { %>
+          <% const yds = byPar[p]; %>
+          <% if (yds.length) { %>
+            <% const short = Math.min(...yds); %>
+            <% const long = Math.max(...yds); %>
+            <% const avg = Math.round(yds.reduce((a, b) => a + b, 0) / yds.length); %>
+            <% const pos = long > short ? Math.round(((avg - short) / (long - short)) * 100) : 50; %>
+            <div class="par-stat-row">
+              <p class="par-stat-label">Par <%= p %> <span class="par-stat-count"><%= yds.length %> total</span></p>
+              <div class="par-stat-track"><span class="par-stat-marker" style="left: <%= pos %>%"></span></div>
+              <div class="par-stat-endpoints">
+                <span>Short<br><strong><%= short %></strong></span>
+                <span class="par-stat-avg">Avg<br><strong><%= avg %></strong></span>
+                <span class="par-stat-long">Long<br><strong><%= long %></strong></span>
+              </div>
+            </div>
+          <% } %>
+        <% }); %>
+      </div>
+    <% } %>
+
     <% if (otherAtClub.length) { %>
       <h2>Other events at this club</h2>
       <ul class="related-list">
