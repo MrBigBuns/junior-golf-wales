@@ -66,3 +66,11 @@ CREATE TABLE IF NOT EXISTS submissions (
 CREATE INDEX IF NOT EXISTS idx_events_date_start ON events(date_start);
 CREATE INDEX IF NOT EXISTS idx_events_club_id ON events(club_id);
 CREATE INDEX IF NOT EXISTS idx_clubs_region ON clubs(region);
+
+-- Additions for richer event detail pages (registration window, course info)
+ALTER TABLE events ADD COLUMN IF NOT EXISTS registration_opens DATE;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS course_image_url TEXT;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS yardage INTEGER;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS par INTEGER;
+ALTER TABLE clubs ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE clubs ADD COLUMN IF NOT EXISTS course_image_url TEXT;

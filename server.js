@@ -5,6 +5,7 @@ const path = require('path');
 const homeRouter = require('./routes/home');
 const eventsRouter = require('./routes/events');
 const clubsRouter = require('./routes/clubs');
+const toursRouter = require('./routes/tours');
 const submitRouter = require('./routes/submit');
 
 const app = express();
@@ -18,6 +19,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/', homeRouter);
 app.use('/events', eventsRouter);
 app.use('/clubs', clubsRouter);
+app.use('/tours', toursRouter);
 app.use('/submit-event', submitRouter);
 
 app.use((req, res) => res.status(404).render('404'));

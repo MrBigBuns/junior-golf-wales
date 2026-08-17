@@ -7,25 +7,67 @@
 <h1><%= event.title %></h1>
 <p class="subtitle"><%= event.club_name %>, <%= event.region %> Wales</p>
 
-<table class="details-table">
-  <tr><td>Date</td><td><%= new Date(event.date_start).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) %></td></tr>
-  <% if (event.format) { %><tr><td>Format</td><td><%= event.format %></td></tr><% } %>
-  <% if (event.age_category) { %><tr><td>Category</td><td><%= event.age_category %></td></tr><% } %>
-  <% if (event.entry_fee) { %><tr><td>Entry fee</td><td>£<%= event.entry_fee %> per person</td></tr><% } %>
-  <% if (event.entry_deadline) { %><tr><td>Entry deadline</td><td><%= new Date(event.entry_deadline).toLocaleDateString('en-GB') %></td></tr><% } %>
-  <% if (event.hcp_allowance_info) { %><tr><td>Handicap allowance</td><td><%= event.hcp_allowance_info %></td></tr><% } %>
-  <% if (event.catering) { %><tr><td>Catering</td><td><%= event.catering %></td></tr><% } %>
-  <% if (event.prizes) { %><tr><td>Prizes</td><td><%= event.prizes %></td></tr><% } %>
-</table>
+<div class="event-detail-grid">
+  <div>
+    <div class="detail-card">
+      <h3 class="detail-card-heading">Registration</h3>
+      <table class="details-table">
+        <% if (event.registration_opens) { %><tr><td>Begins</td><td><%= new Date(event.registration_opens).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) %></td></tr><% } %>
+        <% if (event.entry_deadline) { %><tr><td>Entry deadline</td><td><%= new Date(event.entry_deadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) %></td></tr><% } %>
+        <% if (event.entry_fee) { %><tr><td>Entry fee</td><td>£<%= event.entry_fee %></td></tr><% } %>
+      </table>
+    </div>
 
-<% if (otherAtClub.length) { %>
-  <h2>Other events at this club</h2>
-  <ul class="related-list">
-    <% otherAtClub.forEach(function(e) { %>
-      <li><a href="/events/<%= e.slug %>"><%= e.title %> — <%= new Date(e.date_start).toLocaleDateString('en-GB') %></a></li>
-    <% }); %>
-  </ul>
-<% } %>
+    <div class="detail-card">
+      <h3 class="detail-card-heading">Event details</h3>
+      <table class="details-table">
+        <tr><td>Date</td><td><%= new Date(event.date_start).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) %></td></tr>
+        <% if (event.start_time) { %><tr><td>Start time</td><td><%= event.start_time %></td></tr><% } %>
+        <% if (event.format) { %><tr><td>Format</td><td><%= event.format %></td></tr><% } %>
+        <% if (event.age_category) { %><tr><td>Category</td><td><%= event.age_category %></td></tr><% } %>
+        <% if (event.holes) { %><tr><td>Holes</td><td><%= event.holes %><% if (event.par) { %> · Par <%= event.par %><% } %></td></tr><% } %>
+        <% if (event.yardage) { %><tr><td>Yardage</td><td><%= event.yardage %> yds<% if (event.junior_tees_note) { %> — <%= event.junior_tees_note %><% } %></td></tr><% } %>
+        <% if (event.hcp_allowance_info) { %><tr><td>Handicap allowance</td><td><%= event.hcp_allowance_info %></td></tr><% } %>
+        <% if (event.catering) { %><tr><td>Catering</td><td><%= event.catering %></td></tr><% } %>
+        <% if (event.prizes) { %><tr><td>Prizes</td><td><%= event.prizes %></td></tr><% } %>
+      </table>
+    </div>
+
+    <% if (otherAtClub.length) { %>
+      <h2>Other events at this club</h2>
+      <ul class="related-list">
+        <% otherAtClub.forEach(function(e) { %>
+          <li><a href="/events/<%= e.slug %>"><%= e.title %> — <%= new Date(e.date_start).toLocaleDateString('en-GB') %></a></li>
+        <% }); %>
+      </ul>
+    <% } %>
+  </div>
+
+  <div>
+    <div class="detail-card course-card">
+      <h3 class="detail-card-heading">Course</h3>
+      <% if (event.club_course_image_url) { %>
+        <img src="<%= event.club_course_image_url %>" alt="<%= event.club_name %>" class="course-image">
+      <% } %>
+      <p class="course-club-name"><%= event.club_name %></p>
+      <% if (event.address) { %><p class="course-address"><%= event.address %></p><% } %>
+      <div class="course-links">
+        <% if (event.club_website) { %><a href="<%= event.club_website %>" target="_blank" rel="noopener">Club website</a><% } %>
+        <% if (event.directions_url) { %><a href="<%= event.directions_url %>" target="_blank" rel="noopener">Directions</a><% } %>
+        <a href="/clubs/<%= event.club_slug %>">Club page</a>
+      </div>
+    </div>
+
+    <% if (event.organiser_name) { %>
+      <div class="detail-card">
+        <h3 class="detail-card-heading">Part of</h3>
+        <p class="tour-name"><%= event.organiser_name %></p>
+        <% if (event.organiser_description) { %><p class="tour-desc"><%= event.organiser_description %></p><% } %>
+        <a href="/tours/<%= event.organiser_slug %>">View series</a>
+      </div>
+    <% } %>
+  </div>
+</div>
 
 <script type="application/ld+json">
 {

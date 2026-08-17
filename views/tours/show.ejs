@@ -1,0 +1,17 @@
+<%- include('../partials/head', { pageTitle: organiser.name + ' — Junior Golf Wales' }) %>
+
+<h1><%= organiser.name %></h1>
+<% if (organiser.description) { %><p class="subtitle"><%= organiser.description %></p><% } %>
+<% if (organiser.website) { %><p><a href="<%= organiser.website %>" target="_blank" rel="noopener">Official site</a></p><% } %>
+
+<h2>Upcoming events</h2>
+<% if (events.length === 0) { %>
+  <p>No upcoming events listed for this tour yet.</p>
+<% } %>
+<ul class="related-list">
+  <% events.forEach(function(e) { %>
+    <li><a href="/events/<%= e.slug %>"><%= e.title %> — <%= e.club_name %> — <%= new Date(e.date_start).toLocaleDateString('en-GB') %></a></li>
+  <% }); %>
+</ul>
+
+<%- include('../partials/foot') %>
