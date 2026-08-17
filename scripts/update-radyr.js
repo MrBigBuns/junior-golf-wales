@@ -18,7 +18,8 @@ async function run() {
 
   const eventResult = await pool.query(
     `UPDATE events SET yardage = $1, par = $2, junior_tees_note = $3, scorecard = $4,
-            entry_url = $5, entry_email = $6, entry_phone = $7
+            entry_url = $5, entry_email = $6, entry_phone = $7,
+            registration_opens = $8, entry_deadline = $9, entry_fee_tiers = $10
      WHERE slug LIKE 'junior-open-radyr-golf-club%'
      RETURNING slug, yardage`,
     [
@@ -38,7 +39,16 @@ async function run() {
       ]),
       'https://www.golfempire.co.uk/new/entryform.php?eventid=8354',
       null,
-      null
+      null,
+      // PLACEHOLDER — not sourced from the club; demo values to show the layout.
+      // Replace with real registration window / fees when known, or clear these
+      // three fields (set to null) to fall back to the plain single entry_fee line.
+      '2025-11-01',
+      '2026-08-12',
+      JSON.stringify([
+        { label: 'Member', amount: 12.00 },
+        { label: 'Non-member', amount: 15.00 }
+      ])
     ]
   );
   console.log(`Events updated: ${eventResult.rowCount}`, eventResult.rows);
