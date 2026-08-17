@@ -75,6 +75,7 @@
     <label>Scorecard (JSON — array of holes)
       <textarea name="scorecard" rows="4" placeholder='[{"hole":1,"par":4,"strokeIndex":13,"yards":{"white":319,"yellow":296,"red":254}}, ...]'><%= event.scorecard ? JSON.stringify(event.scorecard) : '' %></textarea>
     </label>
+    <% if (!isNew) { %><p><a href="/admin/events/<%= event.id %>/scorecard-import">Import scorecard from a photo &rarr;</a></p><% } %>
   </fieldset>
 
   <fieldset>

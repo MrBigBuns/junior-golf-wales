@@ -1,0 +1,46 @@
+<%- include('../partials/head', { pageTitle: 'Review scorecard — ' + event.title }) %>
+
+<p><a href="/admin/events/<%= event.id %>/edit">&larr; Back to event</a></p>
+<h1>Review extracted scorecard</h1>
+<p class="course-address">For: <%= event.title %></p>
+
+<% if (parseError) { %>
+  <p class="error-message">Couldn't parse the response as JSON (<%= parseError %>). You can still edit the raw text below and try saving, or go back and retake the photo.</p>
+<% } else { %>
+  <p class="success-message"><%= holeCount %> hole<%= holeCount === 1 ? '' : 's' %> extracted. Check the numbers below against the photo before saving — misreads happen, especially on handwritten or worn cards.</p>
+<% } %>
+
+<% if (parsed && !parseError) { %>
+  <table class="scorecard-table" style="margin-bottom: 1.5rem;">
+    <thead>
+      <tr><th>Hole</th><th>Par</th><th>S.I.</th>
+        <% if (parsed[0] && parsed[0].yards) { %>
+          <% Object.keys(parsed[0].yards).forEach(function(tee) { %><th><%= tee %></th><% }); %>
+        <% } %>
+      </tr>
+    </thead>
+    <tbody>
+      <% parsed.forEach(function(h) { %>
+        <tr>
+          <td><%= h.hole %></td>
+          <td><%= h.par !== undefined ? h.par : '—' %></td>
+          <td><%= h.strokeIndex !== undefined ? h.strokeIndex : '—' %></td>
+          <% if (h.yards) { %>
+            <% Object.keys(h.yards).forEach(function(tee) { %><td><%= h.yards[tee] %></td><% }); %>
+          <% } %>
+        </tr>
+      <% }); %>
+    </tbody>
+  </table>
+<% } %>
+
+<form method="post" action="/admin/events/<%= event.id %>/scorecard-import/save" class="admin-form">
+  <label>Scorecard JSON (edit to fix any misreads before saving)
+    <textarea name="scorecard_json" rows="10"><%= rawText %></textarea>
+  </label>
+  <button type="submit">Save to event</button>
+</form>
+
+<p><a href="/admin/events/<%= event.id %>/scorecard-import">Try a different photo</a></p>
+
+<%- include('../partials/foot') %>

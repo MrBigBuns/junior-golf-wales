@@ -1,0 +1,18 @@
+<%- include('../partials/head', { pageTitle: 'Import scorecard — ' + event.title }) %>
+
+<p><a href="/admin/events/<%= event.id %>/edit">&larr; Back to event</a></p>
+<h1>Import scorecard from photo</h1>
+<p class="course-address">For: <%= event.title %></p>
+
+<% if (error) { %><p class="error-message"><%= error %></p><% } %>
+
+<form method="post" action="/admin/events/<%= event.id %>/scorecard-import" enctype="multipart/form-data" class="admin-form">
+  <label>Scorecard photo (jpg or png)
+    <input type="file" name="scorecard_image" accept="image/*" required>
+  </label>
+  <button type="submit">Extract scorecard</button>
+</form>
+
+<p class="scorecard-note">Uses Claude's vision to read the card. You'll get a chance to review and correct before it's saved — nothing is written to the event automatically.</p>
+
+<%- include('../partials/foot') %>

@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool');
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 
 function slugify(str) {
   return str
@@ -131,6 +133,104 @@ router.post('/events/:id/add-update', async (req, res) => {
       `INSERT INTO event_updates (event_id, message) VALUES ($1, $2)`,
       [req.params.id, req.body.message.trim()]
     );
+  }
+  res.redirect(`/admin/events/${req.params.id}/edit`);
+});
+
+// ---------- Scorecard import (photo -> structured JSON via Claude vision) ----------
+router.get('/events/:id/scorecard-import', async (req, res) => {
+  const { rows } = await pool.query(`SELECT id, title FROM events WHERE id = $1`, [req.params.id]);
+  if (!rows.length) return res.status(404).send('Event not found');
+  res.render('admin/scorecard-import', { event: rows[0], error: null });
+});
+
+router.post('/events/:id/scorecard-import', upload.single('scorecard_image'), async (req, res) => {
+  const { rows } = await pool.query(`SELECT id, title FROM events WHERE id = $1`, [req.params.id]);
+  if (!rows.length) return res.status(404).send('Event not found');
+
+  if (!req.file) {
+    return res.render('admin/scorecard-import', { event: rows[0], error: 'Choose an image first.' });
+  }
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return res.render('admin/scorecard-import', {
+      event: rows[0],
+      error: 'ANTHROPIC_API_KEY is not set on this server — add it under Render > Environment before using this tool.'
+    });
+  }
+
+  try {
+    const base64 = req.file.buffer.toString('base64');
+    const mediaType = req.file.mimetype;
+
+    const prompt = `This is a photo of a golf scorecard. Extract every hole you can read into a JSON array, one object per hole, in this exact shape:
+
+[{"hole": 1, "par": 4, "strokeIndex": 13, "yards": {"white": 319, "yellow": 296, "red": 254}}, ...]
+
+Rules:
+- "hole" is the hole number (1-18).
+- "par" is the par for that hole.
+- "strokeIndex" is the stroke index / S.I. for that hole, if shown.
+- "yards" should have one key per tee colour actually visible on the card (e.g. white, yellow, red, blue, black) — use lowercase colour names as keys. Only include tees that are actually printed on the card.
+- Only include holes you can actually read. If a value is illegible, omit that field for that hole rather than guessing.
+- Respond with ONLY the JSON array — no markdown fences, no commentary, no explanation.`;
+
+    const apiResponse = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-5',
+        max_tokens: 2000,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
+            { type: 'text', text: prompt }
+          ]
+        }]
+      })
+    });
+
+    if (!apiResponse.ok) {
+      const errText = await apiResponse.text();
+      throw new Error(`Anthropic API error (${apiResponse.status}): ${errText.slice(0, 300)}`);
+    }
+
+    const data = await apiResponse.json();
+    const textBlock = (data.content || []).find(b => b.type === 'text');
+    const rawText = textBlock ? textBlock.text.trim() : '';
+
+    // Strip markdown fences if Claude added them despite instructions
+    const cleaned = rawText.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '');
+
+    let parsed;
+    let parseError = null;
+    try {
+      parsed = JSON.parse(cleaned);
+    } catch (e) {
+      parseError = e.message;
+      parsed = null;
+    }
+
+    res.render('admin/scorecard-review', {
+      event: rows[0],
+      rawText: cleaned,
+      parsed,
+      parseError,
+      holeCount: parsed ? parsed.length : 0
+    });
+  } catch (err) {
+    res.render('admin/scorecard-import', { event: rows[0], error: err.message });
+  }
+});
+
+router.post('/events/:id/scorecard-import/save', async (req, res) => {
+  const parsedField = parseJsonField(req.body.scorecard_json);
+  if (parsedField && !parsedField.__parse_error) {
+    await pool.query(`UPDATE events SET scorecard = $1 WHERE id = $2`, [JSON.stringify(parsedField), req.params.id]);
   }
   res.redirect(`/admin/events/${req.params.id}/edit`);
 });
