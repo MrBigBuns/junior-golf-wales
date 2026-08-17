@@ -145,6 +145,14 @@ body {
 .course-links { display: flex; flex-direction: column; gap: 6px; }
 .course-links a { color: var(--wales-green); text-decoration: none; font-size: 0.9rem; }
 
+.map-embed { width: 100%; height: 220px; border: 0; border-radius: 8px; margin-top: 0.5rem; }
+
+.scorecard-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 0.5rem; }
+.scorecard-table th, .scorecard-table td { padding: 4px 6px; text-align: center; border-bottom: 1px solid var(--border); }
+.scorecard-table th:first-child, .scorecard-table td:first-child { text-align: left; color: var(--text-secondary); }
+.scorecard-table { display: block; overflow-x: auto; white-space: nowrap; }
+.scorecard-note { font-size: 0.8rem; color: var(--text-secondary); margin: 0.25rem 0 0.5rem; }
+
 .tour-name { font-weight: 600; margin: 0.5rem 0 4px; }
 .tour-desc { color: var(--text-secondary); font-size: 0.9rem; margin: 0 0 0.75rem; }
 

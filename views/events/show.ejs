@@ -41,6 +41,29 @@
         <% }); %>
       </ul>
     <% } %>
+
+    <% if (event.scorecard && event.scorecard.length) { %>
+      <div class="detail-card">
+        <h3 class="detail-card-heading">Scorecard</h3>
+        <% if (event.scorecard.length < 18) { %><p class="scorecard-note">Front nine only — back nine not yet added.</p><% } %>
+        <table class="scorecard-table">
+          <thead>
+            <tr><th>Hole</th><% event.scorecard.forEach(function(h) { %><th><%= h.hole %></th><% }); %><th>Out</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Par</td><% event.scorecard.forEach(function(h) { %><td><%= h.par %></td><% }); %><td><%= event.scorecard.reduce((s, h) => s + (h.par || 0), 0) %></td></tr>
+            <% if (event.scorecard[0] && event.scorecard[0].strokeIndex !== undefined) { %>
+            <tr><td>S.I.</td><% event.scorecard.forEach(function(h) { %><td><%= h.strokeIndex %></td><% }); %><td>—</td></tr>
+            <% } %>
+            <% if (event.scorecard[0] && event.scorecard[0].yards) { %>
+              <% Object.keys(event.scorecard[0].yards).forEach(function(tee) { %>
+                <tr><td><%= tee.charAt(0).toUpperCase() + tee.slice(1) %> yds</td><% event.scorecard.forEach(function(h) { %><td><%= h.yards[tee] %></td><% }); %><td><%= event.scorecard.reduce((s, h) => s + (h.yards[tee] || 0), 0) %></td></tr>
+              <% }); %>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
   </div>
 
   <div>
@@ -57,6 +80,17 @@
         <a href="/clubs/<%= event.club_slug %>">Club page</a>
       </div>
     </div>
+
+    <% if (event.address) { %>
+      <div class="detail-card">
+        <h3 class="detail-card-heading">Event location</h3>
+        <iframe
+          class="map-embed"
+          loading="lazy"
+          src="https://www.google.com/maps?q=<%= encodeURIComponent(event.club_name + ', ' + event.address) %>&output=embed">
+        </iframe>
+      </div>
+    <% } %>
 
     <% if (event.organiser_name) { %>
       <div class="detail-card">
