@@ -147,10 +147,9 @@ body {
 
 .map-embed { width: 100%; height: 220px; border: 0; border-radius: 8px; margin-top: 0.5rem; }
 
-.scorecard-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 0.5rem; }
-.scorecard-table th, .scorecard-table td { padding: 4px 6px; text-align: center; border-bottom: 1px solid var(--border); }
-.scorecard-table th:first-child, .scorecard-table td:first-child { text-align: left; color: var(--text-secondary); }
-.scorecard-table { display: block; overflow-x: auto; white-space: nowrap; }
+.scorecard-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 0.7rem; margin-top: 0.5rem; }
+.scorecard-table th, .scorecard-table td { padding: 3px 2px; text-align: center; border-bottom: 1px solid var(--border); overflow: hidden; text-overflow: ellipsis; }
+.scorecard-table th:first-child, .scorecard-table td:first-child { text-align: left; color: var(--text-secondary); width: 15%; }
 .scorecard-note { font-size: 0.8rem; color: var(--text-secondary); margin: 0.25rem 0 0.5rem; }
 
 .tee-white td { background: #f2f2f0; }
