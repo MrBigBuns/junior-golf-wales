@@ -1,0 +1,17 @@
+<%- include('../partials/head', { pageTitle: club.name + ' — junior golf events' }) %>
+
+<h1><%= club.name %></h1>
+<p class="subtitle"><%= club.region %> Wales<% if (club.address) { %> · <%= club.address %><% } %></p>
+<% if (club.website) { %><p><a href="<%= club.website %>" target="_blank" rel="noopener">Club website</a></p><% } %>
+
+<h2>Upcoming junior events</h2>
+<% if (events.length === 0) { %>
+  <p>No upcoming junior events listed for this club yet.</p>
+<% } %>
+<ul class="related-list">
+  <% events.forEach(function(e) { %>
+    <li><a href="/events/<%= e.slug %>"><%= e.title %> — <%= new Date(e.date_start).toLocaleDateString('en-GB') %></a></li>
+  <% }); %>
+</ul>
+
+<%- include('../partials/foot') %>

@@ -1,0 +1,44 @@
+<%- include('../partials/head', { pageTitle: event.title + ' at ' + event.club_name }) %>
+
+<nav class="breadcrumb">
+  <a href="/events">Events</a> / <span><%= event.club_name %></span>
+</nav>
+
+<h1><%= event.title %></h1>
+<p class="subtitle"><%= event.club_name %>, <%= event.region %> Wales</p>
+
+<table class="details-table">
+  <tr><td>Date</td><td><%= new Date(event.date_start).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) %></td></tr>
+  <% if (event.format) { %><tr><td>Format</td><td><%= event.format %></td></tr><% } %>
+  <% if (event.age_category) { %><tr><td>Category</td><td><%= event.age_category %></td></tr><% } %>
+  <% if (event.entry_fee) { %><tr><td>Entry fee</td><td>£<%= event.entry_fee %> per person</td></tr><% } %>
+  <% if (event.entry_deadline) { %><tr><td>Entry deadline</td><td><%= new Date(event.entry_deadline).toLocaleDateString('en-GB') %></td></tr><% } %>
+  <% if (event.hcp_allowance_info) { %><tr><td>Handicap allowance</td><td><%= event.hcp_allowance_info %></td></tr><% } %>
+  <% if (event.catering) { %><tr><td>Catering</td><td><%= event.catering %></td></tr><% } %>
+  <% if (event.prizes) { %><tr><td>Prizes</td><td><%= event.prizes %></td></tr><% } %>
+</table>
+
+<% if (otherAtClub.length) { %>
+  <h2>Other events at this club</h2>
+  <ul class="related-list">
+    <% otherAtClub.forEach(function(e) { %>
+      <li><a href="/events/<%= e.slug %>"><%= e.title %> — <%= new Date(e.date_start).toLocaleDateString('en-GB') %></a></li>
+    <% }); %>
+  </ul>
+<% } %>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SportsEvent",
+  "name": "<%= event.title %>",
+  "startDate": "<%= event.date_start %>",
+  "location": {
+    "@type": "Place",
+    "name": "<%= event.club_name %>",
+    "address": "<%= event.address || '' %>"
+  }
+}
+</script>
+
+<%- include('../partials/foot') %>
