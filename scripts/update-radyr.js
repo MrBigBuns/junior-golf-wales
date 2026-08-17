@@ -4,19 +4,22 @@ require('dotenv').config();
 const pool = require('../db/pool');
 
 async function run() {
-  await pool.query(
+  const clubResult = await pool.query(
     `UPDATE clubs SET website = $1, description = $2, address = $3
-     WHERE slug = 'radyr-golf-club'`,
+     WHERE slug = 'radyr-golf-club'
+     RETURNING id, name, address`,
     [
       'https://www.radyrgolf.co.uk',
       'A Harry S Colt parkland course established in 1902, on the outskirts of Cardiff with views over the city, the Vale and the Bristol Channel. Hosted Wales\u2019 first professional golf event in 1904.',
       'Drysgol Rd, Radyr, Cardiff CF15 8BS'
     ]
   );
+  console.log(`Clubs updated: ${clubResult.rowCount}`, clubResult.rows);
 
-  await pool.query(
+  const eventResult = await pool.query(
     `UPDATE events SET yardage = $1, par = $2, junior_tees_note = $3, scorecard = $4
-     WHERE slug LIKE 'junior-open-radyr-golf-club%'`,
+     WHERE slug LIKE 'junior-open-radyr-golf-club%'
+     RETURNING slug, yardage`,
     [
       6109,
       70,
@@ -34,6 +37,7 @@ async function run() {
       ])
     ]
   );
+  console.log(`Events updated: ${eventResult.rowCount}`, eventResult.rows);
 
   console.log('Radyr club and event enriched.');
   await pool.end();

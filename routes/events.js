@@ -35,6 +35,7 @@ router.get('/:slug', async (req, res) => {
   const { rows } = await pool.query(
     `SELECT e.*, c.name AS club_name, c.slug AS club_slug, c.address, c.region,
             c.website AS club_website, c.course_image_url AS club_course_image_url,
+            c.description AS club_description,
             o.name AS organiser_name, o.slug AS organiser_slug, o.description AS organiser_description
      FROM events e
      JOIN clubs c ON c.id = e.club_id

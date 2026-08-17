@@ -140,8 +140,11 @@ body {
 .detail-card-heading { margin: 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-secondary); }
 
 .course-image { width: 100%; border-radius: 8px; margin: 0.75rem 0; display: block; }
+.h1-club { font-weight: 400; color: var(--text-secondary); font-size: 0.65em; }
+
 .course-club-name { font-weight: 600; margin: 0.5rem 0 2px; }
-.course-address { color: var(--text-secondary); font-size: 0.9rem; margin: 0 0 0.75rem; }
+.course-address { color: var(--text-secondary); font-size: 0.9rem; margin: 0 0 0.5rem; }
+.course-description { color: var(--text-secondary); font-size: 0.85rem; line-height: 1.5; margin: 0 0 0.75rem; }
 .course-links { display: flex; flex-direction: column; gap: 6px; }
 .course-links a { color: var(--wales-green); text-decoration: none; font-size: 0.9rem; }
 

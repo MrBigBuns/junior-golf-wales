@@ -4,8 +4,8 @@
   <a href="/events">Events</a> / <span><%= event.club_name %></span>
 </nav>
 
-<h1><%= event.title %></h1>
-<p class="subtitle"><%= event.club_name %>, <%= event.region %> Wales</p>
+<h1><%= event.title %> <span class="h1-club">at <%= event.club_name %></span></h1>
+<p class="subtitle"><%= event.region %> Wales<% if (event.address) { %> · <%= event.address %><% } %></p>
 
 <div class="event-detail-grid">
   <div>
@@ -75,6 +75,7 @@
       <% } %>
       <p class="course-club-name"><%= event.club_name %></p>
       <% if (event.address) { %><p class="course-address"><%= event.address %></p><% } %>
+      <% if (event.club_description) { %><p class="course-description"><%= event.club_description %></p><% } %>
       <div class="course-links">
         <% if (event.club_website) { %><a href="<%= event.club_website %>" target="_blank" rel="noopener">Club website</a><% } %>
         <% if (event.directions_url) { %><a href="<%= event.directions_url %>" target="_blank" rel="noopener">Directions</a><% } %>
