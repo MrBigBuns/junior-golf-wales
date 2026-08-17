@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 
+const homeRouter = require('./routes/home');
 const eventsRouter = require('./routes/events');
 const clubsRouter = require('./routes/clubs');
 const submitRouter = require('./routes/submit');
@@ -14,7 +15,7 @@ app.set('views', path.join(__dirname, 'views'));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 
-app.get('/', (req, res) => res.redirect('/events'));
+app.use('/', homeRouter);
 app.use('/events', eventsRouter);
 app.use('/clubs', clubsRouter);
 app.use('/submit-event', submitRouter);

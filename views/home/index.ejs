@@ -1,0 +1,66 @@
+<%- include('../partials/head', { pageTitle: 'Junior Golf Wales — every junior golf event in Wales' }) %>
+
+<div class="hero">
+  <h1>Croeso i Junior Golf Wales</h1>
+  <p class="hero-sub">Every junior golf event in Wales, in one place — county opens, national tours and club competitions for boys and girls, all ages.</p>
+  <form action="/events" method="get" class="hero-search">
+    <select name="region">
+      <option value="">Any region</option>
+      <option value="North">North Wales</option>
+      <option value="Mid">Mid Wales</option>
+      <option value="South">South Wales</option>
+    </select>
+    <button type="submit">Search</button>
+  </form>
+</div>
+
+<div class="stats-grid">
+  <div class="stat-card">
+    <p class="stat-label">Upcoming events</p>
+    <p class="stat-value"><%= stats.upcoming %></p>
+  </div>
+  <div class="stat-card">
+    <p class="stat-label">Clubs listed</p>
+    <p class="stat-value"><%= stats.clubs %></p>
+  </div>
+  <div class="stat-card">
+    <p class="stat-label">Tours tracked</p>
+    <p class="stat-value"><%= stats.tours %></p>
+  </div>
+  <div class="stat-card">
+    <p class="stat-label">This month</p>
+    <p class="stat-value"><%= stats.thisMonth %></p>
+  </div>
+</div>
+
+<div class="section-header">
+  <h2>Next up</h2>
+  <a href="/events">View all events</a>
+</div>
+
+<div class="event-list">
+  <% if (nextUp.length === 0) { %>
+    <p>No upcoming events yet. <a href="/submit-event">Submit one?</a></p>
+  <% } %>
+  <% nextUp.forEach(function(event) { %>
+    <a class="event-card" href="/events/<%= event.slug %>">
+      <% if (event.age_category) { %><span class="badge"><%= event.age_category %></span><% } %>
+      <p class="event-card-title"><%= event.title %></p>
+      <p class="event-card-club"><%= event.club_name %></p>
+      <p class="event-card-meta">
+        <%= new Date(event.date_start).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) %>
+        · <%= event.region %> Wales
+      </p>
+    </a>
+  <% }); %>
+</div>
+
+<div class="cta-banner">
+  <div>
+    <p class="cta-title">Running a junior event?</p>
+    <p class="cta-sub">Get it listed for free, seen by parents across Wales.</p>
+  </div>
+  <a class="cta-button" href="/submit-event">Submit an event</a>
+</div>
+
+<%- include('../partials/foot') %>
