@@ -5,11 +5,12 @@ const pool = require('../db/pool');
 
 async function run() {
   await pool.query(
-    `UPDATE clubs SET website = $1, description = $2
+    `UPDATE clubs SET website = $1, description = $2, address = $3
      WHERE slug = 'radyr-golf-club'`,
     [
       'https://www.radyrgolf.co.uk',
-      'A Harry S Colt parkland course established in 1902, on the outskirts of Cardiff with views over the city, the Vale and the Bristol Channel. Hosted Wales\u2019 first professional golf event in 1904.'
+      'A Harry S Colt parkland course established in 1902, on the outskirts of Cardiff with views over the city, the Vale and the Bristol Channel. Hosted Wales\u2019 first professional golf event in 1904.',
+      'Drysgol Rd, Radyr, Cardiff CF15 8BS'
     ]
   );
 

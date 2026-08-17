@@ -56,8 +56,9 @@
             <tr><td>S.I.</td><% event.scorecard.forEach(function(h) { %><td><%= h.strokeIndex %></td><% }); %><td>—</td></tr>
             <% } %>
             <% if (event.scorecard[0] && event.scorecard[0].yards) { %>
+              <% const teeColors = { white: 'tee-white', yellow: 'tee-yellow', red: 'tee-red', blue: 'tee-blue' }; %>
               <% Object.keys(event.scorecard[0].yards).forEach(function(tee) { %>
-                <tr><td><%= tee.charAt(0).toUpperCase() + tee.slice(1) %> yds</td><% event.scorecard.forEach(function(h) { %><td><%= h.yards[tee] %></td><% }); %><td><%= event.scorecard.reduce((s, h) => s + (h.yards[tee] || 0), 0) %></td></tr>
+                <tr class="<%= teeColors[tee] || '' %>"><td><%= tee.charAt(0).toUpperCase() + tee.slice(1) %> yds</td><% event.scorecard.forEach(function(h) { %><td><%= h.yards[tee] %></td><% }); %><td><%= event.scorecard.reduce((s, h) => s + (h.yards[tee] || 0), 0) %></td></tr>
               <% }); %>
             <% } %>
           </tbody>

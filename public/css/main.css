@@ -153,6 +153,12 @@ body {
 .scorecard-table { display: block; overflow-x: auto; white-space: nowrap; }
 .scorecard-note { font-size: 0.8rem; color: var(--text-secondary); margin: 0.25rem 0 0.5rem; }
 
+.tee-white td { background: #f2f2f0; }
+.tee-yellow td { background: #fdf6d8; }
+.tee-red td { background: #fbe4e0; }
+.tee-blue td { background: #e3edfa; }
+.tee-white td:first-child, .tee-yellow td:first-child, .tee-red td:first-child, .tee-blue td:first-child { font-weight: 500; }
+
 .tour-name { font-weight: 600; margin: 0.5rem 0 4px; }
 .tour-desc { color: var(--text-secondary); font-size: 0.9rem; margin: 0 0 0.75rem; }
 
