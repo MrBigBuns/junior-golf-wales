@@ -6,6 +6,7 @@
 
 <h1><%= event.title %> <span class="h1-club">at <%= event.club_name %></span></h1>
 <p class="subtitle"><%= event.region %> Wales<% if (event.address) { %> · <%= event.address %><% } %></p>
+<p><a class="calendar-link" href="/events/<%= event.slug %>/calendar.ics"><i class="cal-icon">&#128197;</i> Add to calendar</a></p>
 
 <div class="event-detail-grid">
   <div>
@@ -110,6 +111,31 @@
           loading="lazy"
           src="https://www.google.com/maps?q=<%= encodeURIComponent(event.club_name + ', ' + event.address) %>&output=embed">
         </iframe>
+      </div>
+    <% } %>
+
+    <% if (event.weather) { %>
+      <div class="detail-card">
+        <h3 class="detail-card-heading">Event day weather</h3>
+        <div class="weather-row">
+          <span class="weather-temp"><%= event.weather.maxTemp %>&deg;<span class="weather-temp-low"> / <%= event.weather.minTemp %>&deg;</span></span>
+        </div>
+        <p class="weather-detail"><%= event.weather.rainChance %>% chance of rain · wind up to <%= event.weather.windSpeed %> km/h</p>
+      </div>
+    <% } else if (event.weatherPending) { %>
+      <div class="detail-card">
+        <h3 class="detail-card-heading">Event day weather</h3>
+        <p class="scorecard-note">Forecast becomes available around 2 weeks before the event.</p>
+      </div>
+    <% } %>
+
+    <% if (event.nearby_hotels_url || event.nearby_things_url) { %>
+      <div class="detail-card">
+        <h3 class="detail-card-heading">Nearby</h3>
+        <div class="course-links">
+          <% if (event.nearby_hotels_url) { %><a href="<%= event.nearby_hotels_url %>" target="_blank" rel="noopener">Accommodation nearby</a><% } %>
+          <% if (event.nearby_things_url) { %><a href="<%= event.nearby_things_url %>" target="_blank" rel="noopener">Things to do nearby</a><% } %>
+        </div>
       </div>
     <% } %>
 

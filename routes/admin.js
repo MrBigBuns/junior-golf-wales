@@ -3,6 +3,7 @@ const router = express.Router();
 const pool = require('../db/pool');
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+const { geocodeAddress } = require('../lib/geocode');
 
 function slugify(str) {
   return str
@@ -249,11 +250,18 @@ router.post('/clubs', async (req, res) => {
   const b = req.body;
   const slug = b.slug ? slugify(b.slug) : slugify(b.name);
 
+  let lat = b.lat || null;
+  let lng = b.lng || null;
+  if (!lat && !lng && b.address) {
+    const geo = await geocodeAddress(b.address);
+    if (geo) { lat = geo.lat; lng = geo.lng; }
+  }
+
   const { rows } = await pool.query(
     `INSERT INTO clubs (name, slug, address, region, lat, lng, website, contact_email, junior_membership_contact, logo_url, description, course_image_url)
      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
     [
-      b.name, slug, b.address || null, b.region || null, b.lat || null, b.lng || null,
+      b.name, slug, b.address || null, b.region || null, lat, lng,
       b.website || null, b.contact_email || null, b.junior_membership_contact || null,
       b.logo_url || null, b.description || null, b.course_image_url || null
     ]
@@ -272,12 +280,19 @@ router.post('/clubs/:id/update', async (req, res) => {
   const b = req.body;
   const slug = slugify(b.slug);
 
+  let lat = b.lat || null;
+  let lng = b.lng || null;
+  if (!lat && !lng && b.address) {
+    const geo = await geocodeAddress(b.address);
+    if (geo) { lat = geo.lat; lng = geo.lng; }
+  }
+
   await pool.query(
     `UPDATE clubs SET name=$1, slug=$2, address=$3, region=$4, lat=$5, lng=$6, website=$7,
       contact_email=$8, junior_membership_contact=$9, logo_url=$10, description=$11, course_image_url=$12
      WHERE id = $13`,
     [
-      b.name, slug, b.address || null, b.region || null, b.lat || null, b.lng || null,
+      b.name, slug, b.address || null, b.region || null, lat, lng,
       b.website || null, b.contact_email || null, b.junior_membership_contact || null,
       b.logo_url || null, b.description || null, b.course_image_url || null,
       req.params.id

@@ -197,6 +197,14 @@ body {
 .tour-name { font-weight: 600; margin: 0.5rem 0 4px; }
 .tour-desc { color: var(--text-secondary); font-size: 0.9rem; margin: 0 0 0.75rem; }
 
+.calendar-link { color: var(--wales-green); text-decoration: none; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 6px; }
+.cal-icon { font-style: normal; }
+
+.weather-row { display: flex; align-items: baseline; gap: 8px; margin: 0.5rem 0 4px; }
+.weather-temp { font-size: 1.75rem; font-weight: 500; }
+.weather-temp-low { font-size: 1rem; color: var(--text-secondary); font-weight: 400; }
+.weather-detail { color: var(--text-secondary); font-size: 0.85rem; margin: 0; }
+
 @media (max-width: 640px) {
   .event-detail-grid { grid-template-columns: 1fr; }
 }
