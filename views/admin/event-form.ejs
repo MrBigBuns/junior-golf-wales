@@ -1,0 +1,109 @@
+<%- include('../partials/head', { pageTitle: isNew ? 'New event' : 'Edit event' }) %>
+
+<p><a href="/admin/events">&larr; All events</a></p>
+<h1><%= isNew ? 'New event' : 'Edit: ' + event.title %></h1>
+
+<% if (typeof saved !== 'undefined' || (typeof query !== 'undefined')) { %><% } %>
+
+<form method="post" action="<%= isNew ? '/admin/events' : '/admin/events/' + event.id + '/update' %>" class="admin-form">
+
+  <fieldset>
+    <legend>Basics</legend>
+    <label>Title <input type="text" name="title" value="<%= event.title || '' %>" required></label>
+    <label>Slug <input type="text" name="slug" value="<%= event.slug || '' %>" placeholder="auto-generated if blank"></label>
+    <label>Club
+      <select name="club_id" required>
+        <option value="">— select club —</option>
+        <% clubs.forEach(function(c) { %>
+          <option value="<%= c.id %>" <%= event.club_id == c.id ? 'selected' : '' %>><%= c.name %></option>
+        <% }); %>
+      </select>
+    </label>
+    <label>Organiser / tour (optional)
+      <select name="organiser_id">
+        <option value="">— none —</option>
+        <% organisers.forEach(function(o) { %>
+          <option value="<%= o.id %>" <%= event.organiser_id == o.id ? 'selected' : '' %>><%= o.name %></option>
+        <% }); %>
+      </select>
+    </label>
+    <label>Status
+      <select name="status">
+        <option value="confirmed" <%= event.status === 'confirmed' ? 'selected' : '' %>>Confirmed</option>
+        <option value="tentative" <%= event.status === 'tentative' ? 'selected' : '' %>>Tentative</option>
+        <option value="cancelled" <%= event.status === 'cancelled' ? 'selected' : '' %>>Cancelled</option>
+      </select>
+    </label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Date &amp; time</legend>
+    <label>Date <input type="date" name="date_start" value="<%= event.date_start ? new Date(event.date_start).toISOString().slice(0,10) : '' %>" required></label>
+    <label>End date (multi-day only) <input type="date" name="date_end" value="<%= event.date_end ? new Date(event.date_end).toISOString().slice(0,10) : '' %>"></label>
+    <label>Start time <input type="time" name="start_time" value="<%= event.start_time || '' %>"></label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Category &amp; format</legend>
+    <label>Format <input type="text" name="format" value="<%= event.format || '' %>" placeholder="e.g. Individual Strokeplay & Stableford"></label>
+    <label>Open to (gender) <input type="text" name="gender" value="<%= event.gender || '' %>" placeholder="e.g. Any Gender"></label>
+    <label>Age category <input type="text" name="age_category" value="<%= event.age_category || '' %>" placeholder="e.g. Juniors Under 18"></label>
+    <label>Age cutoff date <input type="date" name="age_cutoff_date" value="<%= event.age_cutoff_date ? new Date(event.age_cutoff_date).toISOString().slice(0,10) : '' %>"></label>
+    <label>Hcp index limit <input type="text" name="hcp_index_limit" value="<%= event.hcp_index_limit || '' %>" placeholder="e.g. 54.0 (boys) 54.0 (girls)"></label>
+    <label>Handicap allowance / info <textarea name="hcp_allowance_info" rows="2"><%= event.hcp_allowance_info || '' %></textarea></label>
+    <label><input type="checkbox" name="accompanying_adult_required" <%= event.accompanying_adult_required ? 'checked' : '' %>> Accompanying adult required</label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Entry &amp; registration</legend>
+    <label>Entry fee (£, single) <input type="text" name="entry_fee" value="<%= event.entry_fee || '' %>" placeholder="leave blank if using fee tiers below"></label>
+    <label>Entry fee tiers (JSON) <textarea name="entry_fee_tiers" rows="3" placeholder='[{"label":"Member","amount":12},{"label":"Non-member","amount":15}]'><%= event.entry_fee_tiers ? JSON.stringify(event.entry_fee_tiers) : '' %></textarea></label>
+    <label>Registration opens <input type="date" name="registration_opens" value="<%= event.registration_opens ? new Date(event.registration_opens).toISOString().slice(0,10) : '' %>"></label>
+    <label>Entry deadline <input type="date" name="entry_deadline" value="<%= event.entry_deadline ? new Date(event.entry_deadline).toISOString().slice(0,10) : '' %>"></label>
+    <label>Entry URL (link to enter) <input type="text" name="entry_url" value="<%= event.entry_url || '' %>"></label>
+    <label>Entry email <input type="email" name="entry_email" value="<%= event.entry_email || '' %>"></label>
+    <label>Entry phone <input type="text" name="entry_phone" value="<%= event.entry_phone || '' %>"></label>
+    <label>Organiser contact (general) <input type="text" name="organiser_contact" value="<%= event.organiser_contact || '' %>"></label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Course</legend>
+    <label>Holes <input type="number" name="holes" value="<%= event.holes || '' %>"></label>
+    <label>Par <input type="number" name="par" value="<%= event.par || '' %>"></label>
+    <label>Yardage <input type="number" name="yardage" value="<%= event.yardage || '' %>"></label>
+    <label>Junior tees note <textarea name="junior_tees_note" rows="2"><%= event.junior_tees_note || '' %></textarea></label>
+    <label>Scorecard (JSON — array of holes)
+      <textarea name="scorecard" rows="4" placeholder='[{"hole":1,"par":4,"strokeIndex":13,"yards":{"white":319,"yellow":296,"red":254}}, ...]'><%= event.scorecard ? JSON.stringify(event.scorecard) : '' %></textarea>
+    </label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Other</legend>
+    <label>Catering <input type="text" name="catering" value="<%= event.catering || '' %>"></label>
+    <label>Prizes <input type="text" name="prizes" value="<%= event.prizes || '' %>"></label>
+  </fieldset>
+
+  <button type="submit">Save event</button>
+</form>
+
+<% if (!isNew) { %>
+  <div class="admin-danger-zone">
+    <form method="post" action="/admin/events/<%= event.id %>/delete" onsubmit="return confirm('Delete this event? This cannot be undone.');">
+      <button type="submit" class="admin-delete-button">Delete event</button>
+    </form>
+  </div>
+
+  <hr>
+  <h2>Updates / news</h2>
+  <form method="post" action="/admin/events/<%= event.id %>/add-update" class="admin-form">
+    <label>New update message <input type="text" name="message" placeholder="e.g. Entries now open"></label>
+    <button type="submit">Post update</button>
+  </form>
+  <ul class="related-list">
+    <% (updates || []).forEach(function(u) { %>
+      <li><%= new Date(u.created_at).toLocaleDateString('en-GB') %> — <%= u.message %></li>
+    <% }); %>
+  </ul>
+<% } %>
+
+<%- include('../partials/foot') %>

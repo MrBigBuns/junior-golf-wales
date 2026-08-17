@@ -1,0 +1,26 @@
+<%- include('../partials/head', { pageTitle: 'Admin — Events' }) %>
+
+<div class="admin-header-row">
+  <h1>Events</h1>
+  <a class="admin-button" href="/admin/events/new">+ New event</a>
+</div>
+<p><a href="/admin">&larr; Dashboard</a></p>
+
+<table class="admin-table">
+  <thead>
+    <tr><th>Title</th><th>Club</th><th>Date</th><th>Status</th><th></th></tr>
+  </thead>
+  <tbody>
+    <% events.forEach(function(e) { %>
+      <tr>
+        <td><%= e.title %></td>
+        <td><%= e.club_name %></td>
+        <td><%= new Date(e.date_start).toLocaleDateString('en-GB') %></td>
+        <td><span class="status-pill status-<%= e.status %>"><%= e.status %></span></td>
+        <td><a href="/admin/events/<%= e.id %>/edit">Edit</a> · <a href="/events/<%= e.slug %>" target="_blank">View</a></td>
+      </tr>
+    <% }); %>
+  </tbody>
+</table>
+
+<%- include('../partials/foot') %>

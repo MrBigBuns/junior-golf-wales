@@ -1,0 +1,16 @@
+<%- include('../partials/head', { pageTitle: 'Admin — Junior Golf Wales' }) %>
+
+<h1>Admin</h1>
+
+<div class="admin-nav">
+  <a href="/admin/events">Events (<%= eventCount %>)</a>
+  <a href="/admin/clubs">Clubs (<%= clubCount %>)</a>
+  <a href="/admin/submissions">Submissions <% if (pendingCount > 0) { %><span class="pending-badge"><%= pendingCount %></span><% } %></a>
+</div>
+
+<div class="admin-quick-links">
+  <a class="admin-button" href="/admin/events/new">+ New event</a>
+  <a class="admin-button" href="/admin/clubs/new">+ New club</a>
+</div>
+
+<%- include('../partials/foot') %>

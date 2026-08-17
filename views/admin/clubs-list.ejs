@@ -1,0 +1,22 @@
+<%- include('../partials/head', { pageTitle: 'Admin — Clubs' }) %>
+
+<div class="admin-header-row">
+  <h1>Clubs</h1>
+  <a class="admin-button" href="/admin/clubs/new">+ New club</a>
+</div>
+<p><a href="/admin">&larr; Dashboard</a></p>
+
+<table class="admin-table">
+  <thead><tr><th>Name</th><th>Region</th><th></th></tr></thead>
+  <tbody>
+    <% clubs.forEach(function(c) { %>
+      <tr>
+        <td><%= c.name %></td>
+        <td><%= c.region || '—' %></td>
+        <td><a href="/admin/clubs/<%= c.id %>/edit">Edit</a> · <a href="/clubs/<%= c.slug %>" target="_blank">View</a></td>
+      </tr>
+    <% }); %>
+  </tbody>
+</table>
+
+<%- include('../partials/foot') %>

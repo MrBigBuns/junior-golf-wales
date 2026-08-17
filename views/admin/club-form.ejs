@@ -1,0 +1,37 @@
+<%- include('../partials/head', { pageTitle: isNew ? 'New club' : 'Edit club' }) %>
+
+<p><a href="/admin/clubs">&larr; All clubs</a></p>
+<h1><%= isNew ? 'New club' : 'Edit: ' + club.name %></h1>
+
+<form method="post" action="<%= isNew ? '/admin/clubs' : '/admin/clubs/' + club.id + '/update' %>" class="admin-form">
+  <label>Name <input type="text" name="name" value="<%= club.name || '' %>" required></label>
+  <label>Slug <input type="text" name="slug" value="<%= club.slug || '' %>" placeholder="auto-generated if blank"></label>
+  <label>Region
+    <select name="region">
+      <option value="">— select —</option>
+      <option value="North" <%= club.region === 'North' ? 'selected' : '' %>>North Wales</option>
+      <option value="Mid" <%= club.region === 'Mid' ? 'selected' : '' %>>Mid Wales</option>
+      <option value="South" <%= club.region === 'South' ? 'selected' : '' %>>South Wales</option>
+    </select>
+  </label>
+  <label>Address <input type="text" name="address" value="<%= club.address || '' %>"></label>
+  <label>Latitude <input type="text" name="lat" value="<%= club.lat || '' %>"></label>
+  <label>Longitude <input type="text" name="lng" value="<%= club.lng || '' %>"></label>
+  <label>Website <input type="text" name="website" value="<%= club.website || '' %>"></label>
+  <label>Contact email <input type="email" name="contact_email" value="<%= club.contact_email || '' %>"></label>
+  <label>Junior membership contact <input type="text" name="junior_membership_contact" value="<%= club.junior_membership_contact || '' %>"></label>
+  <label>Logo URL <input type="text" name="logo_url" value="<%= club.logo_url || '' %>"></label>
+  <label>Course image URL <input type="text" name="course_image_url" value="<%= club.course_image_url || '' %>"></label>
+  <label>Description <textarea name="description" rows="4"><%= club.description || '' %></textarea></label>
+  <button type="submit">Save club</button>
+</form>
+
+<% if (!isNew) { %>
+  <div class="admin-danger-zone">
+    <form method="post" action="/admin/clubs/<%= club.id %>/delete" onsubmit="return confirm('Delete this club? Events linked to it will break. This cannot be undone.');">
+      <button type="submit" class="admin-delete-button">Delete club</button>
+    </form>
+  </div>
+<% } %>
+
+<%- include('../partials/foot') %>
