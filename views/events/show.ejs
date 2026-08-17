@@ -14,8 +14,19 @@
       <table class="details-table">
         <% if (event.registration_opens) { %><tr><td>Begins</td><td><%= new Date(event.registration_opens).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) %></td></tr><% } %>
         <% if (event.entry_deadline) { %><tr><td>Entry deadline</td><td><%= new Date(event.entry_deadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) %></td></tr><% } %>
-        <% if (event.entry_fee) { %><tr><td>Entry fee</td><td>£<%= event.entry_fee %></td></tr><% } %>
+        <% if (!event.entry_fee_tiers && event.entry_fee) { %><tr><td>Entry fee</td><td>£<%= event.entry_fee %></td></tr><% } %>
       </table>
+
+      <% if (event.entry_fee_tiers && event.entry_fee_tiers.length) { %>
+        <table class="fee-tiers-table">
+          <thead><tr><th>Entry fee</th><th></th></tr></thead>
+          <tbody>
+            <% event.entry_fee_tiers.forEach(function(tier) { %>
+              <tr><td><%= tier.label %></td><td>£<%= tier.amount %></td></tr>
+            <% }); %>
+          </tbody>
+        </table>
+      <% } %>
 
       <% if (event.entry_url || event.entry_email || event.entry_phone) { %>
         <div class="how-to-enter">
@@ -33,6 +44,20 @@
         <p class="enter-fallback">No online entry listed yet — contact <%= event.club_name %> directly to enter.</p>
       <% } %>
     </div>
+
+    <% if (updates.length) { %>
+      <div class="detail-card">
+        <h3 class="detail-card-heading">Latest updates</h3>
+        <ul class="updates-list">
+          <% updates.forEach(function(u) { %>
+            <li>
+              <span class="update-date"><%= new Date(u.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) %></span>
+              <span class="update-message"><%= u.message %></span>
+            </li>
+          <% }); %>
+        </ul>
+      </div>
+    <% } %>
 
     <div class="detail-card">
       <h3 class="detail-card-heading">Event details</h3>

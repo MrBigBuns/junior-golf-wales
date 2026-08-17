@@ -67,6 +67,14 @@ CREATE INDEX IF NOT EXISTS idx_events_date_start ON events(date_start);
 CREATE INDEX IF NOT EXISTS idx_events_club_id ON events(club_id);
 CREATE INDEX IF NOT EXISTS idx_clubs_region ON clubs(region);
 
+CREATE TABLE IF NOT EXISTS event_updates (
+  id SERIAL PRIMARY KEY,
+  event_id INTEGER NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+  message TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_event_updates_event_id ON event_updates(event_id, created_at DESC);
+
 -- Additions for richer event detail pages (registration window, course info)
 ALTER TABLE events ADD COLUMN IF NOT EXISTS registration_opens DATE;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS course_image_url TEXT;
@@ -78,3 +86,4 @@ ALTER TABLE events ADD COLUMN IF NOT EXISTS scorecard JSONB;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS entry_url TEXT;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS entry_email TEXT;
 ALTER TABLE events ADD COLUMN IF NOT EXISTS entry_phone TEXT;
+ALTER TABLE events ADD COLUMN IF NOT EXISTS entry_fee_tiers JSONB;

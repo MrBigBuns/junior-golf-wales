@@ -58,7 +58,13 @@ router.get('/:slug', async (req, res) => {
     [event.club_id, event.slug]
   );
 
-  res.render('events/show', { event, otherAtClub });
+  const { rows: updates } = await pool.query(
+    `SELECT message, created_at FROM event_updates
+     WHERE event_id = $1 ORDER BY created_at DESC LIMIT 10`,
+    [event.id]
+  );
+
+  res.render('events/show', { event, otherAtClub, updates });
 });
 
 module.exports = router;
