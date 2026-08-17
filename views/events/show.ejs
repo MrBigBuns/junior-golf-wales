@@ -125,28 +125,62 @@
 </div>
 
 <% if (event.scorecard && event.scorecard.length) { %>
+  <% const frontNine = event.scorecard.slice(0, 9); %>
+  <% const backNine = event.scorecard.slice(9, 18); %>
+  <% const teeColors = { white: 'tee-white', yellow: 'tee-yellow', red: 'tee-red', blue: 'tee-blue' }; %>
+
   <div class="detail-card scorecard-full-width">
     <h3 class="detail-card-heading">Scorecard</h3>
     <% if (event.scorecard.length < 18) { %><p class="scorecard-note">Front nine only — back nine not yet added.</p><% } %>
+
+    <p class="scorecard-nine-label">Front nine</p>
     <div class="scorecard-scroll">
     <table class="scorecard-table">
       <thead>
-        <tr><th>Hole</th><% event.scorecard.forEach(function(h) { %><th><%= h.hole %></th><% }); %><th>Out</th></tr>
+        <tr><th>Hole</th><% frontNine.forEach(function(h) { %><th><%= h.hole %></th><% }); %><th>Out</th></tr>
       </thead>
       <tbody>
-        <tr><td>Par</td><% event.scorecard.forEach(function(h) { %><td><%= h.par %></td><% }); %><td><%= event.scorecard.reduce((s, h) => s + (h.par || 0), 0) %></td></tr>
-        <% if (event.scorecard[0] && event.scorecard[0].strokeIndex !== undefined) { %>
-        <tr><td>S.I.</td><% event.scorecard.forEach(function(h) { %><td><%= h.strokeIndex %></td><% }); %><td>—</td></tr>
+        <tr><td>Par</td><% frontNine.forEach(function(h) { %><td><%= h.par %></td><% }); %><td><%= frontNine.reduce((s, h) => s + (h.par || 0), 0) %></td></tr>
+        <% if (frontNine[0] && frontNine[0].strokeIndex !== undefined) { %>
+        <tr><td>S.I.</td><% frontNine.forEach(function(h) { %><td><%= h.strokeIndex %></td><% }); %><td>—</td></tr>
         <% } %>
-        <% if (event.scorecard[0] && event.scorecard[0].yards) { %>
-          <% const teeColors = { white: 'tee-white', yellow: 'tee-yellow', red: 'tee-red', blue: 'tee-blue' }; %>
-          <% Object.keys(event.scorecard[0].yards).forEach(function(tee) { %>
-            <tr class="<%= teeColors[tee] || '' %>"><td><%= tee.charAt(0).toUpperCase() + tee.slice(1) %> yds</td><% event.scorecard.forEach(function(h) { %><td><%= h.yards[tee] %></td><% }); %><td><%= event.scorecard.reduce((s, h) => s + (h.yards[tee] || 0), 0) %></td></tr>
+        <% if (frontNine[0] && frontNine[0].yards) { %>
+          <% Object.keys(frontNine[0].yards).forEach(function(tee) { %>
+            <tr class="<%= teeColors[tee] || '' %>"><td><%= tee.charAt(0).toUpperCase() + tee.slice(1) %> yds</td><% frontNine.forEach(function(h) { %><td><%= h.yards[tee] %></td><% }); %><td><%= frontNine.reduce((s, h) => s + (h.yards[tee] || 0), 0) %></td></tr>
           <% }); %>
         <% } %>
       </tbody>
     </table>
     </div>
+
+    <% if (backNine.length) { %>
+      <p class="scorecard-nine-label">Back nine</p>
+      <div class="scorecard-scroll">
+      <table class="scorecard-table">
+        <thead>
+          <tr><th>Hole</th><% backNine.forEach(function(h) { %><th><%= h.hole %></th><% }); %><th>In</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Par</td><% backNine.forEach(function(h) { %><td><%= h.par %></td><% }); %><td><%= backNine.reduce((s, h) => s + (h.par || 0), 0) %></td></tr>
+          <% if (backNine[0] && backNine[0].strokeIndex !== undefined) { %>
+          <tr><td>S.I.</td><% backNine.forEach(function(h) { %><td><%= h.strokeIndex %></td><% }); %><td>—</td></tr>
+          <% } %>
+          <% if (backNine[0] && backNine[0].yards) { %>
+            <% Object.keys(backNine[0].yards).forEach(function(tee) { %>
+              <tr class="<%= teeColors[tee] || '' %>"><td><%= tee.charAt(0).toUpperCase() + tee.slice(1) %> yds</td><% backNine.forEach(function(h) { %><td><%= h.yards[tee] %></td><% }); %><td><%= backNine.reduce((s, h) => s + (h.yards[tee] || 0), 0) %></td></tr>
+            <% }); %>
+          <% } %>
+        </tbody>
+      </table>
+      </div>
+
+      <div class="scorecard-totals">
+        <span>Total par: <strong><%= event.scorecard.reduce((s, h) => s + (h.par || 0), 0) %></strong></span>
+        <% Object.keys(event.scorecard[0].yards).forEach(function(tee) { %>
+          <span><%= tee.charAt(0).toUpperCase() + tee.slice(1) %>: <strong><%= event.scorecard.reduce((s, h) => s + (h.yards[tee] || 0), 0) %> yds</strong></span>
+        <% }); %>
+      </div>
+    <% } %>
   </div>
 <% } %>
 

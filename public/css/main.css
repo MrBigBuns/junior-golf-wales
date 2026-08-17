@@ -183,6 +183,10 @@ body {
 .scorecard-table th, .scorecard-table td { padding: 4px 8px; text-align: center; border-bottom: 1px solid var(--border); white-space: nowrap; }
 .scorecard-table th:first-child, .scorecard-table td:first-child { text-align: left; color: var(--text-secondary); position: sticky; left: 0; background: var(--surface-2, white); }
 .scorecard-note { font-size: 0.8rem; color: var(--text-secondary); margin: 0.25rem 0 0; }
+.scorecard-nine-label { font-size: 0.8rem; font-weight: 500; color: var(--text-secondary); margin: 1rem 0 0.25rem; }
+.scorecard-nine-label:first-of-type { margin-top: 0.5rem; }
+.scorecard-totals { display: flex; gap: 1.5rem; margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border); font-size: 0.85rem; flex-wrap: wrap; }
+.scorecard-totals strong { font-weight: 500; }
 
 .tee-white td { background: #f2f2f0; }
 .tee-yellow td { background: #fdf6d8; }
