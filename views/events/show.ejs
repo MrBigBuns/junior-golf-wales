@@ -16,6 +16,22 @@
         <% if (event.entry_deadline) { %><tr><td>Entry deadline</td><td><%= new Date(event.entry_deadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) %></td></tr><% } %>
         <% if (event.entry_fee) { %><tr><td>Entry fee</td><td>£<%= event.entry_fee %></td></tr><% } %>
       </table>
+
+      <% if (event.entry_url || event.entry_email || event.entry_phone) { %>
+        <div class="how-to-enter">
+          <% if (event.entry_url) { %>
+            <a class="enter-button" href="<%= event.entry_url %>" target="_blank" rel="noopener">Enter this event</a>
+          <% } %>
+          <% if (event.entry_email) { %>
+            <p class="enter-contact"><i>Email:</i> <a href="mailto:<%= event.entry_email %>"><%= event.entry_email %></a></p>
+          <% } %>
+          <% if (event.entry_phone) { %>
+            <p class="enter-contact"><i>Phone:</i> <a href="tel:<%= event.entry_phone.replace(/\s+/g, '') %>"><%= event.entry_phone %></a></p>
+          <% } %>
+        </div>
+      <% } else { %>
+        <p class="enter-fallback">No online entry listed yet — contact <%= event.club_name %> directly to enter.</p>
+      <% } %>
     </div>
 
     <div class="detail-card">

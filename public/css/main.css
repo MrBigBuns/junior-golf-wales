@@ -139,6 +139,21 @@ body {
 .detail-card .details-table { margin: 0.5rem 0 0; }
 .detail-card-heading { margin: 0; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--text-secondary); }
 
+.how-to-enter { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+.enter-button {
+  display: inline-block;
+  background: var(--wales-green);
+  color: white;
+  text-decoration: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+.enter-contact { font-size: 0.85rem; color: var(--text-secondary); margin: 4px 0; }
+.enter-contact a { color: var(--wales-green); }
+.enter-fallback { font-size: 0.85rem; color: var(--text-secondary); margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--border); }
+
 .course-image { width: 100%; border-radius: 8px; margin: 0.75rem 0; display: block; }
 .h1-club { font-weight: 400; color: var(--text-secondary); font-size: 0.65em; }
 

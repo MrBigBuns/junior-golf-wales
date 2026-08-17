@@ -17,7 +17,8 @@ async function run() {
   console.log(`Clubs updated: ${clubResult.rowCount}`, clubResult.rows);
 
   const eventResult = await pool.query(
-    `UPDATE events SET yardage = $1, par = $2, junior_tees_note = $3, scorecard = $4
+    `UPDATE events SET yardage = $1, par = $2, junior_tees_note = $3, scorecard = $4,
+            entry_url = $5, entry_email = $6, entry_phone = $7
      WHERE slug LIKE 'junior-open-radyr-golf-club%'
      RETURNING slug, yardage`,
     [
@@ -34,7 +35,10 @@ async function run() {
         { hole: 7, par: 3, strokeIndex: 11, yards: { white: 177, yellow: 169, red: 139 } },
         { hole: 8, par: 5, strokeIndex: 17, yards: { white: 480, yellow: 472, red: 439 } },
         { hole: 9, par: 4, strokeIndex: 3, yards: { white: 446, yellow: 440, red: 436 } }
-      ])
+      ]),
+      'https://www.golfempire.co.uk/new/entryform.php?eventid=8354',
+      null,
+      null
     ]
   );
   console.log(`Events updated: ${eventResult.rowCount}`, eventResult.rows);

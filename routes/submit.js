@@ -7,7 +7,7 @@ router.get('/', (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const { event_title, club_name, event_date, entry_fee, contact_email, notes } = req.body;
+  const { event_title, club_name, event_date, entry_fee, entry_info, contact_email, notes } = req.body;
 
   if (!event_title || !club_name || !event_date || !contact_email) {
     return res.render('submit', {
@@ -20,7 +20,7 @@ router.post('/', async (req, res) => {
     `INSERT INTO submissions (raw_data, submitted_by_email)
      VALUES ($1, $2)`,
     [
-      JSON.stringify({ event_title, club_name, event_date, entry_fee, notes }),
+      JSON.stringify({ event_title, club_name, event_date, entry_fee, entry_info, notes }),
       contact_email
     ]
   );
