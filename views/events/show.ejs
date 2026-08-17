@@ -89,6 +89,7 @@
       <div class="detail-card">
         <h3 class="detail-card-heading">Scorecard</h3>
         <% if (event.scorecard.length < 18) { %><p class="scorecard-note">Front nine only — back nine not yet added.</p><% } %>
+        <div class="scorecard-scroll">
         <table class="scorecard-table">
           <thead>
             <tr><th>Hole</th><% event.scorecard.forEach(function(h) { %><th><%= h.hole %></th><% }); %><th>Out</th></tr>
@@ -106,6 +107,7 @@
             <% } %>
           </tbody>
         </table>
+        </div>
       </div>
     <% } %>
   </div>
