@@ -132,6 +132,13 @@
         <% if (event.directions_url) { %><a href="<%= event.directions_url %>" target="_blank" rel="noopener">Directions</a><% } %>
         <a href="/clubs/<%= event.club_slug %>">Club page</a>
       </div>
+      <% if (event.club_facebook_url || event.club_instagram_url || event.club_x_url) { %>
+        <div class="social-links">
+          <% if (event.club_facebook_url) { %><a href="<%= event.club_facebook_url %>" target="_blank" rel="noopener" aria-label="Facebook">Facebook</a><% } %>
+          <% if (event.club_instagram_url) { %><a href="<%= event.club_instagram_url %>" target="_blank" rel="noopener" aria-label="Instagram">Instagram</a><% } %>
+          <% if (event.club_x_url) { %><a href="<%= event.club_x_url %>" target="_blank" rel="noopener" aria-label="X">X</a><% } %>
+        </div>
+      <% } %>
     </div>
 
     <% if (event.address) { %>

@@ -37,6 +37,7 @@ router.get('/:slug', async (req, res) => {
     `SELECT e.*, c.name AS club_name, c.slug AS club_slug, c.address, c.region,
             c.website AS club_website, c.course_image_url AS club_course_image_url,
             c.description AS club_description, c.lat AS club_lat, c.lng AS club_lng,
+            c.facebook_url AS club_facebook_url, c.instagram_url AS club_instagram_url, c.x_url AS club_x_url,
             o.name AS organiser_name, o.slug AS organiser_slug, o.description AS organiser_description
      FROM events e
      JOIN clubs c ON c.id = e.club_id

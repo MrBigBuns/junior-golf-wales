@@ -3,6 +3,13 @@
 <h1><%= club.name %></h1>
 <p class="subtitle"><%= club.region %> Wales<% if (club.address) { %> · <%= club.address %><% } %></p>
 <% if (club.website) { %><p><a href="<%= club.website %>" target="_blank" rel="noopener">Club website</a></p><% } %>
+<% if (club.facebook_url || club.instagram_url || club.x_url) { %>
+  <div class="social-links">
+    <% if (club.facebook_url) { %><a href="<%= club.facebook_url %>" target="_blank" rel="noopener">Facebook</a><% } %>
+    <% if (club.instagram_url) { %><a href="<%= club.instagram_url %>" target="_blank" rel="noopener">Instagram</a><% } %>
+    <% if (club.x_url) { %><a href="<%= club.x_url %>" target="_blank" rel="noopener">X</a><% } %>
+  </div>
+<% } %>
 
 <h2>Upcoming junior events</h2>
 <% if (events.length === 0) { %>

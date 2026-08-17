@@ -258,12 +258,13 @@ router.post('/clubs', async (req, res) => {
   }
 
   const { rows } = await pool.query(
-    `INSERT INTO clubs (name, slug, address, region, lat, lng, website, contact_email, junior_membership_contact, logo_url, description, course_image_url)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
+    `INSERT INTO clubs (name, slug, address, region, lat, lng, website, contact_email, junior_membership_contact, logo_url, description, course_image_url, facebook_url, instagram_url, x_url)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING id`,
     [
       b.name, slug, b.address || null, b.region || null, lat, lng,
       b.website || null, b.contact_email || null, b.junior_membership_contact || null,
-      b.logo_url || null, b.description || null, b.course_image_url || null
+      b.logo_url || null, b.description || null, b.course_image_url || null,
+      b.facebook_url || null, b.instagram_url || null, b.x_url || null
     ]
   );
 
@@ -289,12 +290,14 @@ router.post('/clubs/:id/update', async (req, res) => {
 
   await pool.query(
     `UPDATE clubs SET name=$1, slug=$2, address=$3, region=$4, lat=$5, lng=$6, website=$7,
-      contact_email=$8, junior_membership_contact=$9, logo_url=$10, description=$11, course_image_url=$12
-     WHERE id = $13`,
+      contact_email=$8, junior_membership_contact=$9, logo_url=$10, description=$11, course_image_url=$12,
+      facebook_url=$13, instagram_url=$14, x_url=$15
+     WHERE id = $16`,
     [
       b.name, slug, b.address || null, b.region || null, lat, lng,
       b.website || null, b.contact_email || null, b.junior_membership_contact || null,
       b.logo_url || null, b.description || null, b.course_image_url || null,
+      b.facebook_url || null, b.instagram_url || null, b.x_url || null,
       req.params.id
     ]
   );
