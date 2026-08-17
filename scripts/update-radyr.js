@@ -19,7 +19,9 @@ async function run() {
   const eventResult = await pool.query(
     `UPDATE events SET yardage = $1, par = $2, junior_tees_note = $3, scorecard = $4,
             entry_url = $5, entry_email = $6, entry_phone = $7,
-            registration_opens = $8, entry_deadline = $9, entry_fee_tiers = $10
+            registration_opens = $8, entry_deadline = $9, entry_fee_tiers = $10,
+            format = $11, gender = $12, hcp_index_limit = $13, age_category = $14,
+            hcp_allowance_info = $15, catering = $16, prizes = $17
      WHERE slug LIKE 'junior-open-radyr-golf-club%'
      RETURNING slug, yardage`,
     [
@@ -48,7 +50,14 @@ async function run() {
       JSON.stringify([
         { label: 'Member', amount: 12.00 },
         { label: 'Non-member', amount: 15.00 }
-      ])
+      ]),
+      'Individual Strokeplay & Stableford',
+      'Any Gender',
+      '54.0 (boys) 54.0 (girls)',
+      'Juniors',
+      '0-12 hcp Strokeplay. 13-36 hcp Stableford. 37+ must enter the 37+ hcp junior open on short course.',
+      'Includes meal.',
+      'Longest drive & nearest-the-pin.'
     ]
   );
   console.log(`Events updated: ${eventResult.rowCount}`, eventResult.rows);

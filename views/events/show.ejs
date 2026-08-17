@@ -65,7 +65,9 @@
         <tr><td>Date</td><td><%= new Date(event.date_start).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) %></td></tr>
         <% if (event.start_time) { %><tr><td>Start time</td><td><%= event.start_time %></td></tr><% } %>
         <% if (event.format) { %><tr><td>Format</td><td><%= event.format %></td></tr><% } %>
+        <% if (event.gender) { %><tr><td>Open to</td><td><%= event.gender %></td></tr><% } %>
         <% if (event.age_category) { %><tr><td>Category</td><td><%= event.age_category %></td></tr><% } %>
+        <% if (event.hcp_index_limit) { %><tr><td>Hcp index limit</td><td><%= event.hcp_index_limit %></td></tr><% } %>
         <% if (event.holes) { %><tr><td>Holes</td><td><%= event.holes %><% if (event.par) { %> · Par <%= event.par %><% } %></td></tr><% } %>
         <% if (event.yardage) { %><tr><td>Yardage</td><td><%= event.yardage %> yds<% if (event.junior_tees_note) { %> — <%= event.junior_tees_note %><% } %></td></tr><% } %>
         <% if (event.hcp_allowance_info) { %><tr><td>Handicap allowance</td><td><%= event.hcp_allowance_info %></td></tr><% } %>
