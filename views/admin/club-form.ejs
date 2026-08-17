@@ -15,8 +15,8 @@
     </select>
   </label>
   <label>Address <input type="text" name="address" value="<%= club.address || '' %>"></label>
-  <label>Latitude <input type="text" name="lat" value="<%= club.lat || '' %>"></label>
-  <label>Longitude <input type="text" name="lng" value="<%= club.lng || '' %>"></label>
+  <label>Latitude <input type="text" name="lat" value="<%= club.lat || '' %>" placeholder="auto-filled from address if left blank, but unreliable — enter manually if known"></label>
+  <label>Longitude <input type="text" name="lng" value="<%= club.lng || '' %>" placeholder="auto-filled from address if left blank, but unreliable — enter manually if known"></label>
   <label>Website <input type="text" name="website" value="<%= club.website || '' %>"></label>
   <label>Contact email <input type="email" name="contact_email" value="<%= club.contact_email || '' %>"></label>
   <label>Junior membership contact <input type="text" name="junior_membership_contact" value="<%= club.junior_membership_contact || '' %>"></label>
