@@ -129,15 +129,20 @@
   <div>
     <div class="detail-card course-card">
       <h3 class="detail-card-heading">Course</h3>
-      <% if (event.club_has_course_photo) { %>
-        <img src="/clubs/<%= event.club_id %>/course-photo-image" alt="<%= event.club_name %>" class="course-image">
-      <% } else if (event.club_course_image_url) { %>
-        <img src="<%= event.club_course_image_url %>" alt="<%= event.club_name %>" class="course-image">
+      <% const hasBanner = event.club_has_course_photo || event.club_course_image_url; %>
+      <% const hasLogo = event.club_has_logo_image; %>
+      <% if (hasBanner) { %>
+        <div class="club-banner-wrap club-banner-wrap-small">
+          <img class="club-banner-image club-banner-image-small" src="<%= event.club_has_course_photo ? '/clubs/' + event.club_id + '/course-photo-image' : event.club_course_image_url %>" alt="<%= event.club_name %>">
+          <% if (hasLogo) { %>
+            <img class="club-banner-logo club-banner-logo-small" src="/clubs/<%= event.club_id %>/logo-image" alt="<%= event.club_name %> logo">
+          <% } %>
+        </div>
       <% } %>
-      <% if (event.club_has_logo_image) { %>
-        <img src="/clubs/<%= event.club_id %>/logo-image" alt="<%= event.club_name %> logo" class="club-logo-inline">
-      <% } %>
-      <p class="course-club-name"><%= event.club_name %></p>
+      <p class="course-club-name <%= hasBanner && hasLogo ? 'has-overlapping-logo-small' : '' %>">
+        <% if (!hasBanner && hasLogo) { %><img src="/clubs/<%= event.club_id %>/logo-image" alt="<%= event.club_name %> logo" class="club-logo-inline"> <% } %>
+        <%= event.club_name %>
+      </p>
       <% if (event.address) { %><p class="course-address"><%= event.address %></p><% } %>
       <% if (event.club_description) { %><p class="course-description"><%= event.club_description %></p><% } %>
       <div class="course-links">

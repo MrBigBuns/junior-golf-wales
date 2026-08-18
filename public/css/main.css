@@ -537,3 +537,9 @@ body {
   .club-banner-logo { width: 64px; height: 64px; left: 16px; bottom: -28px; }
   .club-header-info.has-overlapping-logo { margin-left: 90px; }
 }
+
+/* Smaller version for the event page's sidebar Course card */
+.club-banner-wrap-small { margin-bottom: 0.25rem; }
+.club-banner-image-small { height: 120px; border-radius: 10px; }
+.club-banner-logo-small { width: 52px; height: 52px; left: 14px; bottom: -20px; border-width: 3px; }
+.course-club-name.has-overlapping-logo-small { margin-left: 80px; margin-top: -2px; min-height: 24px; }
