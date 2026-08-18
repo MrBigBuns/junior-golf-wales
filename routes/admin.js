@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool');
+const asyncHandler = require('../lib/asyncHandler');
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 const { geocodeAddress } = require('../lib/geocode');
@@ -24,7 +25,7 @@ function parseJsonField(value) {
 }
 
 // ---------- Dashboard ----------
-router.get('/', async (req, res) => {
+router.get('/', asyncHandler(async (req, res) => {
   const [{ rows: eventCount }, { rows: clubCount }, { rows: pendingCount }] = await Promise.all([
     pool.query(`SELECT COUNT(*) FROM events`),
     pool.query(`SELECT COUNT(*) FROM clubs`),
@@ -35,25 +36,25 @@ router.get('/', async (req, res) => {
     clubCount: clubCount[0].count,
     pendingCount: pendingCount[0].count
   });
-});
+}));
 
 // ---------- Events ----------
-router.get('/events', async (req, res) => {
+router.get('/events', asyncHandler(async (req, res) => {
   const { rows: events } = await pool.query(
     `SELECT e.id, e.title, e.slug, e.date_start, e.status, c.name AS club_name
      FROM events e JOIN clubs c ON c.id = e.club_id
      ORDER BY e.date_start DESC`
   );
   res.render('admin/events-list', { events });
-});
+}));
 
-router.get('/events/new', async (req, res) => {
+router.get('/events/new', asyncHandler(async (req, res) => {
   const { rows: clubs } = await pool.query(`SELECT id, name FROM clubs ORDER BY name`);
   const { rows: organisers } = await pool.query(`SELECT id, name FROM organisers ORDER BY name`);
   res.render('admin/event-form', { event: {}, clubs, organisers, isNew: true });
-});
+}));
 
-router.post('/events', async (req, res) => {
+router.post('/events', asyncHandler(async (req, res) => {
   const b = req.body;
   const slug = b.slug ? slugify(b.slug) : slugify(`${b.title}-${b.club_name_hint || ''}-${b.date_start}`);
 
@@ -80,9 +81,9 @@ router.post('/events', async (req, res) => {
   );
 
   res.redirect(`/admin/events/${rows[0].id}/edit`);
-});
+}));
 
-router.get('/events/:id/edit', async (req, res) => {
+router.get('/events/:id/edit', asyncHandler(async (req, res) => {
   const { rows } = await pool.query(`SELECT * FROM events WHERE id = $1`, [req.params.id]);
   if (!rows.length) return res.status(404).send('Event not found');
   const { rows: clubs } = await pool.query(`SELECT id, name FROM clubs ORDER BY name`);
@@ -92,9 +93,9 @@ router.get('/events/:id/edit', async (req, res) => {
     [req.params.id]
   );
   res.render('admin/event-form', { event: rows[0], clubs, organisers, isNew: false, updates });
-});
+}));
 
-router.post('/events/:id/update', async (req, res) => {
+router.post('/events/:id/update', asyncHandler(async (req, res) => {
   const b = req.body;
   const slug = slugify(b.slug);
 
@@ -121,14 +122,14 @@ router.post('/events/:id/update', async (req, res) => {
   );
 
   res.redirect(`/admin/events/${req.params.id}/edit?saved=1`);
-});
+}));
 
-router.post('/events/:id/delete', async (req, res) => {
+router.post('/events/:id/delete', asyncHandler(async (req, res) => {
   await pool.query(`DELETE FROM events WHERE id = $1`, [req.params.id]);
   res.redirect('/admin/events');
-});
+}));
 
-router.post('/events/:id/add-update', async (req, res) => {
+router.post('/events/:id/add-update', asyncHandler(async (req, res) => {
   if (req.body.message && req.body.message.trim()) {
     await pool.query(
       `INSERT INTO event_updates (event_id, message) VALUES ($1, $2)`,
@@ -136,16 +137,16 @@ router.post('/events/:id/add-update', async (req, res) => {
     );
   }
   res.redirect(`/admin/events/${req.params.id}/edit`);
-});
+}));
 
 // ---------- Scorecard import (photo -> structured JSON via Claude vision) ----------
-router.get('/events/:id/scorecard-import', async (req, res) => {
+router.get('/events/:id/scorecard-import', asyncHandler(async (req, res) => {
   const { rows } = await pool.query(`SELECT id, title FROM events WHERE id = $1`, [req.params.id]);
   if (!rows.length) return res.status(404).send('Event not found');
   res.render('admin/scorecard-import', { event: rows[0], error: null });
-});
+}));
 
-router.post('/events/:id/scorecard-import', upload.single('scorecard_image'), async (req, res) => {
+router.post('/events/:id/scorecard-import', upload.single('scorecard_image'), asyncHandler(async (req, res) => {
   const { rows } = await pool.query(`SELECT id, title FROM events WHERE id = $1`, [req.params.id]);
   if (!rows.length) return res.status(404).send('Event not found');
 
@@ -226,27 +227,27 @@ Rules:
   } catch (err) {
     res.render('admin/scorecard-import', { event: rows[0], error: err.message });
   }
-});
+}));
 
-router.post('/events/:id/scorecard-import/save', async (req, res) => {
+router.post('/events/:id/scorecard-import/save', asyncHandler(async (req, res) => {
   const parsedField = parseJsonField(req.body.scorecard_json);
   if (parsedField && !parsedField.__parse_error) {
     await pool.query(`UPDATE events SET scorecard = $1 WHERE id = $2`, [JSON.stringify(parsedField), req.params.id]);
   }
   res.redirect(`/admin/events/${req.params.id}/edit`);
-});
+}));
 
 // ---------- Clubs ----------
-router.get('/clubs', async (req, res) => {
+router.get('/clubs', asyncHandler(async (req, res) => {
   const { rows: clubs } = await pool.query(`SELECT id, name, slug, region FROM clubs ORDER BY name`);
   res.render('admin/clubs-list', { clubs });
-});
+}));
 
 router.get('/clubs/new', (req, res) => {
   res.render('admin/club-form', { club: {}, isNew: true });
 });
 
-router.post('/clubs', async (req, res) => {
+router.post('/clubs', asyncHandler(async (req, res) => {
   const b = req.body;
   const slug = b.slug ? slugify(b.slug) : slugify(b.name);
 
@@ -269,15 +270,15 @@ router.post('/clubs', async (req, res) => {
   );
 
   res.redirect(`/admin/clubs/${rows[0].id}/edit`);
-});
+}));
 
-router.get('/clubs/:id/edit', async (req, res) => {
+router.get('/clubs/:id/edit', asyncHandler(async (req, res) => {
   const { rows } = await pool.query(`SELECT * FROM clubs WHERE id = $1`, [req.params.id]);
   if (!rows.length) return res.status(404).send('Club not found');
   res.render('admin/club-form', { club: rows[0], isNew: false });
-});
+}));
 
-router.post('/clubs/:id/update', async (req, res) => {
+router.post('/clubs/:id/update', asyncHandler(async (req, res) => {
   const b = req.body;
   const slug = slugify(b.slug);
 
@@ -303,25 +304,25 @@ router.post('/clubs/:id/update', async (req, res) => {
   );
 
   res.redirect(`/admin/clubs/${req.params.id}/edit?saved=1`);
-});
+}));
 
-router.post('/clubs/:id/delete', async (req, res) => {
+router.post('/clubs/:id/delete', asyncHandler(async (req, res) => {
   await pool.query(`DELETE FROM clubs WHERE id = $1`, [req.params.id]);
   res.redirect('/admin/clubs');
-});
+}));
 
 // ---------- Submissions ----------
-router.get('/submissions', async (req, res) => {
+router.get('/submissions', asyncHandler(async (req, res) => {
   const { rows: submissions } = await pool.query(
     `SELECT * FROM submissions ORDER BY created_at DESC LIMIT 100`
   );
   res.render('admin/submissions', { submissions });
-});
+}));
 
-router.post('/submissions/:id/status', async (req, res) => {
+router.post('/submissions/:id/status', asyncHandler(async (req, res) => {
   const status = req.body.status === 'approved' ? 'approved' : 'rejected';
   await pool.query(`UPDATE submissions SET status = $1 WHERE id = $2`, [status, req.params.id]);
   res.redirect('/admin/submissions');
-});
+}));
 
 module.exports = router;

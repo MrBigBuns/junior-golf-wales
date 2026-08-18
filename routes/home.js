@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool');
+const asyncHandler = require('../lib/asyncHandler');
 
-router.get('/', async (req, res) => {
+router.get('/', asyncHandler(async (req, res) => {
   const [eventsCount, clubsCount, toursCount, thisMonthCount, nextUp, regionCounts] = await Promise.all([
     pool.query(`SELECT COUNT(*) FROM events WHERE date_start >= CURRENT_DATE AND status != 'cancelled'`),
     pool.query(`SELECT COUNT(*) FROM clubs`),
@@ -41,6 +42,6 @@ router.get('/', async (req, res) => {
     regionCounts: regionMap,
     ageCategories: ageCategories.rows.map(r => r.age_category)
   });
-});
+}));
 
 module.exports = router;

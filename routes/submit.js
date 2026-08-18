@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool');
+const asyncHandler = require('../lib/asyncHandler');
 
 router.get('/', (req, res) => {
   res.render('submit', { submitted: false });

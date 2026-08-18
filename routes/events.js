@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool');
+const asyncHandler = require('../lib/asyncHandler');
 const { getForecastForDate } = require('../lib/weather');
 
 // GET /events — filterable list
-router.get('/', async (req, res) => {
+router.get('/', asyncHandler(async (req, res) => {
   const { region, age, q } = req.query;
   const conditions = ["e.date_start >= CURRENT_DATE", "e.status != 'cancelled'"];
   const params = [];
@@ -33,10 +34,10 @@ router.get('/', async (req, res) => {
   );
 
   res.render('events/index', { events, region, age, q });
-});
+}));
 
 // GET /events/:slug — detail page
-router.get('/:slug', async (req, res) => {
+router.get('/:slug', asyncHandler(async (req, res) => {
   const { rows } = await pool.query(
     `SELECT e.*, c.name AS club_name, c.slug AS club_slug, c.address, c.region,
             c.website AS club_website, c.course_image_url AS club_course_image_url,
@@ -83,10 +84,10 @@ router.get('/:slug', async (req, res) => {
   );
 
   res.render('events/show', { event, otherAtClub, updates });
-});
+}));
 
 // GET /events/:slug/calendar.ics — downloadable calendar invite
-router.get('/:slug/calendar.ics', async (req, res) => {
+router.get('/:slug/calendar.ics', asyncHandler(async (req, res) => {
   const { rows } = await pool.query(
     `SELECT e.title, e.date_start, e.format, e.entry_fee, c.name AS club_name, c.address
      FROM events e JOIN clubs c ON c.id = e.club_id
@@ -121,6 +122,6 @@ router.get('/:slug/calendar.ics', async (req, res) => {
   res.set('Content-Type', 'text/calendar; charset=utf-8');
   res.set('Content-Disposition', `attachment; filename="${req.params.slug}.ics"`);
   res.send(ics);
-});
+}));
 
 module.exports = router;

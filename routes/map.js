@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool');
+const asyncHandler = require('../lib/asyncHandler');
 
-router.get('/', async (req, res) => {
+router.get('/', asyncHandler(async (req, res) => {
   const { rows: events } = await pool.query(
     `SELECT e.slug, e.title, e.date_start, c.name AS club_name, c.lat, c.lng, c.region
      FROM events e JOIN clubs c ON c.id = e.club_id
@@ -18,6 +19,6 @@ router.get('/', async (req, res) => {
   );
 
   res.render('map', { events, missingCount: missingCount[0].count });
-});
+}));
 
 module.exports = router;
