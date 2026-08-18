@@ -6,8 +6,10 @@ per club. NOT STARTED — scoping only so far.
 
 ## Before building anything registration-related
 
-- [ ] Add authentication to /admin — currently wide open, not acceptable
-      once any personal/child data is involved.
+- [x] Add authentication to /admin — done: HTTP Basic Auth via ADMIN_USER /
+      ADMIN_PASSWORD env vars (lib/adminAuth.js). Still worth reviewing
+      before real personal data is collected — Basic Auth is fine for a
+      single admin, less so for multiple staff or an audit trail.
 - [ ] Write a short privacy policy: what's collected, why, how long it's
       kept, who to contact. Link it from any entry form.
 - [ ] Check ICO registration requirement (UK data controller) — small fee,

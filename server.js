@@ -10,6 +10,7 @@ const submitRouter = require('./routes/submit');
 const adminRouter = require('./routes/admin');
 const mapRouter = require('./routes/map');
 const staticRouter = require('./routes/static');
+const adminAuth = require('./lib/adminAuth');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -24,7 +25,7 @@ app.use('/events', eventsRouter);
 app.use('/clubs', clubsRouter);
 app.use('/tours', toursRouter);
 app.use('/submit-event', submitRouter);
-app.use('/admin', adminRouter);
+app.use('/admin', adminAuth, adminRouter);
 app.use('/map', mapRouter);
 app.use('/', staticRouter);
 
