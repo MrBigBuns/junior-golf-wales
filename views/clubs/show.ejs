@@ -27,9 +27,9 @@
 <% if (club.website) { %><p><a href="<%= club.website %>" target="_blank" rel="noopener">Club website</a></p><% } %>
 <% if (club.facebook_url || club.instagram_url || club.x_url) { %>
   <div class="social-links">
-    <% if (club.facebook_url) { %><a href="<%= club.facebook_url %>" target="_blank" rel="noopener">Facebook</a><% } %>
-    <% if (club.instagram_url) { %><a href="<%= club.instagram_url %>" target="_blank" rel="noopener">Instagram</a><% } %>
-    <% if (club.x_url) { %><a href="<%= club.x_url %>" target="_blank" rel="noopener">X</a><% } %>
+    <% if (club.facebook_url) { %><a href="<%= club.facebook_url %>" target="_blank" rel="noopener" aria-label="Facebook"><%- include('../partials/icon-facebook') %></a><% } %>
+    <% if (club.instagram_url) { %><a href="<%= club.instagram_url %>" target="_blank" rel="noopener" aria-label="Instagram"><%- include('../partials/icon-instagram') %></a><% } %>
+    <% if (club.x_url) { %><a href="<%= club.x_url %>" target="_blank" rel="noopener" aria-label="X"><%- include('../partials/icon-x') %></a><% } %>
   </div>
 <% } %>
 
