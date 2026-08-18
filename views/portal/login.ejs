@@ -1,0 +1,15 @@
+<%- include('../partials/head', { pageTitle: 'Club login — Junior Golf Wales' }) %>
+
+<h1>Club login</h1>
+
+<% if (error) { %><p class="error-message"><%= error %></p><% } %>
+
+<form method="post" action="/club-portal/login" class="admin-form">
+  <label>Email <input type="email" name="email" required></label>
+  <label>Password <input type="password" name="password" required></label>
+  <button type="submit">Log in</button>
+</form>
+
+<p>No account yet? <a href="/club-portal/signup">Sign up</a></p>
+
+<%- include('../partials/foot') %>

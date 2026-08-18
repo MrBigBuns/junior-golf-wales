@@ -1,0 +1,30 @@
+<%- include('../partials/head', { pageTitle: clubUser.club_name + ' — Club Portal' }) %>
+
+<div class="admin-header-row">
+  <h1><%= clubUser.club_name %></h1>
+  <a class="admin-button" href="/club-portal/events/new">+ New event</a>
+</div>
+<p class="subtitle">Logged in as <%= clubUser.name %> (<%= clubUser.email %>) · <a href="/clubs/<%= clubUser.club_slug %>" target="_blank">View club page</a></p>
+
+<table class="admin-table">
+  <thead><tr><th>Title</th><th>Date</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+    <% events.forEach(function(e) { %>
+      <tr>
+        <td><%= e.title %></td>
+        <td><%= new Date(e.date_start).toLocaleDateString('en-GB') %></td>
+        <td><span class="status-pill status-<%= e.status %>"><%= e.status %></span></td>
+        <td><a href="/club-portal/events/<%= e.id %>/edit">Edit</a> · <a href="/events/<%= e.slug %>" target="_blank">View</a></td>
+      </tr>
+    <% }); %>
+    <% if (events.length === 0) { %>
+      <tr><td colspan="4">No events yet — <a href="/club-portal/events/new">add your first one</a>.</td></tr>
+    <% } %>
+  </tbody>
+</table>
+
+<form method="post" action="/club-portal/logout" style="margin-top:1.5rem;">
+  <button type="submit" style="background:none;border:1px solid var(--border);border-radius:6px;padding:8px 16px;cursor:pointer;color:var(--text-secondary);">Log out</button>
+</form>
+
+<%- include('../partials/foot') %>

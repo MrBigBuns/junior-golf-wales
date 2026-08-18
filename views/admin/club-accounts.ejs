@@ -1,0 +1,36 @@
+<%- include('../partials/head', { pageTitle: 'Admin — Club accounts' }) %>
+
+<h1>Club accounts</h1>
+<p><a href="/admin">&larr; Dashboard</a></p>
+
+<table class="admin-table">
+  <thead><tr><th>Name</th><th>Email</th><th>Club</th><th>Status</th><th>Requested</th><th></th></tr></thead>
+  <tbody>
+    <% accounts.forEach(function(a) { %>
+      <tr>
+        <td><%= a.name %></td>
+        <td><%= a.email %></td>
+        <td><%= a.club_name %></td>
+        <td><span class="status-pill status-<%= a.status %>"><%= a.status %></span></td>
+        <td><%= new Date(a.created_at).toLocaleDateString('en-GB') %></td>
+        <td>
+          <% if (a.status === 'pending') { %>
+            <form method="post" action="/admin/club-accounts/<%= a.id %>/status" style="display:inline">
+              <input type="hidden" name="status" value="approved">
+              <button type="submit">Approve</button>
+            </form>
+            <form method="post" action="/admin/club-accounts/<%= a.id %>/status" style="display:inline">
+              <input type="hidden" name="status" value="rejected">
+              <button type="submit" class="admin-delete-button">Reject</button>
+            </form>
+          <% } %>
+        </td>
+      </tr>
+    <% }); %>
+    <% if (accounts.length === 0) { %>
+      <tr><td colspan="6">No club account requests yet.</td></tr>
+    <% } %>
+  </tbody>
+</table>
+
+<%- include('../partials/foot') %>

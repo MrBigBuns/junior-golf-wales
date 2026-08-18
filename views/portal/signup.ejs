@@ -1,0 +1,26 @@
+<%- include('../partials/head', { pageTitle: 'Club sign up — Junior Golf Wales' }) %>
+
+<h1>Create a club account</h1>
+<p class="subtitle">Once approved, you'll be able to add and manage your own club's junior events.</p>
+
+<% if (error) { %><p class="error-message"><%= error %></p><% } %>
+
+<form method="post" action="/club-portal/signup" class="admin-form">
+  <label>Your name <input type="text" name="name" required></label>
+  <label>Email <input type="email" name="email" required></label>
+  <label>Password (min. 8 characters) <input type="password" name="password" minlength="8" required></label>
+  <label>Your club
+    <select name="club_id" required>
+      <option value="">— select your club —</option>
+      <% clubs.forEach(function(c) { %>
+        <option value="<%= c.id %>"><%= c.name %></option>
+      <% }); %>
+    </select>
+  </label>
+  <p class="scorecard-note">Don't see your club listed? <a href="/contact">Get in touch</a> and we'll add it first.</p>
+  <button type="submit">Sign up</button>
+</form>
+
+<p>Already have an account? <a href="/club-portal/login">Log in</a></p>
+
+<%- include('../partials/foot') %>

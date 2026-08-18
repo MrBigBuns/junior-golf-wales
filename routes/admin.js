@@ -26,15 +26,17 @@ function parseJsonField(value) {
 
 // ---------- Dashboard ----------
 router.get('/', asyncHandler(async (req, res) => {
-  const [{ rows: eventCount }, { rows: clubCount }, { rows: pendingCount }] = await Promise.all([
+  const [{ rows: eventCount }, { rows: clubCount }, { rows: pendingCount }, { rows: pendingClubAccounts }] = await Promise.all([
     pool.query(`SELECT COUNT(*) FROM events`),
     pool.query(`SELECT COUNT(*) FROM clubs`),
-    pool.query(`SELECT COUNT(*) FROM submissions WHERE status = 'pending'`)
+    pool.query(`SELECT COUNT(*) FROM submissions WHERE status = 'pending'`),
+    pool.query(`SELECT COUNT(*) FROM club_users WHERE status = 'pending'`)
   ]);
   res.render('admin/dashboard', {
     eventCount: eventCount[0].count,
     clubCount: clubCount[0].count,
-    pendingCount: pendingCount[0].count
+    pendingCount: pendingCount[0].count,
+    pendingClubAccounts: pendingClubAccounts[0].count
   });
 }));
 
@@ -323,6 +325,22 @@ router.post('/submissions/:id/status', asyncHandler(async (req, res) => {
   const status = req.body.status === 'approved' ? 'approved' : 'rejected';
   await pool.query(`UPDATE submissions SET status = $1 WHERE id = $2`, [status, req.params.id]);
   res.redirect('/admin/submissions');
+}));
+
+// ---------- Club accounts (portal sign-ups) ----------
+router.get('/club-accounts', asyncHandler(async (req, res) => {
+  const { rows: accounts } = await pool.query(
+    `SELECT cu.*, c.name AS club_name FROM club_users cu
+     JOIN clubs c ON c.id = cu.club_id
+     ORDER BY (cu.status = 'pending') DESC, cu.created_at DESC`
+  );
+  res.render('admin/club-accounts', { accounts });
+}));
+
+router.post('/club-accounts/:id/status', asyncHandler(async (req, res) => {
+  const status = req.body.status === 'approved' ? 'approved' : 'rejected';
+  await pool.query(`UPDATE club_users SET status = $1 WHERE id = $2`, [status, req.params.id]);
+  res.redirect('/admin/club-accounts');
 }));
 
 module.exports = router;

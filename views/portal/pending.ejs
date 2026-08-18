@@ -1,0 +1,13 @@
+<%- include('../partials/head', { pageTitle: 'Account pending — Junior Golf Wales' }) %>
+
+<h1>Account <%= clubUser.status === 'rejected' ? 'not approved' : 'pending approval' %></h1>
+
+<% if (clubUser.status === 'rejected') { %>
+  <p>Your account for <strong><%= clubUser.club_name %></strong> wasn't approved. If you think this is a mistake, <a href="/contact">get in touch</a>.</p>
+<% } else { %>
+  <p>Your account for <strong><%= clubUser.club_name %></strong> is still waiting for approval. Once approved, you'll be able to log in here and add your club's events.</p>
+<% } %>
+
+<form method="post" action="/club-portal/logout"><button type="submit" class="admin-button" style="border:none;cursor:pointer;">Log out</button></form>
+
+<%- include('../partials/foot') %>

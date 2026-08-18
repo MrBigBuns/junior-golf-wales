@@ -6,6 +6,7 @@
   <a href="/admin/events">Events (<%= eventCount %>)</a>
   <a href="/admin/clubs">Clubs (<%= clubCount %>)</a>
   <a href="/admin/submissions">Submissions <% if (pendingCount > 0) { %><span class="pending-badge"><%= pendingCount %></span><% } %></a>
+  <a href="/admin/club-accounts">Club accounts <% if (pendingClubAccounts > 0) { %><span class="pending-badge"><%= pendingClubAccounts %></span><% } %></a>
 </div>
 
 <div class="admin-quick-links">

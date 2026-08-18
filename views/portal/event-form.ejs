@@ -1,0 +1,39 @@
+<%- include('../partials/head', { pageTitle: isNew ? 'New event' : 'Edit event' }) %>
+
+<p><a href="/club-portal">&larr; Back to dashboard</a></p>
+<h1><%= isNew ? 'New event' : 'Edit: ' + event.title %></h1>
+<p class="subtitle">For <%= clubUser.club_name %></p>
+
+<form method="post" action="<%= isNew ? '/club-portal/events' : '/club-portal/events/' + event.id + '/update' %>" class="admin-form">
+
+  <fieldset>
+    <legend>Basics</legend>
+    <label>Title <input type="text" name="title" value="<%= event.title || '' %>" required></label>
+    <label>Date <input type="date" name="date_start" value="<%= event.date_start ? new Date(event.date_start).toISOString().slice(0,10) : '' %>" required></label>
+    <label>Format <input type="text" name="format" value="<%= event.format || '' %>" placeholder="e.g. Individual Strokeplay & Stableford"></label>
+    <label>Open to (gender) <input type="text" name="gender" value="<%= event.gender || '' %>" placeholder="e.g. Any Gender"></label>
+    <label>Age category <input type="text" name="age_category" value="<%= event.age_category || '' %>" placeholder="e.g. Juniors Under 18"></label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Entry</legend>
+    <label>Entry fee (£) <input type="text" name="entry_fee" value="<%= event.entry_fee || '' %>"></label>
+    <label>Entry deadline <input type="date" name="entry_deadline" value="<%= event.entry_deadline ? new Date(event.entry_deadline).toISOString().slice(0,10) : '' %>"></label>
+    <label>Entry link (booking form/page) <input type="text" name="entry_url" value="<%= event.entry_url || '' %>"></label>
+    <label>Entry email <input type="email" name="entry_email" value="<%= event.entry_email || '' %>"></label>
+    <label>Entry phone <input type="text" name="entry_phone" value="<%= event.entry_phone || '' %>"></label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Other details</legend>
+    <label>Handicap allowance / info <textarea name="hcp_allowance_info" rows="2"><%= event.hcp_allowance_info || '' %></textarea></label>
+    <label>Catering <input type="text" name="catering" value="<%= event.catering || '' %>"></label>
+    <label>Prizes <input type="text" name="prizes" value="<%= event.prizes || '' %>"></label>
+  </fieldset>
+
+  <button type="submit">Save event</button>
+</form>
+
+<p class="scorecard-note">Want a course map, scorecard, or photos added? <a href="/contact">Let us know</a> and we'll add the extra detail.</p>
+
+<%- include('../partials/foot') %>

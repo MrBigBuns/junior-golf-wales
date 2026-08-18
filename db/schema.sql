@@ -92,3 +92,14 @@ ALTER TABLE events DROP CONSTRAINT IF EXISTS events_gender_check;
 ALTER TABLE clubs ADD COLUMN IF NOT EXISTS facebook_url TEXT;
 ALTER TABLE clubs ADD COLUMN IF NOT EXISTS instagram_url TEXT;
 ALTER TABLE clubs ADD COLUMN IF NOT EXISTS x_url TEXT;
+
+CREATE TABLE IF NOT EXISTS club_users (
+  id SERIAL PRIMARY KEY,
+  club_id INTEGER NOT NULL REFERENCES clubs(id),
+  name TEXT NOT NULL,
+  email TEXT UNIQUE NOT NULL,
+  password_hash TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_club_users_email ON club_users(email);
