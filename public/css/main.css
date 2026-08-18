@@ -438,7 +438,10 @@ body {
   font-size: 0.85rem;
   cursor: pointer;
   cursor: grab;
+  touch-action: none;
+  user-select: none;
 }
+.fb-palette-item:active { cursor: grabbing; }
 .fb-palette-item:hover { border-color: var(--wales-green); color: var(--wales-green); }
 .fb-palette-item[data-preset="age"] { border-color: var(--wales-green); font-weight: 500; }
 

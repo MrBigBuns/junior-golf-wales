@@ -88,7 +88,29 @@
         sortableInstance = new Sortable(canvas, {
           handle: '.fb-drag-handle',
           animation: 150,
+          group: { name: 'formBuilder', pull: false, put: true },
+          onAdd: function (evt) {
+            // A palette item was dropped in — the dropped node is a raw
+            // clone of the palette button, not our card markup. Read what
+            // type it represents, remove the raw clone, and let addField
+            // build the real card in its place via a normal re-render.
+            const clone = evt.item;
+            const insertIndex = evt.newIndex;
+            clone.remove();
+
+            let base;
+            if (clone.dataset.preset === 'age') {
+              base = AGE_PRESET;
+            } else {
+              const type = clone.dataset.type;
+              const meta = FIELD_TYPES.find(t => t.type === type);
+              if (!meta) return;
+              base = { type, label: meta.label };
+            }
+            addField(base, insertIndex);
+          },
           onEnd: function (evt) {
+            if (evt.from !== evt.to) return; // handled by onAdd instead
             const moved = fields.splice(evt.oldIndex, 1)[0];
             fields.splice(evt.newIndex, 0, moved);
             render();
@@ -101,14 +123,19 @@
       syncHiddenInput();
     }
 
-    function addField(base) {
-      fields.push({
+    function addField(base, insertIndex) {
+      const newField = {
         id: makeId(),
         type: base.type,
         label: base.label,
         required: !!base.required,
         options: needsOptions(base.type) ? (base.options || ['Option 1', 'Option 2']) : undefined
-      });
+      };
+      if (insertIndex === undefined || insertIndex === null) {
+        fields.push(newField);
+      } else {
+        fields.splice(insertIndex, 0, newField);
+      }
       render();
     }
 
@@ -124,6 +151,15 @@
         addField({ type, label: meta.label });
       }
     });
+
+    // Palette: drag out to the canvas (clone — palette stays reusable)
+    if (typeof Sortable !== 'undefined') {
+      new Sortable(palette, {
+        group: { name: 'formBuilder', pull: 'clone', put: false },
+        sort: false,
+        animation: 150
+      });
+    }
 
     // Canvas: delegated events for edits within cards
     canvas.addEventListener('input', function (e) {
