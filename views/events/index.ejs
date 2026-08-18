@@ -3,13 +3,17 @@
 <h1>Upcoming junior golf events</h1>
 
 <form method="get" class="filters">
+  <input type="text" name="q" value="<%= q || '' %>" placeholder="Search by event, club, or tour">
   <select name="region" onchange="this.form.submit()">
     <option value="">Any region</option>
     <option value="North" <%= region === 'North' ? 'selected' : '' %>>North Wales</option>
     <option value="Mid" <%= region === 'Mid' ? 'selected' : '' %>>Mid Wales</option>
     <option value="South" <%= region === 'South' ? 'selected' : '' %>>South Wales</option>
   </select>
+  <% if (age) { %><input type="hidden" name="age" value="<%= age %>"><% } %>
+  <button type="submit">Search</button>
 </form>
+<% if (age) { %><p class="scorecard-note">Filtered by category: <%= age %> — <a href="/events<%= region ? '?region=' + region : '' %>">clear</a></p><% } %>
 
 <div class="event-list">
   <% if (events.length === 0) { %>

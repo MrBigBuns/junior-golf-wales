@@ -8,6 +8,8 @@ const clubsRouter = require('./routes/clubs');
 const toursRouter = require('./routes/tours');
 const submitRouter = require('./routes/submit');
 const adminRouter = require('./routes/admin');
+const mapRouter = require('./routes/map');
+const staticRouter = require('./routes/static');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -23,6 +25,8 @@ app.use('/clubs', clubsRouter);
 app.use('/tours', toursRouter);
 app.use('/submit-event', submitRouter);
 app.use('/admin', adminRouter);
+app.use('/map', mapRouter);
+app.use('/', staticRouter);
 
 app.use((req, res) => res.status(404).render('404'));
 

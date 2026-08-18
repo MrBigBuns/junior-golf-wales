@@ -19,6 +19,11 @@ router.get('/', async (req, res) => {
        FROM clubs c LEFT JOIN events e ON e.club_id = c.id AND e.date_start >= CURRENT_DATE AND e.status != 'cancelled'
        WHERE c.region IS NOT NULL
        GROUP BY c.region`
+    ),
+    pool.query(
+      `SELECT DISTINCT age_category FROM events
+       WHERE age_category IS NOT NULL AND date_start >= CURRENT_DATE
+       ORDER BY age_category ASC LIMIT 8`
     )
   ]);
 
@@ -33,7 +38,8 @@ router.get('/', async (req, res) => {
       thisMonth: thisMonthCount.rows[0].count
     },
     nextUp: nextUp.rows,
-    regionCounts: regionMap
+    regionCounts: regionMap,
+    ageCategories: ageCategories.rows.map(r => r.age_category)
   });
 });
 

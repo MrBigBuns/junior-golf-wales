@@ -4,6 +4,7 @@
   <h1>Croeso i Junior Golf Wales</h1>
   <p class="hero-sub">Every junior golf event in Wales, in one place — county opens, national tours and club competitions for boys and girls, all ages.</p>
   <form action="/events" method="get" class="hero-search">
+    <input type="text" name="q" placeholder="Search by event, club, or tour">
     <select name="region">
       <option value="">Any region</option>
       <option value="North">North Wales</option>
@@ -12,6 +13,13 @@
     </select>
     <button type="submit">Search</button>
   </form>
+  <% if (ageCategories && ageCategories.length) { %>
+    <div class="age-chips">
+      <% ageCategories.forEach(function(age) { %>
+        <a class="age-chip" href="/events?age=<%= encodeURIComponent(age) %>"><%= age %></a>
+      <% }); %>
+    </div>
+  <% } %>
 </div>
 
 <div class="stats-grid">
@@ -63,6 +71,7 @@
 
 <div class="section-header">
   <h2>Browse by region</h2>
+  <a href="/map">View all on a map</a>
 </div>
 <div class="region-grid">
   <a class="region-card" href="/events?region=North">

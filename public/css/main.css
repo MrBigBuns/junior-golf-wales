@@ -52,9 +52,10 @@ body {
 }
 .hero h1 { margin: 0 0 6px; }
 .hero-sub { color: var(--text-secondary); max-width: 480px; margin: 0 0 1.25rem; }
-.hero-search { display: flex; gap: 8px; max-width: 520px; }
+.hero-search { display: flex; gap: 8px; max-width: 620px; }
 .hero-search input, .hero-search select { padding: 8px; border: 1px solid var(--border); border-radius: 6px; }
-.hero-search input { flex: 1; }
+.hero-search input { flex: 2; }
+.hero-search select { flex: 1; }
 .hero-search button {
   background: var(--wales-green);
   color: white;
@@ -310,6 +311,33 @@ body {
 .subtitle { color: var(--text-secondary); }
 
 .site-footer { text-align: center; padding: 2rem; color: #999; font-size: 0.85rem; }
+.footer-links { display: flex; justify-content: center; gap: 1.25rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+.footer-links a { color: var(--text-secondary); text-decoration: none; font-size: 0.85rem; }
+.footer-links a:hover { color: var(--wales-green); }
+
+.age-chips { display: flex; gap: 8px; margin-top: 0.75rem; flex-wrap: wrap; }
+.age-chip {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 5px 12px;
+  text-decoration: none;
+}
+.age-chip:hover { border-color: var(--wales-green); color: var(--wales-green); }
+
+.filters { display: flex; gap: 8px; margin: 1rem 0; flex-wrap: wrap; }
+.filters input, .filters select { padding: 8px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; }
+.filters input { flex: 1; min-width: 200px; }
+.filters button {
+  background: var(--wales-green);
+  color: white;
+  border: none;
+  padding: 0 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
 
 /* Admin */
 .admin-nav { display: flex; gap: 1rem; margin: 1rem 0 1.5rem; }

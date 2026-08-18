@@ -4,6 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= typeof pageTitle !== 'undefined' ? pageTitle : 'Junior Golf Wales' %></title>
+  <meta name="description" content="<%= typeof pageDescription !== 'undefined' ? pageDescription : 'Every junior golf event in Wales, in one place — county opens, national tours and club competitions for boys and girls, all ages.' %>">
+  <meta property="og:title" content="<%= typeof pageTitle !== 'undefined' ? pageTitle : 'Junior Golf Wales' %>">
+  <meta property="og:description" content="<%= typeof pageDescription !== 'undefined' ? pageDescription : 'Every junior golf event in Wales, in one place.' %>">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Junior Golf Wales">
+  <% if (typeof ogImage !== 'undefined' && ogImage) { %><meta property="og:image" content="<%= ogImage %>"><% } %>
+  <meta name="twitter:card" content="summary">
   <link rel="stylesheet" href="/css/main.css">
 </head>
 <body>
@@ -13,6 +20,7 @@
     <nav>
       <a href="/events">Events</a>
       <a href="/clubs">Clubs</a>
+      <a href="/map">Map</a>
       <a href="/admin">Admin</a>
     </nav>
     <a href="/submit-event" class="nav-cta">Submit an event</a>

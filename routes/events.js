@@ -5,7 +5,7 @@ const { getForecastForDate } = require('../lib/weather');
 
 // GET /events — filterable list
 router.get('/', async (req, res) => {
-  const { region, age } = req.query;
+  const { region, age, q } = req.query;
   const conditions = ["e.date_start >= CURRENT_DATE", "e.status != 'cancelled'"];
   const params = [];
 
@@ -16,6 +16,10 @@ router.get('/', async (req, res) => {
   if (age) {
     params.push(age);
     conditions.push(`e.age_category = $${params.length}`);
+  }
+  if (q) {
+    params.push(`%${q}%`);
+    conditions.push(`(e.title ILIKE $${params.length} OR c.name ILIKE $${params.length})`);
   }
 
   const { rows: events } = await pool.query(
@@ -28,7 +32,7 @@ router.get('/', async (req, res) => {
     params
   );
 
-  res.render('events/index', { events, region, age });
+  res.render('events/index', { events, region, age, q });
 });
 
 // GET /events/:slug — detail page

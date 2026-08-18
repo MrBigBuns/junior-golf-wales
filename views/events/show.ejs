@@ -1,4 +1,8 @@
-<%- include('../partials/head', { pageTitle: event.title + ' at ' + event.club_name }) %>
+<%- include('../partials/head', {
+  pageTitle: event.title + ' at ' + event.club_name,
+  pageDescription: event.meta_description || (event.title + ' at ' + event.club_name + ', ' + event.region + ' Wales — ' + new Date(event.date_start).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) + '.'),
+  ogImage: event.club_course_image_url || null
+}) %>
 
 <nav class="breadcrumb">
   <a href="/events">Events</a> / <span><%= event.club_name %></span>
