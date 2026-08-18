@@ -25,9 +25,30 @@ router.get('/', asyncHandler(async (req, res) => {
   res.render('clubs/index', { grouped });
 }));
 
+router.get('/:id/logo-image', asyncHandler(async (req, res) => {
+  const { rows } = await pool.query(`SELECT logo_image, logo_image_type FROM clubs WHERE id = $1`, [req.params.id]);
+  if (!rows.length || !rows[0].logo_image) return res.status(404).send('Not found');
+  res.set('Content-Type', rows[0].logo_image_type || 'image/jpeg');
+  res.set('Cache-Control', 'public, max-age=86400');
+  res.send(rows[0].logo_image);
+}));
+
+router.get('/:id/course-photo-image', asyncHandler(async (req, res) => {
+  const { rows } = await pool.query(`SELECT course_photo_image, course_photo_image_type FROM clubs WHERE id = $1`, [req.params.id]);
+  if (!rows.length || !rows[0].course_photo_image) return res.status(404).send('Not found');
+  res.set('Content-Type', rows[0].course_photo_image_type || 'image/jpeg');
+  res.set('Cache-Control', 'public, max-age=86400');
+  res.send(rows[0].course_photo_image);
+}));
+
 router.get('/:slug', asyncHandler(async (req, res) => {
   const { rows: clubRows } = await pool.query(
-    `SELECT * FROM clubs WHERE slug = $1`,
+    `SELECT id, name, slug, address, region, lat, lng, website, contact_email,
+            junior_membership_contact, logo_url, description, course_image_url,
+            facebook_url, instagram_url, x_url,
+            (logo_image IS NOT NULL) AS has_logo_image,
+            (course_photo_image IS NOT NULL) AS has_course_photo_image
+     FROM clubs WHERE slug = $1`,
     [req.params.slug]
   );
 

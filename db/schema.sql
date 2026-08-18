@@ -121,3 +121,11 @@ CREATE TABLE IF NOT EXISTS event_form_submissions (
   submitted_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_event_form_submissions_form ON event_form_submissions(event_form_id, submitted_at DESC);
+
+-- Uploaded images stored directly in Postgres (small scale, avoids needing
+-- a separate cloud storage service). If both an uploaded image and a URL
+-- are set, the uploaded image takes priority — see views/admin/club-form.
+ALTER TABLE clubs ADD COLUMN IF NOT EXISTS logo_image BYTEA;
+ALTER TABLE clubs ADD COLUMN IF NOT EXISTS logo_image_type TEXT;
+ALTER TABLE clubs ADD COLUMN IF NOT EXISTS course_photo_image BYTEA;
+ALTER TABLE clubs ADD COLUMN IF NOT EXISTS course_photo_image_type TEXT;

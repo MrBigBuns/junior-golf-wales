@@ -252,7 +252,12 @@ router.get('/clubs/new', (req, res) => {
   res.render('admin/club-form', { club: {}, isNew: true });
 });
 
-router.post('/clubs', asyncHandler(async (req, res) => {
+const clubImageUpload = upload.fields([
+  { name: 'logo_image', maxCount: 1 },
+  { name: 'course_photo', maxCount: 1 }
+]);
+
+router.post('/clubs', clubImageUpload, asyncHandler(async (req, res) => {
   const b = req.body;
   const slug = b.slug ? slugify(b.slug) : slugify(b.name);
 
@@ -274,16 +279,25 @@ router.post('/clubs', asyncHandler(async (req, res) => {
     ]
   );
 
+  await saveClubImages(rows[0].id, req.files);
   res.redirect(`/admin/clubs/${rows[0].id}/edit`);
 }));
 
 router.get('/clubs/:id/edit', asyncHandler(async (req, res) => {
-  const { rows } = await pool.query(`SELECT * FROM clubs WHERE id = $1`, [req.params.id]);
+  const { rows } = await pool.query(
+    `SELECT id, name, slug, address, region, lat, lng, website, contact_email,
+            junior_membership_contact, logo_url, description, course_image_url,
+            facebook_url, instagram_url, x_url,
+            (logo_image IS NOT NULL) AS has_logo_image,
+            (course_photo_image IS NOT NULL) AS has_course_photo_image
+     FROM clubs WHERE id = $1`,
+    [req.params.id]
+  );
   if (!rows.length) return res.status(404).send('Club not found');
   res.render('admin/club-form', { club: rows[0], isNew: false });
 }));
 
-router.post('/clubs/:id/update', asyncHandler(async (req, res) => {
+router.post('/clubs/:id/update', clubImageUpload, asyncHandler(async (req, res) => {
   const b = req.body;
   const slug = slugify(b.slug);
 
@@ -308,8 +322,31 @@ router.post('/clubs/:id/update', asyncHandler(async (req, res) => {
     ]
   );
 
+  await saveClubImages(req.params.id, req.files);
+
+  if (b.remove_logo_image === 'on') {
+    await pool.query(`UPDATE clubs SET logo_image = NULL, logo_image_type = NULL WHERE id = $1`, [req.params.id]);
+  }
+  if (b.remove_course_photo === 'on') {
+    await pool.query(`UPDATE clubs SET course_photo_image = NULL, course_photo_image_type = NULL WHERE id = $1`, [req.params.id]);
+  }
+
   res.redirect(`/admin/clubs/${req.params.id}/edit?saved=1`);
 }));
+
+// Saves any uploaded logo/course-photo files for a club. Only touches a
+// column if a new file was actually provided, so an update without a new
+// upload never wipes out a previously-saved image.
+async function saveClubImages(clubId, files) {
+  if (files && files.logo_image && files.logo_image[0]) {
+    const f = files.logo_image[0];
+    await pool.query(`UPDATE clubs SET logo_image = $1, logo_image_type = $2 WHERE id = $3`, [f.buffer, f.mimetype, clubId]);
+  }
+  if (files && files.course_photo && files.course_photo[0]) {
+    const f = files.course_photo[0];
+    await pool.query(`UPDATE clubs SET course_photo_image = $1, course_photo_image_type = $2 WHERE id = $3`, [f.buffer, f.mimetype, clubId]);
+  }
+}
 
 router.post('/clubs/:id/delete', asyncHandler(async (req, res) => {
   await pool.query(`DELETE FROM clubs WHERE id = $1`, [req.params.id]);

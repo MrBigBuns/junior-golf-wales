@@ -3,7 +3,7 @@
 <p><a href="/admin/clubs">&larr; All clubs</a></p>
 <h1><%= isNew ? 'New club' : 'Edit: ' + club.name %></h1>
 
-<form method="post" action="<%= isNew ? '/admin/clubs' : '/admin/clubs/' + club.id + '/update' %>" class="admin-form">
+<form method="post" action="<%= isNew ? '/admin/clubs' : '/admin/clubs/' + club.id + '/update' %>" class="admin-form" enctype="multipart/form-data">
   <label>Name <input type="text" name="name" value="<%= club.name || '' %>" required></label>
   <label>Slug <input type="text" name="slug" value="<%= club.slug || '' %>" placeholder="auto-generated if blank"></label>
   <label>Region
@@ -23,8 +23,25 @@
   <label>X / Twitter URL <input type="text" name="x_url" value="<%= club.x_url || '' %>"></label>
   <label>Contact email <input type="email" name="contact_email" value="<%= club.contact_email || '' %>"></label>
   <label>Junior membership contact <input type="text" name="junior_membership_contact" value="<%= club.junior_membership_contact || '' %>"></label>
-  <label>Logo URL <input type="text" name="logo_url" value="<%= club.logo_url || '' %>"></label>
-  <label>Course image URL <input type="text" name="course_image_url" value="<%= club.course_image_url || '' %>"></label>
+
+  <label>Logo
+    <% if (!isNew && club.has_logo_image) { %>
+      <img src="/clubs/<%= club.id %>/logo-image" alt="Current logo" class="admin-image-preview">
+      <span class="fb-required-toggle"><input type="checkbox" name="remove_logo_image"> Remove uploaded logo</span>
+    <% } %>
+    <input type="file" name="logo_image" accept="image/*">
+  </label>
+  <label>Logo URL (used only if no image is uploaded above) <input type="text" name="logo_url" value="<%= club.logo_url || '' %>"></label>
+
+  <label>Course photo
+    <% if (!isNew && club.has_course_photo_image) { %>
+      <img src="/clubs/<%= club.id %>/course-photo-image" alt="Current course photo" class="admin-image-preview">
+      <span class="fb-required-toggle"><input type="checkbox" name="remove_course_photo"> Remove uploaded photo</span>
+    <% } %>
+    <input type="file" name="course_photo" accept="image/*">
+  </label>
+  <label>Course image URL (used only if no photo is uploaded above) <input type="text" name="course_image_url" value="<%= club.course_image_url || '' %>"></label>
+
   <label>Description <textarea name="description" rows="4"><%= club.description || '' %></textarea></label>
   <button type="submit">Save club</button>
 </form>

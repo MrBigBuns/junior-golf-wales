@@ -1,6 +1,15 @@
 <%- include('../partials/head', { pageTitle: club.name + ' — junior golf events' }) %>
 
-<h1><%= club.name %></h1>
+<% if (club.has_course_photo_image) { %>
+  <img src="/clubs/<%= club.id %>/course-photo-image" alt="<%= club.name %>" class="course-image" style="max-width:600px;">
+<% } else if (club.course_image_url) { %>
+  <img src="<%= club.course_image_url %>" alt="<%= club.name %>" class="course-image" style="max-width:600px;">
+<% } %>
+
+<div style="display:flex;align-items:center;gap:10px;">
+  <% if (club.has_logo_image) { %><img src="/clubs/<%= club.id %>/logo-image" alt="<%= club.name %> logo" class="club-logo-inline"><% } %>
+  <h1><%= club.name %></h1>
+</div>
 <p class="subtitle"><%= club.region %> Wales<% if (club.address) { %> · <%= club.address %><% } %></p>
 <% if (club.website) { %><p><a href="<%= club.website %>" target="_blank" rel="noopener">Club website</a></p><% } %>
 <% if (club.facebook_url || club.instagram_url || club.x_url) { %>

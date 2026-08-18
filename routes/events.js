@@ -53,6 +53,8 @@ router.get('/:slug', asyncHandler(async (req, res) => {
             c.website AS club_website, c.course_image_url AS club_course_image_url,
             c.description AS club_description, c.lat AS club_lat, c.lng AS club_lng,
             c.facebook_url AS club_facebook_url, c.instagram_url AS club_instagram_url, c.x_url AS club_x_url,
+            (c.course_photo_image IS NOT NULL) AS club_has_course_photo,
+            (c.logo_image IS NOT NULL) AS club_has_logo_image,
             o.name AS organiser_name, o.slug AS organiser_slug, o.description AS organiser_description,
             ef.id AS form_id
      FROM events e

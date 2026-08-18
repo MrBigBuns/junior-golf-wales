@@ -129,8 +129,13 @@
   <div>
     <div class="detail-card course-card">
       <h3 class="detail-card-heading">Course</h3>
-      <% if (event.club_course_image_url) { %>
+      <% if (event.club_has_course_photo) { %>
+        <img src="/clubs/<%= event.club_id %>/course-photo-image" alt="<%= event.club_name %>" class="course-image">
+      <% } else if (event.club_course_image_url) { %>
         <img src="<%= event.club_course_image_url %>" alt="<%= event.club_name %>" class="course-image">
+      <% } %>
+      <% if (event.club_has_logo_image) { %>
+        <img src="/clubs/<%= event.club_id %>/logo-image" alt="<%= event.club_name %> logo" class="club-logo-inline">
       <% } %>
       <p class="course-club-name"><%= event.club_name %></p>
       <% if (event.address) { %><p class="course-address"><%= event.address %></p><% } %>
