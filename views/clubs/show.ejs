@@ -1,16 +1,29 @@
 <%- include('../partials/head', { pageTitle: club.name + ' — junior golf events' }) %>
 
-<% if (club.has_course_photo_image) { %>
-  <img src="/clubs/<%= club.id %>/course-photo-image" alt="<%= club.name %>" class="course-image" style="max-width:600px;">
-<% } else if (club.course_image_url) { %>
-  <img src="<%= club.course_image_url %>" alt="<%= club.name %>" class="course-image" style="max-width:600px;">
+<% const hasBanner = club.has_course_photo_image || club.course_image_url; %>
+<% const hasLogo = club.has_logo_image; %>
+
+<% if (hasBanner) { %>
+  <div class="club-banner-wrap">
+    <img class="club-banner-image" src="<%= club.has_course_photo_image ? '/clubs/' + club.id + '/course-photo-image' : club.course_image_url %>" alt="<%= club.name %>">
+    <% if (hasLogo) { %>
+      <img class="club-banner-logo" src="/clubs/<%= club.id %>/logo-image" alt="<%= club.name %> logo">
+    <% } %>
+  </div>
 <% } %>
 
-<div style="display:flex;align-items:center;gap:10px;">
-  <% if (club.has_logo_image) { %><img src="/clubs/<%= club.id %>/logo-image" alt="<%= club.name %> logo" class="club-logo-inline"><% } %>
-  <h1><%= club.name %></h1>
+<div class="club-header-info <%= hasBanner && hasLogo ? 'has-overlapping-logo' : '' %>">
+  <% if (!hasBanner && hasLogo) { %>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <img src="/clubs/<%= club.id %>/logo-image" alt="<%= club.name %> logo" class="club-logo-inline">
+      <h1><%= club.name %></h1>
+    </div>
+  <% } else { %>
+    <h1><%= club.name %></h1>
+  <% } %>
+  <p class="subtitle"><%= club.region %> Wales<% if (club.address) { %> · <%= club.address %><% } %></p>
 </div>
-<p class="subtitle"><%= club.region %> Wales<% if (club.address) { %> · <%= club.address %><% } %></p>
+
 <% if (club.website) { %><p><a href="<%= club.website %>" target="_blank" rel="noopener">Club website</a></p><% } %>
 <% if (club.facebook_url || club.instagram_url || club.x_url) { %>
   <div class="social-links">
