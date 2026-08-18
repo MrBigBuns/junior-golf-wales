@@ -28,12 +28,22 @@ router.get('/', asyncHandler(async (req, res) => {
      FROM events e
      JOIN clubs c ON c.id = e.club_id
      WHERE ${conditions.join(' AND ')}
-     ORDER BY e.date_start ASC
+     ORDER BY
+       CASE c.region WHEN 'North' THEN 1 WHEN 'Mid' THEN 2 WHEN 'South' THEN 3 ELSE 4 END,
+       e.date_start ASC,
+       e.title ASC
      LIMIT 100`,
     params
   );
 
-  res.render('events/index', { events, region, age, q });
+  const grouped = {};
+  events.forEach(e => {
+    const key = e.region || 'Other';
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(e);
+  });
+
+  res.render('events/index', { grouped, totalCount: events.length, region, age, q });
 }));
 
 // GET /events/:slug — detail page

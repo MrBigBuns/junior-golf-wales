@@ -15,20 +15,27 @@
 </form>
 <% if (age) { %><p class="scorecard-note">Filtered by category: <%= age %> — <a href="/events<%= region ? '?region=' + region : '' %>">clear</a></p><% } %>
 
-<div class="event-list">
-  <% if (events.length === 0) { %>
-    <p>No upcoming events found. <a href="/submit-event">Submit one?</a></p>
+<% if (totalCount === 0) { %>
+  <p>No upcoming events found. <a href="/submit-event">Submit one?</a></p>
+<% } %>
+
+<% ['North', 'Mid', 'South', 'Other'].forEach(function(r) { %>
+  <% if (grouped[r] && grouped[r].length) { %>
+    <div class="section-header">
+      <h2><%= r === 'Other' ? 'Region not set' : r + ' Wales' %></h2>
+    </div>
+    <div class="event-list">
+      <% grouped[r].forEach(function(event) { %>
+        <a class="event-card" href="/events/<%= event.slug %>">
+          <p class="event-card-title"><%= event.title %></p>
+          <p class="event-card-club"><%= event.club_name %></p>
+          <p class="event-card-meta">
+            <%= new Date(event.date_start).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) %>
+          </p>
+        </a>
+      <% }); %>
+    </div>
   <% } %>
-  <% events.forEach(function(event) { %>
-    <a class="event-card" href="/events/<%= event.slug %>">
-      <p class="event-card-title"><%= event.title %></p>
-      <p class="event-card-club"><%= event.club_name %></p>
-      <p class="event-card-meta">
-        <%= new Date(event.date_start).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) %>
-        · <%= event.region %> Wales
-      </p>
-    </a>
-  <% }); %>
-</div>
+<% }); %>
 
 <%- include('../partials/foot') %>
