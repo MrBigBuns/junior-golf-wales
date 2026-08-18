@@ -447,7 +447,21 @@ body {
 
 .fb-card { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; }
 .fb-card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; font-size: 0.8rem; color: var(--text-secondary); }
-.fb-drag-handle { cursor: grab; font-size: 1rem; color: var(--text-secondary); }
+.fb-drag-handle {
+  cursor: grab;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--wales-green);
+  background: #EAF3DE;
+  padding: 6px 12px;
+  border-radius: 6px;
+  user-select: none;
+  touch-action: none;
+}
+.fb-drag-handle:active { cursor: grabbing; }
+.sortable-ghost { opacity: 0.4; }
+.sortable-chosen { box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+.sortable-drag { opacity: 0.9; }
 .fb-type-badge { text-transform: capitalize; flex: 1; }
 .fb-required-toggle { display: flex; align-items: center; gap: 4px; font-size: 0.8rem; }
 .fb-delete-btn { background: none; border: none; color: var(--wales-red); font-size: 1.1rem; cursor: pointer; line-height: 1; }

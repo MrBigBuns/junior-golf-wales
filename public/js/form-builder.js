@@ -47,7 +47,7 @@
       return `
         <div class="fb-card" data-index="${i}">
           <div class="fb-card-header">
-            <span class="fb-drag-handle" title="Drag to reorder">⠿</span>
+            <span class="fb-drag-handle" title="Drag to reorder">⠿ Drag</span>
             <span class="fb-type-badge">${escapeHtml(FIELD_TYPES.find(t => t.type === f.type)?.icon || '')} ${escapeHtml(f.type)}</span>
             <label class="fb-required-toggle">
               <input type="checkbox" class="fb-required-checkbox" ${f.required ? 'checked' : ''} ${f.type === 'heading' ? 'disabled' : ''}>
