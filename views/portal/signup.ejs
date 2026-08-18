@@ -8,7 +8,12 @@
 <form method="post" action="/club-portal/signup" class="admin-form">
   <label>Your name <input type="text" name="name" required></label>
   <label>Email <input type="email" name="email" required></label>
-  <label>Password (min. 8 characters) <input type="password" name="password" minlength="8" required></label>
+  <label>Password (min. 8 characters)
+    <div class="password-field">
+      <input type="password" name="password" id="signup-password" minlength="8" required>
+      <button type="button" class="password-toggle" onclick="togglePasswordVisibility('signup-password', this)" aria-pressed="false" aria-label="Show password">Show</button>
+    </div>
+  </label>
   <label>Your club
     <select name="club_id" required>
       <option value="">— select your club —</option>

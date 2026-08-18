@@ -6,7 +6,12 @@
 
 <form method="post" action="/club-portal/login" class="admin-form">
   <label>Email <input type="email" name="email" required></label>
-  <label>Password <input type="password" name="password" required></label>
+  <label>Password
+    <div class="password-field">
+      <input type="password" name="password" id="login-password" required>
+      <button type="button" class="password-toggle" onclick="togglePasswordVisibility('login-password', this)" aria-pressed="false" aria-label="Show password">Show</button>
+    </div>
+  </label>
   <button type="submit">Log in</button>
 </form>
 
