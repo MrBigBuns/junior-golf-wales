@@ -84,15 +84,19 @@
       });
 
       if (sortableInstance) sortableInstance.destroy();
-      sortableInstance = new Sortable(canvas, {
-        handle: '.fb-drag-handle',
-        animation: 150,
-        onEnd: function (evt) {
-          const moved = fields.splice(evt.oldIndex, 1)[0];
-          fields.splice(evt.newIndex, 0, moved);
-          render();
-        }
-      });
+      if (typeof Sortable !== 'undefined') {
+        sortableInstance = new Sortable(canvas, {
+          handle: '.fb-drag-handle',
+          animation: 150,
+          onEnd: function (evt) {
+            const moved = fields.splice(evt.oldIndex, 1)[0];
+            fields.splice(evt.newIndex, 0, moved);
+            render();
+          }
+        });
+      } else {
+        console.warn('Sortable library did not load — drag-to-reorder is unavailable, but adding/editing fields still works.');
+      }
 
       syncHiddenInput();
     }
