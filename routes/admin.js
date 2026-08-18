@@ -5,6 +5,7 @@ const asyncHandler = require('../lib/asyncHandler');
 const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 const { geocodeAddress } = require('../lib/geocode');
+const { purgeOldSubmissions } = require('../lib/retention');
 
 function slugify(str) {
   return str
@@ -26,6 +27,8 @@ function parseJsonField(value) {
 
 // ---------- Dashboard ----------
 router.get('/', asyncHandler(async (req, res) => {
+  purgeOldSubmissions(pool).catch(err => console.error('Retention sweep failed:', err.message));
+
   const [{ rows: eventCount }, { rows: clubCount }, { rows: pendingCount }, { rows: pendingClubAccounts }] = await Promise.all([
     pool.query(`SELECT COUNT(*) FROM events`),
     pool.query(`SELECT COUNT(*) FROM clubs`),

@@ -1,0 +1,56 @@
+<%- include('../partials/head', { pageTitle: 'Signup form — ' + event.title }) %>
+
+<p><a href="/club-portal/events/<%= event.id %>/edit">&larr; Back to event</a></p>
+<h1>Signup form</h1>
+<p class="subtitle">For <%= event.title %> — optional. Leave empty and clubs can still list an external link/email/phone on the event page instead.</p>
+
+<form method="post" action="/club-portal/events/<%= event.id %>/form" id="form-builder-form">
+  <div class="fb-meta">
+    <label>Form title <input type="text" name="title" value="<%= form.title || 'Entry form' %>" required></label>
+    <label>Intro text (optional) <textarea name="description" rows="2"><%= form.description || '' %></textarea></label>
+  </div>
+
+  <p class="scorecard-note">Tip: prefer "Age category" over asking for a full date of birth — it's usually all you need to check eligibility, with less personal data collected.</p>
+
+  <div class="fb-layout">
+    <div class="fb-palette" id="field-palette">
+      <h3 class="detail-card-heading">Add a field</h3>
+      <button type="button" class="fb-palette-item" data-preset="age">Age category</button>
+      <button type="button" class="fb-palette-item" data-type="text">Short text</button>
+      <button type="button" class="fb-palette-item" data-type="textarea">Long text</button>
+      <button type="button" class="fb-palette-item" data-type="email">Email</button>
+      <button type="button" class="fb-palette-item" data-type="tel">Phone</button>
+      <button type="button" class="fb-palette-item" data-type="number">Number</button>
+      <button type="button" class="fb-palette-item" data-type="date">Date</button>
+      <button type="button" class="fb-palette-item" data-type="select">Dropdown</button>
+      <button type="button" class="fb-palette-item" data-type="radio">Multiple choice</button>
+      <button type="button" class="fb-palette-item" data-type="checkbox">Checkbox (yes/no)</button>
+      <button type="button" class="fb-palette-item" data-type="heading">Section heading</button>
+    </div>
+
+    <div class="fb-canvas-wrap">
+      <h3 class="detail-card-heading">Your form</h3>
+      <div id="form-canvas"></div>
+    </div>
+  </div>
+
+  <input type="hidden" name="fields_json" id="fields-json-input">
+  <div class="fb-actions">
+    <button type="submit">Save form</button>
+    <% if (form.id) { %><a href="/club-portal/events/<%= event.id %>/form/submissions">View submissions &rarr;</a><% } %>
+  </div>
+</form>
+
+<% if (form.id) { %>
+  <form method="post" action="/club-portal/events/<%= event.id %>/form/delete" onsubmit="return confirm('Remove this signup form? Existing submissions will also be deleted.');" style="margin-top:1rem;">
+    <button type="submit" class="admin-delete-button">Remove signup form</button>
+  </form>
+<% } %>
+
+<script src="https://unpkg.com/sortablejs@1.15.2/Sortable.min.js"></script>
+<script src="/js/form-builder.js"></script>
+<script>
+  window.initFormBuilder(<%- JSON.stringify(form.fields || []) %>);
+</script>
+
+<%- include('../partials/foot') %>

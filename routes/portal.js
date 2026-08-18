@@ -143,4 +143,124 @@ router.post('/events/:id/update', requireClubLogin, requireApprovedClub, asyncHa
   res.redirect(`/club-portal/events/${req.params.id}/edit?saved=1`);
 }));
 
+// Allowed field types for the form builder — server validates against this
+// whitelist rather than trusting arbitrary client input.
+const ALLOWED_FIELD_TYPES = ['text', 'textarea', 'email', 'tel', 'number', 'date', 'select', 'radio', 'checkbox', 'heading'];
+const MAX_FIELDS = 25;
+
+function sanitizeFields(rawFields) {
+  if (!Array.isArray(rawFields)) return [];
+  return rawFields
+    .filter(f => f && ALLOWED_FIELD_TYPES.includes(f.type))
+    .slice(0, MAX_FIELDS)
+    .map(f => ({
+      id: String(f.id || '').slice(0, 40) || `f_${Math.random().toString(36).slice(2, 10)}`,
+      type: f.type,
+      label: String(f.label || '').slice(0, 200) || 'Untitled field',
+      required: !!f.required,
+      options: Array.isArray(f.options) ? f.options.slice(0, 20).map(o => String(o).slice(0, 100)) : undefined
+    }));
+}
+
+// ---------- Signup form builder (scoped to the logged-in club) ----------
+router.get('/events/:id/form', requireClubLogin, requireApprovedClub, asyncHandler(async (req, res) => {
+  const { rows: eventRows } = await pool.query(
+    `SELECT id, title FROM events WHERE id = $1 AND club_id = $2`,
+    [req.params.id, req.clubUser.club_id]
+  );
+  if (!eventRows.length) return res.status(404).send('Event not found, or it belongs to a different club.');
+
+  const { rows: formRows } = await pool.query(`SELECT * FROM event_forms WHERE event_id = $1`, [req.params.id]);
+  const form = formRows[0] || { title: 'Entry form', description: '', fields: [] };
+
+  res.render('portal/form-builder', { clubUser: req.clubUser, event: eventRows[0], form });
+}));
+
+router.post('/events/:id/form', requireClubLogin, requireApprovedClub, asyncHandler(async (req, res) => {
+  const { rows: eventRows } = await pool.query(
+    `SELECT id FROM events WHERE id = $1 AND club_id = $2`,
+    [req.params.id, req.clubUser.club_id]
+  );
+  if (!eventRows.length) return res.status(404).send('Event not found, or it belongs to a different club.');
+
+  let fields = [];
+  try {
+    fields = sanitizeFields(JSON.parse(req.body.fields_json || '[]'));
+  } catch (e) {
+    fields = [];
+  }
+
+  const title = (req.body.title || 'Entry form').slice(0, 200);
+  const description = (req.body.description || '').slice(0, 1000);
+
+  await pool.query(
+    `INSERT INTO event_forms (event_id, title, description, fields)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (event_id) DO UPDATE SET title = $2, description = $3, fields = $4, updated_at = now()`,
+    [req.params.id, title, description, JSON.stringify(fields)]
+  );
+
+  res.redirect(`/club-portal/events/${req.params.id}/form?saved=1`);
+}));
+
+router.post('/events/:id/form/delete', requireClubLogin, requireApprovedClub, asyncHandler(async (req, res) => {
+  const { rows: eventRows } = await pool.query(
+    `SELECT id FROM events WHERE id = $1 AND club_id = $2`,
+    [req.params.id, req.clubUser.club_id]
+  );
+  if (!eventRows.length) return res.status(404).send('Event not found, or it belongs to a different club.');
+
+  await pool.query(`DELETE FROM event_forms WHERE event_id = $1`, [req.params.id]);
+  res.redirect(`/club-portal/events/${req.params.id}/edit`);
+}));
+
+router.get('/events/:id/form/submissions', requireClubLogin, requireApprovedClub, asyncHandler(async (req, res) => {
+  const { rows: eventRows } = await pool.query(
+    `SELECT e.id, e.title, ef.id AS form_id, ef.title AS form_title, ef.fields
+     FROM events e LEFT JOIN event_forms ef ON ef.event_id = e.id
+     WHERE e.id = $1 AND e.club_id = $2`,
+    [req.params.id, req.clubUser.club_id]
+  );
+  if (!eventRows.length) return res.status(404).send('Event not found, or it belongs to a different club.');
+  const event = eventRows[0];
+  if (!event.form_id) return res.redirect(`/club-portal/events/${req.params.id}/form`);
+
+  const { rows: submissions } = await pool.query(
+    `SELECT * FROM event_form_submissions WHERE event_form_id = $1 ORDER BY submitted_at DESC`,
+    [event.form_id]
+  );
+
+  res.render('portal/form-submissions', { clubUser: req.clubUser, event, submissions });
+}));
+
+router.get('/events/:id/form/submissions.csv', requireClubLogin, requireApprovedClub, asyncHandler(async (req, res) => {
+  const { rows: eventRows } = await pool.query(
+    `SELECT e.id, e.title, ef.id AS form_id, ef.fields
+     FROM events e LEFT JOIN event_forms ef ON ef.event_id = e.id
+     WHERE e.id = $1 AND e.club_id = $2`,
+    [req.params.id, req.clubUser.club_id]
+  );
+  if (!eventRows.length || !eventRows[0].form_id) return res.status(404).send('Not found.');
+  const event = eventRows[0];
+
+  const { rows: submissions } = await pool.query(
+    `SELECT * FROM event_form_submissions WHERE event_form_id = $1 ORDER BY submitted_at ASC`,
+    [event.form_id]
+  );
+
+  const fields = (event.fields || []).filter(f => f.type !== 'heading');
+  const escapeCsv = (v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+
+  const header = ['Submitted at', ...fields.map(f => f.label)].map(escapeCsv).join(',');
+  const rows = submissions.map(s => {
+    const cells = [new Date(s.submitted_at).toISOString(), ...fields.map(f => s.data[f.id] || '')];
+    return cells.map(escapeCsv).join(',');
+  });
+
+  const csv = [header, ...rows].join('\r\n');
+  res.set('Content-Type', 'text/csv; charset=utf-8');
+  res.set('Content-Disposition', `attachment; filename="submissions-${event.id}.csv"`);
+  res.send(csv);
+}));
+
 module.exports = router;

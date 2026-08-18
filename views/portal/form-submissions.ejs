@@ -1,0 +1,34 @@
+<%- include('../partials/head', { pageTitle: 'Submissions — ' + event.title }) %>
+
+<p><a href="/club-portal/events/<%= event.id %>/form">&larr; Back to form</a></p>
+<div class="admin-header-row">
+  <h1>Submissions</h1>
+  <a class="admin-button" href="/club-portal/events/<%= event.id %>/form/submissions.csv">Download CSV</a>
+</div>
+<p class="subtitle"><%= event.title %> — <%= submissions.length %> submission<%= submissions.length === 1 ? '' : 's' %></p>
+
+<% const fields = (event.fields || []).filter(f => f.type !== 'heading'); %>
+
+<table class="admin-table">
+  <thead>
+    <tr>
+      <th>Submitted</th>
+      <% fields.forEach(function(f) { %><th><%= f.label %></th><% }); %>
+    </tr>
+  </thead>
+  <tbody>
+    <% submissions.forEach(function(s) { %>
+      <tr>
+        <td><%= new Date(s.submitted_at).toLocaleString('en-GB') %></td>
+        <% fields.forEach(function(f) { %><td><%= s.data[f.id] || '' %></td><% }); %>
+      </tr>
+    <% }); %>
+    <% if (submissions.length === 0) { %>
+      <tr><td colspan="<%= fields.length + 1 %>">No submissions yet.</td></tr>
+    <% } %>
+  </tbody>
+</table>
+
+<p class="scorecard-note">Submissions for events over 30 days past are automatically removed. Download the CSV if you need a record.</p>
+
+<%- include('../partials/foot') %>

@@ -26,18 +26,30 @@ per club. NOT STARTED — scoping only so far.
 
 ## Retention
 
-- [ ] Build a scheduled purge job — entries auto-delete N days after the
-      event date (proposed: 30 days). Not a manual step.
-- [ ] Give the club a one-time CSV export of entrants before purge, if
-      they want a record for their own files.
-- [ ] Document the retention period in the privacy policy.
+- [x] Build a purge mechanism — event_form_submissions are deleted for any
+      event more than 30 days past, via lib/retention.js. This runs as a
+      lazy sweep triggered on admin dashboard load rather than a true
+      scheduled job (Render's free/starter web service has no built-in
+      cron) — good enough at this scale, but revisit if admin isn't
+      visited regularly, since the sweep won't run.
+- [x] Give the club a CSV export of entrants — /club-portal/events/:id/form/submissions.csv
+- [x] Document the retention period in the privacy policy — done.
 
-## Build scope (once the above is in place)
+## Build scope
 
-- [ ] v1: structured entry form per event (name, email, home club,
-      handicap/category) — entries land in DB, club gets CSV export. No
-      payments yet.
+- [x] v1: structured entry form per event, drag-and-drop builder in the club
+      portal (routes/portal.js, views/portal/form-builder.ejs,
+      public/js/form-builder.js). Age-category preset offered instead of a
+      raw date-of-birth field to nudge minimization. No payments.
 - [ ] v2 (separate, later): payment collection via Stripe — treat as its
       own project given refunds/disputes/reconciliation complexity.
 - [ ] Pricing: maybe free for basic forms, paid tier once payment
       collection is added — decide later, don't lock in now.
+
+## Still open
+- [ ] ICO registration requirement — check separately, not something code
+      can resolve.
+- [ ] Formal review of UK GDPR + ICO Children's Code — the site follows the
+      spirit of minimization/retention/transparency, but this isn't a
+      substitute for an actual legal review before this handles real
+      volume.

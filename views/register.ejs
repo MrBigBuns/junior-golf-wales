@@ -1,0 +1,60 @@
+<%- include('partials/head', { pageTitle: form.title + ' — ' + form.event_title, pageDescription: 'Register for ' + form.event_title + ' at ' + form.club_name }) %>
+
+<nav class="breadcrumb">
+  <a href="/events/<%= slug %>"><%= form.event_title %></a> / Register
+</nav>
+
+<h1><%= form.title %></h1>
+<p class="subtitle"><%= form.event_title %> — <%= form.club_name %>, <%= new Date(form.date_start).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) %></p>
+<% if (form.description) { %><p><%= form.description %></p><% } %>
+
+<% if (submitted) { %>
+  <p class="success-message">Thanks — your registration has been received.</p>
+  <p><a href="/events/<%= slug %>">&larr; Back to event</a></p>
+<% } else { %>
+  <% if (error) { %><p class="error-message"><%= error %></p><% } %>
+
+  <form method="post" action="/events/<%= slug %>/register" class="admin-form">
+    <% form.fields.forEach(function(f) { %>
+      <% if (f.type === 'heading') { %>
+        <h2><%= f.label %></h2>
+      <% } else if (f.type === 'textarea') { %>
+        <label><%= f.label %><% if (f.required) { %> *<% } %>
+          <textarea name="<%= f.id %>" rows="3" <%= f.required ? 'required' : '' %>></textarea>
+        </label>
+      <% } else if (f.type === 'select') { %>
+        <label><%= f.label %><% if (f.required) { %> *<% } %>
+          <select name="<%= f.id %>" <%= f.required ? 'required' : '' %>>
+            <option value="">— choose —</option>
+            <% (f.options || []).forEach(function(o) { %><option value="<%= o %>"><%= o %></option><% }); %>
+          </select>
+        </label>
+      <% } else if (f.type === 'radio') { %>
+        <fieldset>
+          <legend><%= f.label %><% if (f.required) { %> *<% } %></legend>
+          <% (f.options || []).forEach(function(o, i) { %>
+            <label style="display:flex;align-items:center;gap:6px;font-weight:400;">
+              <input type="radio" name="<%= f.id %>" value="<%= o %>" <%= f.required && i === 0 ? 'required' : '' %>>
+              <%= o %>
+            </label>
+          <% }); %>
+        </fieldset>
+      <% } else if (f.type === 'checkbox') { %>
+        <label style="display:flex;align-items:center;gap:6px;">
+          <input type="checkbox" name="<%= f.id %>" value="Yes" <%= f.required ? 'required' : '' %>>
+          <%= f.label %>
+        </label>
+      <% } else { %>
+        <label><%= f.label %><% if (f.required) { %> *<% } %>
+          <input type="<%= f.type %>" name="<%= f.id %>" <%= f.required ? 'required' : '' %>>
+        </label>
+      <% } %>
+    <% }); %>
+
+    <button type="submit">Submit</button>
+  </form>
+
+  <p class="scorecard-note">Your details are used only to register you for this event, and are removed automatically 30 days after the event date. See our <a href="/privacy">privacy policy</a>.</p>
+<% } %>
+
+<%- include('partials/foot') %>

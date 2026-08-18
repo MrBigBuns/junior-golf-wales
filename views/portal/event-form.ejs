@@ -34,6 +34,10 @@
   <button type="submit">Save event</button>
 </form>
 
+<% if (!isNew) { %>
+  <p style="margin-top:1.5rem;"><a href="/club-portal/events/<%= event.id %>/form" class="admin-button" style="text-decoration:none;">Create/edit signup form &rarr;</a></p>
+<% } %>
+
 <p class="scorecard-note">Want a course map, scorecard, or photos added? <a href="/contact">Let us know</a> and we'll add the extra detail.</p>
 
 <%- include('../partials/foot') %>

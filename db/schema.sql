@@ -103,3 +103,21 @@ CREATE TABLE IF NOT EXISTS club_users (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_club_users_email ON club_users(email);
+
+CREATE TABLE IF NOT EXISTS event_forms (
+  id SERIAL PRIMARY KEY,
+  event_id INTEGER NOT NULL UNIQUE REFERENCES events(id) ON DELETE CASCADE,
+  title TEXT NOT NULL DEFAULT 'Entry form',
+  description TEXT,
+  fields JSONB NOT NULL DEFAULT '[]',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS event_form_submissions (
+  id SERIAL PRIMARY KEY,
+  event_form_id INTEGER NOT NULL REFERENCES event_forms(id) ON DELETE CASCADE,
+  data JSONB NOT NULL,
+  submitted_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_event_form_submissions_form ON event_form_submissions(event_form_id, submitted_at DESC);

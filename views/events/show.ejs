@@ -33,7 +33,11 @@
         </table>
       <% } %>
 
-      <% if (event.entry_url || event.entry_email || event.entry_phone) { %>
+      <% if (event.form_id) { %>
+        <div class="how-to-enter">
+          <a class="enter-button" href="/events/<%= event.slug %>/register">Register for this event</a>
+        </div>
+      <% } else if (event.entry_url || event.entry_email || event.entry_phone) { %>
         <div class="how-to-enter">
           <% if (event.entry_url) { %>
             <a class="enter-button" href="<%= event.entry_url %>" target="_blank" rel="noopener">Enter this event</a>

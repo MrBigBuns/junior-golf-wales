@@ -53,10 +53,12 @@ router.get('/:slug', asyncHandler(async (req, res) => {
             c.website AS club_website, c.course_image_url AS club_course_image_url,
             c.description AS club_description, c.lat AS club_lat, c.lng AS club_lng,
             c.facebook_url AS club_facebook_url, c.instagram_url AS club_instagram_url, c.x_url AS club_x_url,
-            o.name AS organiser_name, o.slug AS organiser_slug, o.description AS organiser_description
+            o.name AS organiser_name, o.slug AS organiser_slug, o.description AS organiser_description,
+            ef.id AS form_id
      FROM events e
      JOIN clubs c ON c.id = e.club_id
      LEFT JOIN organisers o ON o.id = e.organiser_id
+     LEFT JOIN event_forms ef ON ef.event_id = e.id AND jsonb_array_length(ef.fields) > 0
      WHERE e.slug = $1`,
     [req.params.slug]
   );
@@ -132,6 +134,57 @@ router.get('/:slug/calendar.ics', asyncHandler(async (req, res) => {
   res.set('Content-Type', 'text/calendar; charset=utf-8');
   res.set('Content-Disposition', `attachment; filename="${req.params.slug}.ics"`);
   res.send(ics);
+}));
+
+// GET /events/:slug/register — public signup form, if the club has built one
+router.get('/:slug/register', asyncHandler(async (req, res) => {
+  const { rows } = await pool.query(
+    `SELECT e.id AS event_id, e.title AS event_title, e.date_start, c.name AS club_name,
+            ef.id AS form_id, ef.title, ef.description, ef.fields
+     FROM events e
+     JOIN clubs c ON c.id = e.club_id
+     JOIN event_forms ef ON ef.event_id = e.id
+     WHERE e.slug = $1`,
+    [req.params.slug]
+  );
+  if (!rows.length || !rows[0].fields || !rows[0].fields.length) return res.status(404).render('404');
+
+  res.render('register', { form: rows[0], slug: req.params.slug, submitted: false, error: null });
+}));
+
+router.post('/:slug/register', asyncHandler(async (req, res) => {
+  const { rows } = await pool.query(
+    `SELECT e.id AS event_id, e.title AS event_title, e.date_start, c.name AS club_name,
+            ef.id AS form_id, ef.title, ef.description, ef.fields
+     FROM events e
+     JOIN clubs c ON c.id = e.club_id
+     JOIN event_forms ef ON ef.event_id = e.id
+     WHERE e.slug = $1`,
+    [req.params.slug]
+  );
+  if (!rows.length || !rows[0].fields || !rows[0].fields.length) return res.status(404).render('404');
+
+  const form = rows[0];
+  const data = {};
+  let missingRequired = false;
+
+  form.fields.forEach(f => {
+    if (f.type === 'heading') return;
+    const value = req.body[f.id];
+    if (f.required && (!value || !value.toString().trim())) missingRequired = true;
+    if (value !== undefined) data[f.id] = String(value).slice(0, 1000);
+  });
+
+  if (missingRequired) {
+    return res.render('register', { form, slug: req.params.slug, submitted: false, error: 'Please fill in all required fields.' });
+  }
+
+  await pool.query(
+    `INSERT INTO event_form_submissions (event_form_id, data) VALUES ($1, $2)`,
+    [form.form_id, JSON.stringify(data)]
+  );
+
+  res.render('register', { form, slug: req.params.slug, submitted: true, error: null });
 }));
 
 module.exports = router;
