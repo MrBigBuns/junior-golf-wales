@@ -165,7 +165,7 @@ function sanitizeFields(rawFields) {
 // ---------- Signup form builder (scoped to the logged-in club) ----------
 router.get('/events/:id/form', requireClubLogin, requireApprovedClub, asyncHandler(async (req, res) => {
   const { rows: eventRows } = await pool.query(
-    `SELECT id, title FROM events WHERE id = $1 AND club_id = $2`,
+    `SELECT id, title, slug FROM events WHERE id = $1 AND club_id = $2`,
     [req.params.id, req.clubUser.club_id]
   );
   if (!eventRows.length) return res.status(404).send('Event not found, or it belongs to a different club.');

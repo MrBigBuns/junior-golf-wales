@@ -37,9 +37,15 @@
   <input type="hidden" name="fields_json" id="fields-json-input">
   <div class="fb-actions">
     <button type="submit">Save form</button>
-    <% if (form.id) { %><a href="/club-portal/events/<%= event.id %>/form/submissions">View submissions &rarr;</a><% } %>
+    <button type="button" id="preview-form-btn" class="admin-button" style="border:none;">Preview form</button>
+    <% if (form.id) { %>
+      <a href="/events/<%= event.slug %>/register" target="_blank">View live form &rarr;</a>
+      <a href="/club-portal/events/<%= event.id %>/form/submissions">View submissions &rarr;</a>
+    <% } %>
   </div>
 </form>
+
+<div id="form-preview-overlay" class="fb-preview-overlay"></div>
 
 <% if (form.id) { %>
   <form method="post" action="/club-portal/events/<%= event.id %>/form/delete" onsubmit="return confirm('Remove this signup form? Existing submissions will also be deleted.');" style="margin-top:1rem;">

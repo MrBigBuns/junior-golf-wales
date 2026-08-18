@@ -33,6 +33,8 @@
     const canvas = document.getElementById('form-canvas');
     const palette = document.getElementById('field-palette');
     const hiddenInput = document.getElementById('fields-json-input');
+    const previewBtn = document.getElementById('preview-form-btn');
+    const previewOverlay = document.getElementById('form-preview-overlay');
     let sortableInstance = null;
 
     function syncHiddenInput() {
@@ -131,12 +133,26 @@
         required: !!base.required,
         options: needsOptions(base.type) ? (base.options || ['Option 1', 'Option 2']) : undefined
       };
+      let atIndex;
       if (insertIndex === undefined || insertIndex === null) {
         fields.push(newField);
+        atIndex = fields.length - 1;
       } else {
         fields.splice(insertIndex, 0, newField);
+        atIndex = insertIndex;
       }
       render();
+
+      // Auto-focus the new field's label so it's immediately editable —
+      // no extra click needed to start typing the real question.
+      const newCard = canvas.querySelector(`[data-index="${atIndex}"]`);
+      if (newCard) {
+        const labelInput = newCard.querySelector('.fb-label-input');
+        if (labelInput) {
+          labelInput.focus();
+          labelInput.select();
+        }
+      }
     }
 
     // Palette: click to add
@@ -193,6 +209,63 @@
       fields.splice(i, 1);
       render();
     });
+
+    // Live preview — mirrors how the public register page renders each
+    // field type, using the current unsaved edits (not what's in the DB).
+    function fieldPreviewHtml(f) {
+      const req = f.required ? ' *' : '';
+      if (f.type === 'heading') {
+        return `<h3>${escapeHtml(f.label)}</h3>`;
+      }
+      if (f.type === 'textarea') {
+        return `<label class="fb-preview-field">${escapeHtml(f.label)}${req}<textarea rows="3"></textarea></label>`;
+      }
+      if (f.type === 'select') {
+        const opts = (f.options || []).map(o => `<option>${escapeHtml(o)}</option>`).join('');
+        return `<label class="fb-preview-field">${escapeHtml(f.label)}${req}<select><option value="">— choose —</option>${opts}</select></label>`;
+      }
+      if (f.type === 'radio') {
+        const opts = (f.options || []).map(o => `<label class="fb-preview-radio"><input type="radio" name="preview_${f.id}" disabled> ${escapeHtml(o)}</label>`).join('');
+        return `<fieldset class="fb-preview-field"><legend>${escapeHtml(f.label)}${req}</legend>${opts}</fieldset>`;
+      }
+      if (f.type === 'checkbox') {
+        return `<label class="fb-preview-checkbox"><input type="checkbox"> ${escapeHtml(f.label)}${req}</label>`;
+      }
+      return `<label class="fb-preview-field">${escapeHtml(f.label)}${req}<input type="${escapeHtml(f.type)}"></label>`;
+    }
+
+    function openPreview() {
+      const titleInput = document.querySelector('input[name="title"]');
+      const descInput = document.querySelector('textarea[name="description"]');
+      const title = (titleInput && titleInput.value) || 'Entry form';
+      const description = descInput ? descInput.value : '';
+
+      previewOverlay.innerHTML = `
+        <div class="fb-preview-modal">
+          <button type="button" id="fb-preview-close" class="fb-preview-close" aria-label="Close preview">&times;</button>
+          <p class="scorecard-note">Preview — this is how the public form will look. Nothing here submits.</p>
+          <h2>${escapeHtml(title)}</h2>
+          ${description ? `<p>${escapeHtml(description)}</p>` : ''}
+          <div class="fb-preview-fields">
+            ${fields.length ? fields.map(fieldPreviewHtml).join('') : '<p class="scorecard-note">No fields added yet.</p>'}
+          </div>
+        </div>
+      `;
+      previewOverlay.style.display = 'flex';
+      document.getElementById('fb-preview-close').addEventListener('click', closePreview);
+    }
+
+    function closePreview() {
+      previewOverlay.style.display = 'none';
+      previewOverlay.innerHTML = '';
+    }
+
+    if (previewBtn) previewBtn.addEventListener('click', openPreview);
+    if (previewOverlay) {
+      previewOverlay.addEventListener('click', function (e) {
+        if (e.target === previewOverlay) closePreview();
+      });
+    }
 
     render();
   };
