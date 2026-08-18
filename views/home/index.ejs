@@ -15,22 +15,22 @@
 </div>
 
 <div class="stats-grid">
-  <div class="stat-card">
+  <a class="stat-card" href="/events">
     <p class="stat-label">Upcoming events</p>
     <p class="stat-value"><%= stats.upcoming %></p>
-  </div>
-  <div class="stat-card">
+  </a>
+  <a class="stat-card" href="/clubs">
     <p class="stat-label">Clubs listed</p>
     <p class="stat-value"><%= stats.clubs %></p>
-  </div>
-  <div class="stat-card">
+  </a>
+  <a class="stat-card" href="/events">
     <p class="stat-label">Tours tracked</p>
     <p class="stat-value"><%= stats.tours %></p>
-  </div>
-  <div class="stat-card">
+  </a>
+  <a class="stat-card" href="/events">
     <p class="stat-label">This month</p>
     <p class="stat-value"><%= stats.thisMonth %></p>
-  </div>
+  </a>
 </div>
 
 <div class="section-header">
@@ -43,8 +43,14 @@
     <p>No upcoming events yet. <a href="/submit-event">Submit one?</a></p>
   <% } %>
   <% nextUp.forEach(function(event) { %>
+    <% const daysUntil = Math.round((new Date(event.date_start) - new Date().setHours(0,0,0,0)) / 86400000); %>
     <a class="event-card" href="/events/<%= event.slug %>">
-      <% if (event.age_category) { %><span class="badge"><%= event.age_category %></span><% } %>
+      <div class="event-card-top">
+        <% if (event.age_category) { %><span class="badge"><%= event.age_category %></span><% } %>
+        <% if (daysUntil === 0) { %><span class="days-until days-until-today">Today</span>
+        <% } else if (daysUntil === 1) { %><span class="days-until">Tomorrow</span>
+        <% } else if (daysUntil <= 14) { %><span class="days-until">In <%= daysUntil %> days</span><% } %>
+      </div>
       <p class="event-card-title"><%= event.title %></p>
       <p class="event-card-club"><%= event.club_name %></p>
       <p class="event-card-meta">
@@ -53,6 +59,24 @@
       </p>
     </a>
   <% }); %>
+</div>
+
+<div class="section-header">
+  <h2>Browse by region</h2>
+</div>
+<div class="region-grid">
+  <a class="region-card" href="/events?region=North">
+    <p class="region-name">North Wales</p>
+    <p class="region-count"><%= regionCounts.North %> upcoming</p>
+  </a>
+  <a class="region-card" href="/events?region=Mid">
+    <p class="region-name">Mid Wales</p>
+    <p class="region-count"><%= regionCounts.Mid %> upcoming</p>
+  </a>
+  <a class="region-card" href="/events?region=South">
+    <p class="region-name">South Wales</p>
+    <p class="region-count"><%= regionCounts.South %> upcoming</p>
+  </a>
 </div>
 
 <div class="cta-banner">

@@ -65,10 +65,53 @@ body {
 }
 
 .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin: 1.5rem 0; }
-.stat-card { background: white; border-top: 2px solid var(--wales-red); border-radius: 8px; padding: 1rem; }
+.stat-card {
+  background: white;
+  border-top: 2px solid var(--wales-red);
+  border-radius: 8px;
+  padding: 1rem;
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.stat-card:hover, .stat-card:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+}
 .stat-card:nth-child(even) { border-top-color: var(--wales-green); }
 .stat-label { font-size: 0.85rem; color: var(--text-secondary); margin: 0 0 4px; }
 .stat-value { font-size: 1.5rem; font-weight: 600; margin: 0; }
+
+.event-card-top { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+.event-card-top .badge { margin-bottom: 0; }
+.days-until {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--wales-green);
+  background: #EAF3DE;
+  padding: 3px 9px;
+  border-radius: 6px;
+}
+.days-until-today { color: white; background: var(--wales-red); }
+
+.region-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 1.5rem; }
+.region-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+.region-card:hover, .region-card:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+  border-color: var(--wales-green);
+}
+.region-name { font-weight: 600; margin: 0 0 2px; }
+.region-count { color: var(--text-secondary); font-size: 0.85rem; margin: 0; }
 
 .section-header { display: flex; justify-content: space-between; align-items: center; margin: 1.5rem 0 0.75rem; }
 .section-header a { color: var(--wales-green); text-decoration: none; font-size: 0.9rem; }
@@ -117,7 +160,14 @@ body {
   padding: 1rem;
   text-decoration: none;
   color: inherit;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
 }
+.event-card:hover, .event-card:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+  border-color: var(--wales-green);
+}
+.event-card:active { transform: translateY(0); box-shadow: none; }
 
 .event-card-title { font-weight: 600; margin: 0 0 4px; }
 .event-card-club { color: var(--text-secondary); margin: 0 0 8px; font-size: 0.9rem; }

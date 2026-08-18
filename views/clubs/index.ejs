@@ -1,0 +1,15 @@
+<%- include('../partials/head', { pageTitle: 'Wales golf clubs — Junior Golf Wales' }) %>
+
+<h1>Clubs</h1>
+<p class="subtitle">Every club we track junior events for.</p>
+
+<div class="event-list">
+  <% clubs.forEach(function(c) { %>
+    <a class="event-card" href="/clubs/<%= c.slug %>">
+      <p class="event-card-title"><%= c.name %></p>
+      <p class="event-card-meta"><%= c.region || 'Region not set' %> Wales · <%= c.upcoming_count %> upcoming event<%= c.upcoming_count == 1 ? '' : 's' %></p>
+    </a>
+  <% }); %>
+</div>
+
+<%- include('../partials/foot') %>

@@ -2,6 +2,18 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool');
 
+router.get('/', async (req, res) => {
+  const { rows: clubs } = await pool.query(
+    `SELECT c.id, c.name, c.slug, c.region, c.course_image_url,
+            COUNT(e.id) FILTER (WHERE e.date_start >= CURRENT_DATE) AS upcoming_count
+     FROM clubs c
+     LEFT JOIN events e ON e.club_id = c.id
+     GROUP BY c.id
+     ORDER BY c.name ASC`
+  );
+  res.render('clubs/index', { clubs });
+});
+
 router.get('/:slug', async (req, res) => {
   const { rows: clubRows } = await pool.query(
     `SELECT * FROM clubs WHERE slug = $1`,

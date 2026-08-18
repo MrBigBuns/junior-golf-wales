@@ -3,7 +3,7 @@ const router = express.Router();
 const pool = require('../db/pool');
 
 router.get('/', async (req, res) => {
-  const [eventsCount, clubsCount, toursCount, thisMonthCount, nextUp] = await Promise.all([
+  const [eventsCount, clubsCount, toursCount, thisMonthCount, nextUp, regionCounts] = await Promise.all([
     pool.query(`SELECT COUNT(*) FROM events WHERE date_start >= CURRENT_DATE AND status != 'cancelled'`),
     pool.query(`SELECT COUNT(*) FROM clubs`),
     pool.query(`SELECT COUNT(*) FROM organisers`),
@@ -13,8 +13,17 @@ router.get('/', async (req, res) => {
        FROM events e JOIN clubs c ON c.id = e.club_id
        WHERE e.date_start >= CURRENT_DATE AND e.status != 'cancelled'
        ORDER BY e.date_start ASC LIMIT 3`
+    ),
+    pool.query(
+      `SELECT c.region, COUNT(e.id) AS upcoming_count
+       FROM clubs c LEFT JOIN events e ON e.club_id = c.id AND e.date_start >= CURRENT_DATE AND e.status != 'cancelled'
+       WHERE c.region IS NOT NULL
+       GROUP BY c.region`
     )
   ]);
+
+  const regionMap = { North: 0, Mid: 0, South: 0 };
+  regionCounts.rows.forEach(r => { regionMap[r.region] = parseInt(r.upcoming_count, 10); });
 
   res.render('home/index', {
     stats: {
@@ -23,7 +32,8 @@ router.get('/', async (req, res) => {
       tours: toursCount.rows[0].count,
       thisMonth: thisMonthCount.rows[0].count
     },
-    nextUp: nextUp.rows
+    nextUp: nextUp.rows,
+    regionCounts: regionMap
   });
 });
 
