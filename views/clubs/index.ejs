@@ -3,13 +3,20 @@
 <h1>Clubs</h1>
 <p class="subtitle">Every club we track junior events for.</p>
 
-<div class="event-list">
-  <% clubs.forEach(function(c) { %>
-    <a class="event-card" href="/clubs/<%= c.slug %>">
-      <p class="event-card-title"><%= c.name %></p>
-      <p class="event-card-meta"><%= c.region || 'Region not set' %> Wales · <%= c.upcoming_count %> upcoming event<%= c.upcoming_count == 1 ? '' : 's' %></p>
-    </a>
-  <% }); %>
-</div>
+<% ['North', 'Mid', 'South', 'Other'].forEach(function(region) { %>
+  <% if (grouped[region] && grouped[region].length) { %>
+    <div class="section-header">
+      <h2><%= region === 'Other' ? 'Region not set' : region + ' Wales' %></h2>
+    </div>
+    <div class="event-list">
+      <% grouped[region].forEach(function(c) { %>
+        <a class="event-card" href="/clubs/<%= c.slug %>">
+          <p class="event-card-title"><%= c.name %></p>
+          <p class="event-card-meta"><%= c.upcoming_count %> upcoming event<%= c.upcoming_count == 1 ? '' : 's' %></p>
+        </a>
+      <% }); %>
+    </div>
+  <% } %>
+<% }); %>
 
 <%- include('../partials/foot') %>

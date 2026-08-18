@@ -10,9 +10,19 @@ router.get('/', asyncHandler(async (req, res) => {
      FROM clubs c
      LEFT JOIN events e ON e.club_id = c.id
      GROUP BY c.id
-     ORDER BY c.name ASC`
+     ORDER BY
+       CASE c.region WHEN 'North' THEN 1 WHEN 'Mid' THEN 2 WHEN 'South' THEN 3 ELSE 4 END,
+       c.name ASC`
   );
-  res.render('clubs/index', { clubs });
+
+  const grouped = {};
+  clubs.forEach(c => {
+    const key = c.region || 'Other';
+    if (!grouped[key]) grouped[key] = [];
+    grouped[key].push(c);
+  });
+
+  res.render('clubs/index', { grouped });
 }));
 
 router.get('/:slug', asyncHandler(async (req, res) => {
