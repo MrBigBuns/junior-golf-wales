@@ -91,22 +91,48 @@ async function askClaude(clubName) {
   return JSON.parse(text.slice(start, end + 1));
 }
 
-async function fetchPage(url) {
+const BROWSER_HEADERS = {
+  // Some club sites reject non-browser user agents, so present as a normal browser
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+  'Accept-Language': 'en-GB,en;q=0.9'
+};
+
+async function fetchOnce(url) {
   const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), 15000);
+  const t = setTimeout(() => ctrl.abort(), 20000);
   try {
-    const res = await fetch(url, {
-      signal: ctrl.signal,
-      redirect: 'follow',
-      headers: { 'User-Agent': 'JuniorGolfWales/0.1 (club directory; junior-golf-wales.onrender.com)' }
-    });
-    if (!res.ok) return null;
+    const res = await fetch(url, { signal: ctrl.signal, redirect: 'follow', headers: BROWSER_HEADERS });
+    if (!res.ok) return { error: `HTTP ${res.status}` };
     return { html: await res.text(), finalUrl: res.url || url };
   } catch (e) {
-    return null;
+    return { error: e.name === 'AbortError' ? 'timed out' : e.message };
   } finally {
     clearTimeout(t);
   }
+}
+
+// Tries the URL as given, then the www / non-www and https variants.
+async function fetchPage(url) {
+  const tried = new Set();
+  const variants = [url];
+  try {
+    const u = new URL(url);
+    const alt = new URL(url);
+    alt.hostname = u.hostname.startsWith('www.') ? u.hostname.slice(4) : 'www.' + u.hostname;
+    variants.push(alt.href);
+    if (u.protocol === 'http:') { const s = new URL(url); s.protocol = 'https:'; variants.push(s.href); }
+  } catch (e) { /* malformed URL: just try as given */ }
+
+  let lastError = 'no response';
+  for (const v of variants) {
+    if (tried.has(v)) continue;
+    tried.add(v);
+    const r = await fetchOnce(v);
+    if (r.html) return r;
+    lastError = r.error;
+  }
+  return { error: lastError };
 }
 
 function absolute(href, base) {
@@ -193,8 +219,8 @@ async function research(club) {
   // Homepage scrape: social links and logo, from the club's own site
   if (data.website) {
     const page = await fetchPage(data.website);
-    if (!page) {
-      warnings.push('Website did not load; it may be down or the URL may be wrong.');
+    if (!page.html) {
+      warnings.push(`Website did not load for the script (${page.error}); social links and logo need filling manually.`);
     } else {
       const scraped = scrapeHomepage(page.html, page.finalUrl);
       for (const k of ['facebook_url', 'instagram_url', 'x_url']) {
