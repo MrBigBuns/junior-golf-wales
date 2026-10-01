@@ -6,6 +6,7 @@
   <a href="/admin/events">Events (<%= eventCount %>)</a>
   <a href="/admin/clubs">Clubs (<%= clubCount %>)</a>
   <a href="/admin/submissions">Submissions <% if (pendingCount > 0) { %><span class="pending-badge"><%= pendingCount %></span><% } %></a>
+  <a href="/admin/club-suggestions">Club suggestions <% if (pendingSuggestions > 0) { %><span class="pending-badge"><%= pendingSuggestions %></span><% } %></a>
   <a href="/admin/club-accounts">Club accounts <% if (pendingClubAccounts > 0) { %><span class="pending-badge"><%= pendingClubAccounts %></span><% } %></a>
 </div>
 
@@ -30,6 +31,13 @@ node scripts/scan-brs-opens.js --save   # queue matches for review</code></pre>
   <h3>Course scorecards</h3>
   <p class="course-address">Scorecards belong to the <strong>club</strong>: open <a href="/admin/clubs">Clubs</a>, edit the club, and use <strong>Import scorecard from a photo &rarr;</strong> in the Course scorecard section. Every event at that club uses it automatically, and it shows on the club page. Par and yardage are worked out from the card. Approved clubs can also manage their own card from the club portal.</p>
   <p class="course-address">Only override on an event (tick <em>Override the scorecard for this event only</em>) when it plays a different course or layout, such as a short course or another course at a multi-course venue. Different tees on the same card just need the junior tees note. Photo import needs <code>ANTHROPIC_API_KEY</code> set in Render &rarr; Environment.</p>
+
+  <h3>Fill in club details automatically</h3>
+  <p class="course-address">Researches clubs with missing details (address, website, email, social links, logo, par, yardage, description and scorecard where published) and queues them in <a href="/admin/club-suggestions">Club suggestions</a>. Each value shows its source; tick the ones to accept. Needs <code>ANTHROPIC_API_KEY</code>, with web search enabled for your organisation in the Anthropic Console. Costs roughly 10-20p per club.</p>
+  <pre><code>node scripts/add-south-wales-clubs.js            # one-off: add the 79 South Wales clubs
+node scripts/enrich-clubs.js --dry-run --limit 2 # try it, queue nothing
+node scripts/enrich-clubs.js --limit 10          # research the next 10 clubs with gaps
+node scripts/enrich-clubs.js --club radyr-golf-club   # one club (add --redo to repeat)</code></pre>
 
   <h3>Post an update on an event</h3>
   <pre><code>node scripts/add-update.js &lt;event-slug&gt; "Message"</code></pre>

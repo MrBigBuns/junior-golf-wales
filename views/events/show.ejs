@@ -86,7 +86,8 @@
     </div>
 
     <% if (event.scorecard && event.scorecard.length) { %>
-      <% const primaryTee = event.scorecard[0].yards ? Object.keys(event.scorecard[0].yards)[0] : null; %>
+      <% const teeLen = {}; event.scorecard.forEach(function(h) { Object.keys(h.yards || {}).forEach(function(t) { teeLen[t] = (teeLen[t] || 0) + (Number(h.yards[t]) || 0); }); }); %>
+      <% const primaryTee = Object.keys(teeLen).sort(function(a, b) { return teeLen[b] - teeLen[a]; })[0] || null; %>
       <% const byPar = { 3: [], 4: [], 5: [] }; %>
       <% event.scorecard.forEach(function(h) { if (byPar[h.par] && primaryTee && h.yards && h.yards[primaryTee] != null) byPar[h.par].push(h.yards[primaryTee]); }); %>
       <div class="detail-card">

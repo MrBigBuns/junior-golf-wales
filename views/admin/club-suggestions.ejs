@@ -1,0 +1,128 @@
+<%- include('../partials/head', { pageTitle: 'Admin — Club suggestions' }) %>
+
+<h1>Club suggestions</h1>
+<p><a href="/admin">&larr; Dashboard</a></p>
+
+<div class="detail-card suggestion-tools">
+  <h3 class="detail-card-heading">Fill gaps in a spreadsheet</h3>
+  <p class="course-address">Export every club (proposed values where pending, otherwise live values), fill in or correct cells in Excel, then import. Changed cells become pending suggestions marked <em>your edit</em> for review below. Blank cells are ignored and never clear data. Leave the <code>id</code> column alone.</p>
+  <p>
+    <a class="admin-button" href="/admin/club-suggestions/export.csv?region=South">Export South</a>
+    <a class="admin-button" href="/admin/club-suggestions/export.csv">Export all regions</a>
+  </p>
+  <form method="post" action="/admin/club-suggestions/import" enctype="multipart/form-data" class="admin-form">
+    <label>Edited CSV <input type="file" name="csv" accept=".csv,text/csv" required></label>
+    <button type="submit">Import</button>
+  </form>
+  <p class="scorecard-note">In Excel, save as <strong>CSV UTF-8</strong> where offered (plain CSV also works). Scorecards are JSON; edit them on the club page rather than in a cell unless you are confident with the format.</p>
+</div>
+
+<% if (importResult === 'ok') { %>
+  <p class="success-message">Import complete: <%= importChanged %> club<%= importChanged === '1' ? '' : 's' %> with changes queued for review.</p>
+  <% if (importProblems.length) { %>
+    <ul class="suggestion-warnings">
+      <% importProblems.forEach(function(p) { %><li><%= p %> (cell skipped)</li><% }); %>
+    </ul>
+  <% } %>
+<% } else if (importResult === 'nofile' || importResult === 'badfile') { %>
+  <p class="error-message"><%= importResult === 'nofile' ? 'Choose a CSV file first.' : 'That file has no id column, so rows cannot be matched to clubs. Start from an export.' %></p>
+<% } %>
+
+<% if (applied !== null) { %><p class="success-message"><%= applied %> field<%= applied === '1' ? '' : 's' %> applied.</p><% } %>
+
+<p class="course-address">
+  Proposed details from <code>scripts/enrich-clubs.js</code>. Fields that would fill a gap, and your own spreadsheet edits, are ticked;
+  researched values that would overwrite existing data are not. Check anything marked with a warning against its source.
+  <% if (counts.accepted || counts.rejected) { %>
+    <br>Reviewed so far: <%= counts.accepted || 0 %> accepted, <%= counts.rejected || 0 %> rejected.
+  <% } %>
+</p>
+
+<% if (suggestions.length === 0) { %>
+  <p>Nothing waiting for review. Run <code>node scripts/enrich-clubs.js --limit 10</code> to research more clubs.</p>
+<% } %>
+
+<%
+  const labels = {
+    address: 'Address', website: 'Website', contact_email: 'Email', facebook_url: 'Facebook',
+    instagram_url: 'Instagram', x_url: 'X / Twitter', description: 'Description', par: 'Par',
+    yardage: 'Yardage', scorecard: 'Scorecard', logo_url: 'Logo'
+  };
+  function cardSummary(card) {
+    if (!Array.isArray(card) || !card.length) return '';
+    const par = card.reduce((s, h) => s + (Number(h.par) || 0), 0);
+    const tees = card[0].yards ? Object.keys(card[0].yards) : [];
+    return card.length + ' holes, par ' + par + (tees.length ? ', tees: ' + tees.join(', ') : '');
+  }
+  function isUrl(v) { return typeof v === 'string' && /^https?:\/\//.test(v); }
+%>
+
+<% suggestions.forEach(function(s) { %>
+  <div class="detail-card suggestion-card">
+    <h2 style="margin-top:0;"><%= s.club_name %></h2>
+    <p class="course-address"><a href="/clubs/<%= s.club_slug %>" target="_blank">Club page</a> · <a href="/admin/clubs/<%= s.club_id %>/edit">Edit club</a> · Researched <%= new Date(s.created_at).toLocaleDateString('en-GB') %></p>
+
+    <% if (s.warnings && s.warnings.length) { %>
+      <ul class="suggestion-warnings">
+        <% s.warnings.forEach(function(w) { %><li><%= w %></li><% }); %>
+      </ul>
+    <% } %>
+
+    <form method="post" action="/admin/club-suggestions/<%= s.id %>/apply">
+      <div class="scorecard-scroll">
+      <table class="admin-table suggestion-table">
+        <thead><tr><th></th><th>Field</th><th>Current</th><th>Proposed</th><th>Source</th></tr></thead>
+        <tbody>
+          <% fields.forEach(function(f) { %>
+            <% const proposed = s.data[f]; if (proposed == null) return; %>
+            <% const current = s[f]; %>
+            <% const hasCurrent = current != null && current !== '' && !(Array.isArray(current) && !current.length); %>
+            <% const same = hasCurrent && JSON.stringify(current) === JSON.stringify(proposed); %>
+            <tr class="<%= same ? 'suggestion-same' : '' %>">
+              <td><input type="checkbox" name="fields" value="<%= f %>" <%= (!hasCurrent || (s.sources && s.sources[f] === 'manual')) && !same ? 'checked' : '' %> <%= same ? 'disabled' : '' %>></td>
+              <td><%= labels[f] %></td>
+              <td class="suggestion-current">
+                <% if (!hasCurrent) { %><em>empty</em>
+                <% } else if (f === 'scorecard') { %><%= cardSummary(current) %>
+                <% } else if (f === 'logo_url') { %><img src="<%= current %>" alt="" class="suggestion-logo">
+                <% } else { %><%= current %><% } %>
+              </td>
+              <td>
+                <% if (f === 'scorecard') { %>
+                  <details><summary><%= cardSummary(proposed) %></summary>
+                    <%- include('../partials/scorecard', { scorecard: proposed, scorecardNote: null }) %>
+                  </details>
+                <% } else if (f === 'logo_url') { %>
+                  <img src="<%= proposed %>" alt="Proposed logo" class="suggestion-logo"><br><a href="<%= proposed %>" target="_blank" class="scorecard-note">open image</a>
+                <% } else if (isUrl(proposed)) { %>
+                  <a href="<%= proposed %>" target="_blank"><%= proposed %></a>
+                <% } else { %>
+                  <%= proposed %><% if (f === 'yardage' && s.sources && s.sources.yardage_tee) { %> (<%= s.sources.yardage_tee %> tees)<% } %>
+                  <% if (f === 'address' && s.data.lat != null) { %><br><span class="scorecard-note">Geocoded: <%= s.data.lat %>, <%= s.data.lng %></span><% } %>
+                <% } %>
+              </td>
+              <td><% if (s.sources && s.sources[f] === 'manual') { %><strong>your edit</strong><% } else if (s.sources && isUrl(s.sources[f])) { %><a href="<%= s.sources[f] %>" target="_blank">source</a><% } else { %><span class="scorecard-note">none</span><% } %></td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+      </div>
+      <button type="submit">Apply ticked fields</button>
+    </form>
+    <form method="post" action="/admin/club-suggestions/<%= s.id %>/reject" style="display:inline;">
+      <button type="submit" class="admin-delete-button">Reject all</button>
+    </form>
+  </div>
+<% }); %>
+
+<style>
+  .suggestion-card { margin-bottom: 1.5rem; }
+  .suggestion-tools { margin-bottom: 1.5rem; }
+  .suggestion-warnings { background: #fff6e5; border-left: 3px solid #e0a100; padding: 0.5rem 0.5rem 0.5rem 1.75rem; margin: 0.5rem 0 1rem; font-size: 0.9rem; }
+  .suggestion-table td { vertical-align: top; }
+  .suggestion-current { color: var(--text-secondary); max-width: 16rem; }
+  .suggestion-same { opacity: 0.5; }
+  .suggestion-logo { max-height: 48px; max-width: 160px; background: #f4f4f4; padding: 4px; border-radius: 4px; }
+</style>
+
+<%- include('../partials/foot') %>

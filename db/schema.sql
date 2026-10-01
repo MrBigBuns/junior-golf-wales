@@ -161,3 +161,17 @@ UPDATE events e SET yardage = NULL FROM clubs c
  WHERE c.id = e.club_id AND e.yardage IS NOT NULL AND e.yardage = c.yardage;
 UPDATE events e SET par = NULL FROM clubs c
  WHERE c.id = e.club_id AND e.par IS NOT NULL AND e.par = c.par;
+
+-- Proposed club details gathered by scripts/enrich-clubs.js. Nothing here is
+-- live until accepted field-by-field at /admin/club-suggestions.
+CREATE TABLE IF NOT EXISTS club_suggestions (
+  id SERIAL PRIMARY KEY,
+  club_id INTEGER NOT NULL REFERENCES clubs(id) ON DELETE CASCADE,
+  data JSONB NOT NULL,
+  sources JSONB,
+  warnings JSONB,
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected')),
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  reviewed_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_club_suggestions_status ON club_suggestions(status, created_at);

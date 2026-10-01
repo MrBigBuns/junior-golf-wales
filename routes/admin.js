@@ -7,6 +7,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 const { geocodeAddress } = require('../lib/geocode');
 const { purgeOldSubmissions } = require('../lib/retention');
 const { extractScorecardFromImage, deriveTotals, isScorecard } = require('../lib/scorecard');
+const { toCsv, parseCsv, decodeUpload } = require('../lib/csv');
 
 function slugify(str) {
   return str
@@ -38,17 +39,19 @@ function eventScorecardFromForm(b) {
 router.get('/', asyncHandler(async (req, res) => {
   purgeOldSubmissions(pool).catch(err => console.error('Retention sweep failed:', err.message));
 
-  const [{ rows: eventCount }, { rows: clubCount }, { rows: pendingCount }, { rows: pendingClubAccounts }] = await Promise.all([
+  const [{ rows: eventCount }, { rows: clubCount }, { rows: pendingCount }, { rows: pendingClubAccounts }, { rows: pendingSuggestions }] = await Promise.all([
     pool.query(`SELECT COUNT(*) FROM events`),
     pool.query(`SELECT COUNT(*) FROM clubs`),
     pool.query(`SELECT COUNT(*) FROM submissions WHERE status = 'pending'`),
-    pool.query(`SELECT COUNT(*) FROM club_users WHERE status = 'pending'`)
+    pool.query(`SELECT COUNT(*) FROM club_users WHERE status = 'pending'`),
+    pool.query(`SELECT COUNT(*) FROM club_suggestions WHERE status = 'pending'`)
   ]);
   res.render('admin/dashboard', {
     eventCount: eventCount[0].count,
     clubCount: clubCount[0].count,
     pendingCount: pendingCount[0].count,
-    pendingClubAccounts: pendingClubAccounts[0].count
+    pendingClubAccounts: pendingClubAccounts[0].count,
+    pendingSuggestions: pendingSuggestions[0].count
   });
 }));
 
@@ -345,6 +348,186 @@ async function saveClubImages(clubId, files) {
 router.post('/clubs/:id/delete', asyncHandler(async (req, res) => {
   await pool.query(`DELETE FROM clubs WHERE id = $1`, [req.params.id]);
   res.redirect('/admin/clubs');
+}));
+
+// ---------- Club suggestions (from scripts/enrich-clubs.js) ----------
+const SUGGESTION_FIELDS = ['address', 'website', 'contact_email', 'facebook_url', 'instagram_url', 'x_url',
+  'description', 'par', 'yardage', 'scorecard', 'logo_url'];
+
+router.get('/club-suggestions', asyncHandler(async (req, res) => {
+  const { rows: suggestions } = await pool.query(
+    `SELECT s.*, c.name AS club_name, c.slug AS club_slug,
+            c.address, c.website, c.contact_email, c.facebook_url, c.instagram_url, c.x_url,
+            c.description, c.par, c.yardage, c.scorecard, c.logo_url
+     FROM club_suggestions s JOIN clubs c ON c.id = s.club_id
+     WHERE s.status = 'pending'
+     ORDER BY c.name`
+  );
+  const { rows: counts } = await pool.query(
+    `SELECT status, COUNT(*)::int AS n FROM club_suggestions GROUP BY status`
+  );
+  res.render('admin/club-suggestions', {
+    suggestions, fields: SUGGESTION_FIELDS,
+    counts: Object.fromEntries(counts.map(r => [r.status, r.n])),
+    applied: req.query.applied || null,
+    importResult: req.query.import || null,
+    importChanged: req.query.changed || 0,
+    importProblems: req.query.import === 'ok' ? (req.session.importProblems || []) : []
+  });
+  if (req.session) delete req.session.importProblems;
+}));
+
+// ---- Spreadsheet round trip: export, fill gaps in Excel, import back ----
+// Export shows the proposed value where one is pending, otherwise the live
+// value. Import turns any cell that differs from the live club into (or onto)
+// a pending suggestion, so edits still go through the normal review/apply.
+const CSV_FIELDS = ['address', 'website', 'contact_email', 'facebook_url', 'instagram_url', 'x_url',
+  'description', 'par', 'yardage', 'logo_url', 'scorecard'];
+const WELSH_POSTCODE_AREAS = ['CF', 'NP', 'SA', 'LD', 'SY', 'LL', 'CH'];
+
+function csvValue(field, v) {
+  if (v == null) return '';
+  return field === 'scorecard' ? JSON.stringify(v) : v;
+}
+
+router.get('/club-suggestions/export.csv', asyncHandler(async (req, res) => {
+  const region = ['North', 'Mid', 'South'].includes(req.query.region) ? req.query.region : null;
+  const { rows } = await pool.query(
+    `SELECT c.id, c.name, c.slug, c.region, ${CSV_FIELDS.map(f => 'c.' + f).join(', ')},
+            s.data AS proposed, s.warnings
+     FROM clubs c
+     LEFT JOIN LATERAL (
+       SELECT data, warnings FROM club_suggestions
+       WHERE club_id = c.id AND status = 'pending' ORDER BY created_at DESC LIMIT 1
+     ) s ON true
+     WHERE ($1::text IS NULL OR c.region = $1)
+     ORDER BY c.region, c.name`,
+    [region]
+  );
+
+  const header = ['id', 'name', 'region', ...CSV_FIELDS, 'status', 'warnings (read only)'];
+  const lines = [header];
+  rows.forEach(r => {
+    const p = r.proposed || {};
+    const values = CSV_FIELDS.map(f => csvValue(f, p[f] != null ? p[f] : r[f]));
+    const status = r.proposed ? 'pending review' : (CSV_FIELDS.some(f => r[f] == null) ? 'has gaps' : 'complete');
+    lines.push([r.id, r.name, r.region, ...values, status, (r.warnings || []).join(' | ')]);
+  });
+
+  const stamp = new Date().toISOString().slice(0, 10);
+  res.set('Content-Type', 'text/csv; charset=utf-8');
+  res.set('Content-Disposition', `attachment; filename="clubs-${(region || 'all').toLowerCase()}-${stamp}.csv"`);
+  res.send(toCsv(lines));
+}));
+
+router.post('/club-suggestions/import', upload.single('csv'), asyncHandler(async (req, res) => {
+  if (!req.file) return res.redirect('/admin/club-suggestions?import=nofile');
+  const table = parseCsv(decodeUpload(req.file.buffer));
+  const header = (table.shift() || []).map(h => h.trim());
+  const col = name => header.indexOf(name);
+  if (col('id') < 0) return res.redirect('/admin/club-suggestions?import=badfile');
+
+  let changedClubs = 0;
+  const problems = [];
+
+  for (const cells of table) {
+    const id = Number(cells[col('id')]);
+    if (!id) continue;
+    const { rows: clubRows } = await pool.query(`SELECT * FROM clubs WHERE id = $1`, [id]);
+    if (!clubRows.length) { problems.push(`Row id ${id}: club not found`); continue; }
+    const club = clubRows[0];
+    const label = club.name;
+
+    const edits = {};
+    for (const f of CSV_FIELDS) {
+      const i = col(f);
+      if (i < 0) continue;
+      const raw = (cells[i] || '').trim();
+      if (raw === '') continue; // blank cells never clear data
+
+      let value = raw;
+      if (f === 'par' || f === 'yardage') {
+        value = Number(raw.replace(/,/g, ''));
+        if (!Number.isInteger(value)) { problems.push(`${label}: ${f} "${raw}" is not a whole number`); continue; }
+      } else if (f === 'scorecard') {
+        try { value = JSON.parse(raw); } catch (e) { problems.push(`${label}: scorecard is not valid JSON`); continue; }
+        if (!isScorecard(value)) { problems.push(`${label}: scorecard must be a list of holes`); continue; }
+      } else if (/_url$|^website$/.test(f) && !/^https?:\/\//i.test(raw)) {
+        problems.push(`${label}: ${f} should start with http:// or https://`); continue;
+      }
+
+      if (JSON.stringify(value) !== JSON.stringify(club[f])) edits[f] = value;
+    }
+    if (!Object.keys(edits).length) continue;
+
+    const { rows: pending } = await pool.query(
+      `SELECT * FROM club_suggestions WHERE club_id = $1 AND status = 'pending' ORDER BY created_at DESC LIMIT 1`, [id]
+    );
+    const prev = pending[0];
+    const data = { ...(prev ? prev.data : {}), ...edits };
+    const sources = { ...(prev && prev.sources ? prev.sources : {}) };
+    Object.keys(edits).forEach(f => {
+      if (!prev || JSON.stringify(prev.data[f]) !== JSON.stringify(edits[f])) sources[f] = 'manual';
+    });
+    const warnings = (prev && prev.warnings ? prev.warnings : []).filter(w => !/^Edited in spreadsheet/.test(w));
+    warnings.push(`Edited in spreadsheet import on ${new Date().toLocaleDateString('en-GB')}.`);
+
+    if (edits.address && sources.address === 'manual') {
+      const area = ((edits.address.match(/\b([A-Z]{1,2})[0-9][A-Z0-9]?\s*[0-9][A-Z]{2}\b/i) || [])[1] || '').toUpperCase();
+      if (!area) warnings.push('Edited address has no recognisable postcode.');
+      else if (!WELSH_POSTCODE_AREAS.includes(area)) warnings.push(`Edited address postcode area ${area} is outside Wales.`);
+      const geo = await geocodeAddress(edits.address);
+      if (geo) { data.lat = geo.lat; data.lng = geo.lng; }
+      else { delete data.lat; delete data.lng; warnings.push('Edited address did not geocode; check the postcode.'); }
+    }
+
+    if (prev) {
+      await pool.query(`UPDATE club_suggestions SET data = $1, sources = $2, warnings = $3 WHERE id = $4`,
+        [JSON.stringify(data), JSON.stringify(sources), JSON.stringify(warnings), prev.id]);
+    } else {
+      await pool.query(`INSERT INTO club_suggestions (club_id, data, sources, warnings) VALUES ($1, $2, $3, $4)`,
+        [id, JSON.stringify(data), JSON.stringify(sources), JSON.stringify(warnings)]);
+    }
+    changedClubs++;
+  }
+
+  req.session.importProblems = problems.slice(0, 50);
+  res.redirect(`/admin/club-suggestions?import=ok&changed=${changedClubs}&problems=${problems.length}`);
+}));
+
+router.post('/club-suggestions/:id/apply', asyncHandler(async (req, res) => {
+  const { rows } = await pool.query(`SELECT * FROM club_suggestions WHERE id = $1`, [req.params.id]);
+  if (!rows.length) return res.status(404).send('Suggestion not found');
+  const s = rows[0];
+  const chosen = [].concat(req.body.fields || []).filter(f => SUGGESTION_FIELDS.includes(f) && s.data[f] != null);
+
+  const sets = [];
+  const vals = [];
+  const add = (col, val) => { vals.push(val); sets.push(`${col} = $${vals.length}`); };
+
+  for (const f of chosen) add(f, f === 'scorecard' ? JSON.stringify(s.data[f]) : s.data[f]);
+  if (chosen.includes('address') && s.data.lat != null && s.data.lng != null) {
+    add('lat', s.data.lat);
+    add('lng', s.data.lng);
+  }
+  // Fill par/yardage from an accepted scorecard if the club has none
+  if (chosen.includes('scorecard')) {
+    const t = deriveTotals(s.data.scorecard);
+    if (!chosen.includes('par') && t.par) sets.push(`par = COALESCE(par, ${Number(t.par)})`);
+    if (!chosen.includes('yardage') && t.yardage) sets.push(`yardage = COALESCE(yardage, ${Number(t.yardage)})`);
+  }
+
+  if (sets.length) {
+    vals.push(s.club_id);
+    await pool.query(`UPDATE clubs SET ${sets.join(', ')} WHERE id = $${vals.length}`, vals);
+  }
+  await pool.query(`UPDATE club_suggestions SET status = 'accepted', reviewed_at = now() WHERE id = $1`, [s.id]);
+  res.redirect(`/admin/club-suggestions?applied=${chosen.length}`);
+}));
+
+router.post('/club-suggestions/:id/reject', asyncHandler(async (req, res) => {
+  await pool.query(`UPDATE club_suggestions SET status = 'rejected', reviewed_at = now() WHERE id = $1`, [req.params.id]);
+  res.redirect('/admin/club-suggestions');
 }));
 
 // ---------- Submissions ----------
