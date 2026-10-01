@@ -54,19 +54,19 @@ const events = [
     title: "Junior Open - 'Ben Williams Trophy'",
     date: '2027-08-02',
     startTime: null,
-    format: 'Individual Strokeplay',
+    format: 'Individual Strokeplay (formats vary by age and handicap)',
     hcpIndexLimit: '54.0 (boys) 54.0 (girls)',
-    ageCategory: 'Juniors under 18 on 1st January',
+    ageCategory: 'Under 18 on 1 January 2027',
     entryFee: 15.00,
     feeTiers: null,
     entryUrl: 'https://opens.whitchurchcardiffgolfclub.co.uk/opens',
-    sourceUrl: 'https://www.golfempire.co.uk/new/entryform.php?eventid=11279',
+    sourceUrl: 'https://opens.whitchurchcardiffgolfclub.co.uk/opens',
     yardage: 6278,
     par: 71,
-    juniorTeesNote: null,
+    juniorTeesNote: "men's course yardage shown; juniors play White, Yellow or Blue tees by playing handicap.",
     catering: 'Post-round meal included.',
-    prizes: null,
-    hcpAllowanceInfo: null
+    prizes: 'Nearest-the-pin challenges.',
+    hcpAllowanceInfo: 'Tees by playing handicap: White up to 20, Yellow 21 to 36, Blue 36 to 54 (as published by the club). Tees and formats vary by age and handicap.'
   },
   {
     club: {
