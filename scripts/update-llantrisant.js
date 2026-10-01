@@ -1,5 +1,6 @@
 // One-off enrichment script for Llantrisant & Pontyclun Golf Club junior open.
 // Run via the Render web shell: node scripts/update-llantrisant.js
+// The scorecard, par and yardage live on the club (shared by all its events).
 //
 // Course yardage/par corrected from the club's physical scorecard (White tee
 // 6,302 yds, par 72) — this supersedes an earlier value pulled from aggregator
@@ -12,33 +13,16 @@ const pool = require('../db/pool');
 
 async function run() {
   const clubResult = await pool.query(
-    `UPDATE clubs SET website = $1, description = $2, address = $3
+    `UPDATE clubs SET website = $1, description = $2, address = $3,
+            yardage = $4, par = $5, scorecard = $6
      WHERE slug = 'llantrisant-and-pontyclun-golf-club'
      RETURNING id, name, address`,
     [
       'https://www.llantrisantgolfclub.com/',
       'A parkland course lined with mature trees and bounded by the River Ely, established in 1927 in the heart of Talbot Green. Recognised as a Wales Golf junior club of the year.',
-      'Ely Valley Road, Talbot Green, Pontyclun, CF72 8HZ'
-    ]
-  );
-  console.log(`Clubs updated: ${clubResult.rowCount}`, clubResult.rows);
-
-  const eventResult = await pool.query(
-    `UPDATE events SET yardage = $1, par = $2, entry_url = $3, format = $4,
-            entry_deadline = $5, gender = $6, hcp_index_limit = $7, age_category = $8,
-            hcp_allowance_info = $9, scorecard = $10
-     WHERE slug LIKE 'junior-open-llantrisant%'
-     RETURNING slug, yardage`,
-    [
+      'Ely Valley Road, Talbot Green, Pontyclun, CF72 8HZ',
       6302,
       72,
-      'https://docs.google.com/forms/d/e/1FAIpQLSebzhZMypimqD6feCXoKVHluDfkqe38ZgHBtzkf0meiOSn23A/viewform?pli=1',
-      'Individual Strokeplay & Stableford',
-      '2026-08-21',
-      'Any Gender',
-      '54.0 (boys) 54.0 (girls)',
-      'Juniors Under 18',
-      'Strokeplay/Medal up to 18.4 handicap. Stableford 18.5 to 36 handicap. \u00a37.50 for 9 hole competition 36+ handicap. Glamorgan County Order of Merit Event \u2014 Medal Only.',
       JSON.stringify([
         { hole: 1, par: 4, strokeIndex: 13, yards: { white: 319, yellow: 296, red: 254 } },
         { hole: 2, par: 3, strokeIndex: 15, yards: { white: 152, yellow: 117, red: 102 } },
@@ -59,6 +43,24 @@ async function run() {
         { hole: 17, par: 4, strokeIndex: 16, yards: { white: 341, yellow: 328, red: 296 } },
         { hole: 18, par: 3, strokeIndex: 12, yards: { white: 172, yellow: 166, red: 136 } }
       ])
+    ]
+  );
+  console.log(`Clubs updated: ${clubResult.rowCount}`, clubResult.rows);
+
+  const eventResult = await pool.query(
+    `UPDATE events SET entry_url = $1, format = $2,
+            entry_deadline = $3, gender = $4, hcp_index_limit = $5, age_category = $6,
+            hcp_allowance_info = $7, scorecard = NULL, yardage = NULL, par = NULL
+     WHERE slug LIKE 'junior-open-llantrisant%'
+     RETURNING slug`,
+    [
+      'https://docs.google.com/forms/d/e/1FAIpQLSebzhZMypimqD6feCXoKVHluDfkqe38ZgHBtzkf0meiOSn23A/viewform?pli=1',
+      'Individual Strokeplay & Stableford',
+      '2026-08-21',
+      'Any Gender',
+      '54.0 (boys) 54.0 (girls)',
+      'Juniors Under 18',
+      'Strokeplay/Medal up to 18.4 handicap. Stableford 18.5 to 36 handicap. \u00a37.50 for 9 hole competition 36+ handicap. Glamorgan County Order of Merit Event \u2014 Medal Only.'
     ]
   );
   console.log(`Events updated: ${eventResult.rowCount}`, eventResult.rows);
