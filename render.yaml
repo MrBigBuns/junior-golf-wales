@@ -1,26 +1,31 @@
+databases:
+  - name: junior-golf-wales-db
+    databaseName: junior_golf_wales
+    user: jgw_app
+    plan: basic-256mb
+    region: oregon
+
 services:
   - type: web
     name: junior-golf-wales
     runtime: node
-    plan: free
+    region: oregon
+    plan: starter
     buildCommand: npm install
+    preDeployCommand: npm run migrate
     startCommand: npm start
     envVars:
-      - key: NODE_ENV
-        value: production
-      - key: ANTHROPIC_API_KEY
-        sync: false
-      - key: ADMIN_USER
-        sync: false
-      - key: ADMIN_PASSWORD
-        sync: false
-      - key: SESSION_SECRET
-        generateValue: true
       - key: DATABASE_URL
         fromDatabase:
           name: junior-golf-wales-db
           property: connectionString
-
-databases:
-  - name: junior-golf-wales-db
-    plan: free
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: NODE_ENV
+        value: production
+      - key: ADMIN_USER
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
