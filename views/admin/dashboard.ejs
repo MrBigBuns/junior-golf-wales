@@ -27,6 +27,10 @@ node scripts/scan-brs-opens.js          # dry run: junior matches only
 node scripts/scan-brs-opens.js --save   # queue matches for review</code></pre>
   <p class="scorecard-note">If <code>--all</code> shows 0 results or garbled lines, BRS has changed their page layout and the parser needs updating.</p>
 
+  <h3>Course scorecards</h3>
+  <p class="course-address">Scorecards belong to the <strong>club</strong>: open <a href="/admin/clubs">Clubs</a>, edit the club, and use <strong>Import scorecard from a photo &rarr;</strong> in the Course scorecard section. Every event at that club uses it automatically, and it shows on the club page. Par and yardage are worked out from the card. Approved clubs can also manage their own card from the club portal.</p>
+  <p class="course-address">Only override on an event (tick <em>Override the scorecard for this event only</em>) when it plays a different course or layout, such as a short course or another course at a multi-course venue. Different tees on the same card just need the junior tees note. Photo import needs <code>ANTHROPIC_API_KEY</code> set in Render &rarr; Environment.</p>
+
   <h3>Post an update on an event</h3>
   <pre><code>node scripts/add-update.js &lt;event-slug&gt; "Message"</code></pre>
 

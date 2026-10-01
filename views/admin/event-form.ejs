@@ -69,13 +69,39 @@
   <fieldset>
     <legend>Course</legend>
     <label>Holes <input type="number" name="holes" value="<%= event.holes || '' %>"></label>
-    <label>Par <input type="number" name="par" value="<%= event.par || '' %>"></label>
-    <label>Yardage <input type="number" name="yardage" value="<%= event.yardage || '' %>"></label>
-    <label>Junior tees note <textarea name="junior_tees_note" rows="2"><%= event.junior_tees_note || '' %></textarea></label>
-    <label>Scorecard (JSON — array of holes)
-      <textarea name="scorecard" rows="4" placeholder='[{"hole":1,"par":4,"strokeIndex":13,"yards":{"white":319,"yellow":296,"red":254}}, ...]'><%= event.scorecard ? JSON.stringify(event.scorecard) : '' %></textarea>
-    </label>
-    <% if (!isNew) { %><p><a href="/admin/events/<%= event.id %>/scorecard-import">Import scorecard from a photo &rarr;</a></p><% } %>
+    <%
+      const ownCard = Array.isArray(event.scorecard) && event.scorecard.length > 0;
+      const clubHasCard = clubCard && Array.isArray(clubCard.scorecard) && clubCard.scorecard.length > 0;
+    %>
+    <label>Par <input type="number" name="par" value="<%= event.par || '' %>" placeholder="<%= clubCard && clubCard.par ? 'Club: ' + clubCard.par : '' %>"></label>
+    <label>Yardage <input type="number" name="yardage" value="<%= event.yardage || '' %>" placeholder="<%= clubCard && clubCard.yardage ? 'Club: ' + clubCard.yardage : '' %>"></label>
+    <p class="scorecard-note">Leave par and yardage blank to use the club's figures.</p>
+    <label>Junior tees note <textarea name="junior_tees_note" rows="2" placeholder="e.g. Boys play white tees, girls red"><%= event.junior_tees_note || '' %></textarea></label>
+
+    <div class="scorecard-source">
+      <% if (clubHasCard) { %>
+        <p><strong>Scorecard:</strong> using the club card (<%= clubCard.scorecard.length %> holes<% if (clubCard.par) { %>, par <%= clubCard.par %><% } %><% if (clubCard.yardage) { %>, <%= clubCard.yardage %> yds<% } %>). <a href="/admin/clubs/<%= clubCard.id %>/edit">Edit on the club page &rarr;</a></p>
+      <% } else if (clubCard) { %>
+        <p><strong>Scorecard:</strong> <%= clubCard.name %> has no scorecard yet. <a href="/admin/clubs/<%= clubCard.id %>/scorecard-import">Add one to the club &rarr;</a></p>
+      <% } else { %>
+        <p class="scorecard-note">The event uses its club's scorecard. Save the event first, then add the card on the club page.</p>
+      <% } %>
+
+      <label class="fb-required-toggle"><input type="checkbox" name="override_scorecard" id="override_scorecard" <%= ownCard ? 'checked' : '' %>> Override the scorecard for this event only</label>
+      <p class="scorecard-note">Only needed if this event plays a different course or layout, e.g. a short course or another course at a multi-course venue. Different tees on the same card don't need an override — use the junior tees note.</p>
+
+      <div id="override_scorecard_fields" <%= ownCard ? '' : 'hidden' %>>
+        <label>Event scorecard (JSON — array of holes)
+          <textarea name="scorecard" rows="4" placeholder='[{"hole":1,"par":4,"strokeIndex":13,"yards":{"white":319,"yellow":296,"red":254}}, ...]'><%= ownCard ? JSON.stringify(event.scorecard) : '' %></textarea>
+        </label>
+        <% if (!isNew) { %><p><a href="/admin/events/<%= event.id %>/scorecard-import">Import event scorecard from a photo &rarr;</a></p><% } %>
+      </div>
+    </div>
+    <script>
+      document.getElementById('override_scorecard').addEventListener('change', function () {
+        document.getElementById('override_scorecard_fields').hidden = !this.checked;
+      });
+    </script>
   </fieldset>
 
   <fieldset>

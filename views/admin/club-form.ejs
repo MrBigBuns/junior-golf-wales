@@ -43,6 +43,24 @@
   <label>Course image URL (used only if no photo is uploaded above) <input type="text" name="course_image_url" value="<%= club.course_image_url || '' %>"></label>
 
   <label>Description <textarea name="description" rows="4"><%= club.description || '' %></textarea></label>
+
+  <fieldset>
+    <legend>Course scorecard</legend>
+    <p class="scorecard-note">Used by every event at this club, unless an event sets its own override.</p>
+    <% const hasCard = Array.isArray(club.scorecard) && club.scorecard.length > 0; %>
+    <% if (!isNew) { %>
+      <p><a href="/admin/clubs/<%= club.id %>/scorecard-import"><%= hasCard ? 'Replace scorecard from a photo' : 'Import scorecard from a photo' %> &rarr;</a></p>
+    <% } else { %>
+      <p class="scorecard-note">Save the club first to import a scorecard from a photo.</p>
+    <% } %>
+    <label>Par <input type="number" name="par" value="<%= club.par || '' %>"></label>
+    <label>Yardage <input type="number" name="yardage" value="<%= club.yardage || '' %>"></label>
+    <p class="scorecard-note">Leave par and yardage blank to work them out from the scorecard (yardage uses the first tee listed).</p>
+    <label>Scorecard (JSON — array of holes)
+      <textarea name="scorecard" rows="4" placeholder='[{"hole":1,"par":4,"strokeIndex":13,"yards":{"white":319,"yellow":296,"red":254}}, ...]'><%= hasCard ? JSON.stringify(club.scorecard) : '' %></textarea>
+    </label>
+  </fieldset>
+
   <button type="submit">Save club</button>
 </form>
 
