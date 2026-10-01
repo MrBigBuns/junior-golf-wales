@@ -41,7 +41,7 @@ const events = [
     juniorTeesNote: 'Yardage/par shown is from the back tees; juniors will likely play shorter tees, check with the club.',
     catering: null,
     prizes: null,
-    hcpAllowanceInfo: 'Tee times 10:00 to 13:54.'
+    hcpAllowanceInfo: null
   },
   {
     club: {
@@ -91,7 +91,7 @@ const events = [
     juniorTeesNote: null,
     catering: null,
     prizes: null,
-    hcpAllowanceInfo: 'Tee times 08:00 to 09:50.'
+    hcpAllowanceInfo: null
   },
   {
     club: {
@@ -119,7 +119,7 @@ const events = [
     juniorTeesNote: 'White tees (boys), red tees (girls).',
     catering: null,
     prizes: 'Run with the Justin Rose & Daily Telegraph Junior Championship. Best gross and nett scores from the leading boy and girl go forward, with potential to qualify for the finals at Quinta do Lago, Portugal. Prize presentation after the last group finishes.',
-    hcpAllowanceInfo: 'Handicap qualifier: all players must have a handicap index of 36.0 or less. Tee times 10:00 to 12:33. Not open to iGolfers.'
+    hcpAllowanceInfo: 'Handicap qualifier: all players must have a handicap index of 36.0 or less. Not open to iGolfers.'
   }
 ];
 
