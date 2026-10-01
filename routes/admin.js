@@ -6,6 +6,7 @@ const multer = require('multer');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 const { geocodeAddress } = require('../lib/geocode');
 const { purgeOldSubmissions } = require('../lib/retention');
+const { extractScorecardFromImage, deriveTotals, isScorecard } = require('../lib/scorecard');
 
 function slugify(str) {
   return str
@@ -23,6 +24,14 @@ function parseJsonField(value) {
   } catch (e) {
     return { __parse_error: e.message, __raw: value };
   }
+}
+
+// Event scorecard is an override of the club's card: only saved when the
+// "override for this event" box is ticked, otherwise cleared so the event
+// falls back to the club scorecard.
+function eventScorecardFromForm(b) {
+  if (b.override_scorecard !== 'on') return null;
+  return parseJsonField(b.scorecard);
 }
 
 // ---------- Dashboard ----------
@@ -56,7 +65,7 @@ router.get('/events', asyncHandler(async (req, res) => {
 router.get('/events/new', asyncHandler(async (req, res) => {
   const { rows: clubs } = await pool.query(`SELECT id, name FROM clubs ORDER BY name`);
   const { rows: organisers } = await pool.query(`SELECT id, name FROM organisers ORDER BY name`);
-  res.render('admin/event-form', { event: {}, clubs, organisers, isNew: true });
+  res.render('admin/event-form', { event: {}, clubs, organisers, isNew: true, clubCard: null });
 }));
 
 router.post('/events', asyncHandler(async (req, res) => {
@@ -80,7 +89,7 @@ router.post('/events', asyncHandler(async (req, res) => {
       b.organiser_contact || null, b.hcp_allowance_info || null, b.hcp_index_limit || null, b.catering || null, b.prizes || null,
       b.yardage || null, b.par || null, b.entry_url || null, b.entry_email || null, b.entry_phone || null,
       JSON.stringify(parseJsonField(b.entry_fee_tiers)),
-      JSON.stringify(parseJsonField(b.scorecard)),
+      JSON.stringify(eventScorecardFromForm(b)),
       b.status || 'confirmed'
     ]
   );
@@ -97,7 +106,10 @@ router.get('/events/:id/edit', asyncHandler(async (req, res) => {
     `SELECT * FROM event_updates WHERE event_id = $1 ORDER BY created_at DESC`,
     [req.params.id]
   );
-  res.render('admin/event-form', { event: rows[0], clubs, organisers, isNew: false, updates });
+  const { rows: clubCard } = await pool.query(
+    `SELECT id, name, scorecard, par, yardage FROM clubs WHERE id = $1`, [rows[0].club_id]
+  );
+  res.render('admin/event-form', { event: rows[0], clubs, organisers, isNew: false, updates, clubCard: clubCard[0] || null });
 }));
 
 router.post('/events/:id/update', asyncHandler(async (req, res) => {
@@ -120,7 +132,7 @@ router.post('/events/:id/update', asyncHandler(async (req, res) => {
       b.organiser_contact || null, b.hcp_allowance_info || null, b.hcp_index_limit || null, b.catering || null, b.prizes || null,
       b.yardage || null, b.par || null, b.entry_url || null, b.entry_email || null, b.entry_phone || null,
       JSON.stringify(parseJsonField(b.entry_fee_tiers)),
-      JSON.stringify(parseJsonField(b.scorecard)),
+      JSON.stringify(eventScorecardFromForm(b)),
       b.status || 'confirmed',
       req.params.id
     ]
@@ -145,102 +157,68 @@ router.post('/events/:id/add-update', asyncHandler(async (req, res) => {
 }));
 
 // ---------- Scorecard import (photo -> structured JSON via Claude vision) ----------
-router.get('/events/:id/scorecard-import', asyncHandler(async (req, res) => {
-  const { rows } = await pool.query(`SELECT id, title FROM events WHERE id = $1`, [req.params.id]);
-  if (!rows.length) return res.status(404).send('Event not found');
-  res.render('admin/scorecard-import', { event: rows[0], error: null });
-}));
-
-router.post('/events/:id/scorecard-import', upload.single('scorecard_image'), asyncHandler(async (req, res) => {
-  const { rows } = await pool.query(`SELECT id, title FROM events WHERE id = $1`, [req.params.id]);
-  if (!rows.length) return res.status(404).send('Event not found');
-
-  if (!req.file) {
-    return res.render('admin/scorecard-import', { event: rows[0], error: 'Choose an image first.' });
+// Works for clubs (the default card for the course) and events (an optional
+// override for that event only). `kind` is 'clubs' or 'events'.
+async function loadScorecardTarget(kind, id) {
+  if (kind === 'clubs') {
+    const { rows } = await pool.query(`SELECT id, name FROM clubs WHERE id = $1`, [id]);
+    if (!rows.length) return null;
+    return {
+      title: rows[0].name,
+      subtitle: 'Club scorecard — used by all events at this club unless an event overrides it.',
+      backUrl: `/admin/clubs/${id}/edit`,
+      importUrl: `/admin/clubs/${id}/scorecard-import`,
+      saveUrl: `/admin/clubs/${id}/scorecard-import/save`,
+      saveLabel: 'Save to club'
+    };
   }
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return res.render('admin/scorecard-import', {
-      event: rows[0],
-      error: 'ANTHROPIC_API_KEY is not set on this server — add it under Render > Environment before using this tool.'
-    });
-  }
+  const { rows } = await pool.query(`SELECT id, title FROM events WHERE id = $1`, [id]);
+  if (!rows.length) return null;
+  return {
+    title: rows[0].title,
+    subtitle: 'Event override — only use this if the event plays a different course or layout from the club card.',
+    backUrl: `/admin/events/${id}/edit`,
+    importUrl: `/admin/events/${id}/scorecard-import`,
+    saveUrl: `/admin/events/${id}/scorecard-import/save`,
+    saveLabel: 'Save as event override'
+  };
+}
 
-  try {
-    const base64 = req.file.buffer.toString('base64');
-    const mediaType = req.file.mimetype;
+['clubs', 'events'].forEach(kind => {
+  router.get(`/${kind}/:id/scorecard-import`, asyncHandler(async (req, res) => {
+    const target = await loadScorecardTarget(kind, req.params.id);
+    if (!target) return res.status(404).send('Not found');
+    res.render('admin/scorecard-import', { target, error: null });
+  }));
 
-    const prompt = `This is a photo of a golf scorecard. Extract every hole you can read into a JSON array, one object per hole, in this exact shape:
+  router.post(`/${kind}/:id/scorecard-import`, upload.single('scorecard_image'), asyncHandler(async (req, res) => {
+    const target = await loadScorecardTarget(kind, req.params.id);
+    if (!target) return res.status(404).send('Not found');
+    if (!req.file) return res.render('admin/scorecard-import', { target, error: 'Choose an image first.' });
 
-[{"hole": 1, "par": 4, "strokeIndex": 13, "yards": {"white": 319, "yellow": 296, "red": 254}}, ...]
-
-Rules:
-- "hole" is the hole number (1-18).
-- "par" is the par for that hole.
-- "strokeIndex" is the stroke index / S.I. for that hole, if shown.
-- "yards" should have one key per tee colour actually visible on the card (e.g. white, yellow, red, blue, black) — use lowercase colour names as keys. Only include tees that are actually printed on the card.
-- Only include holes you can actually read. If a value is illegible, omit that field for that hole rather than guessing.
-- Respond with ONLY the JSON array — no markdown fences, no commentary, no explanation.`;
-
-    const apiResponse = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-5',
-        max_tokens: 2000,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'image', source: { type: 'base64', media_type: mediaType, data: base64 } },
-            { type: 'text', text: prompt }
-          ]
-        }]
-      })
-    });
-
-    if (!apiResponse.ok) {
-      const errText = await apiResponse.text();
-      throw new Error(`Anthropic API error (${apiResponse.status}): ${errText.slice(0, 300)}`);
-    }
-
-    const data = await apiResponse.json();
-    const textBlock = (data.content || []).find(b => b.type === 'text');
-    const rawText = textBlock ? textBlock.text.trim() : '';
-
-    // Strip markdown fences if Claude added them despite instructions
-    const cleaned = rawText.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '');
-
-    let parsed;
-    let parseError = null;
     try {
-      parsed = JSON.parse(cleaned);
-    } catch (e) {
-      parseError = e.message;
-      parsed = null;
+      const { rawText, parsed, parseError } = await extractScorecardFromImage(req.file.buffer, req.file.mimetype);
+      res.render('admin/scorecard-review', {
+        target, rawText, parsed, parseError,
+        holeCount: Array.isArray(parsed) ? parsed.length : 0
+      });
+    } catch (err) {
+      res.render('admin/scorecard-import', { target, error: err.message });
     }
+  }));
 
-    res.render('admin/scorecard-review', {
-      event: rows[0],
-      rawText: cleaned,
-      parsed,
-      parseError,
-      holeCount: parsed ? parsed.length : 0
-    });
-  } catch (err) {
-    res.render('admin/scorecard-import', { event: rows[0], error: err.message });
-  }
-}));
-
-router.post('/events/:id/scorecard-import/save', asyncHandler(async (req, res) => {
-  const parsedField = parseJsonField(req.body.scorecard_json);
-  if (parsedField && !parsedField.__parse_error) {
-    await pool.query(`UPDATE events SET scorecard = $1 WHERE id = $2`, [JSON.stringify(parsedField), req.params.id]);
-  }
-  res.redirect(`/admin/events/${req.params.id}/edit`);
-}));
+  router.post(`/${kind}/:id/scorecard-import/save`, asyncHandler(async (req, res) => {
+    const card = parseJsonField(req.body.scorecard_json);
+    if (isScorecard(card)) {
+      const { par, yardage } = deriveTotals(card);
+      await pool.query(
+        `UPDATE ${kind} SET scorecard = $1, par = COALESCE($2, par), yardage = COALESCE($3, yardage) WHERE id = $4`,
+        [JSON.stringify(card), par, yardage, req.params.id]
+      );
+    }
+    res.redirect(`/admin/${kind}/${req.params.id}/edit?saved=1`);
+  }));
+});
 
 // ---------- Clubs ----------
 router.get('/clubs', asyncHandler(async (req, res) => {
@@ -280,6 +258,7 @@ router.post('/clubs', clubImageUpload, asyncHandler(async (req, res) => {
   );
 
   await saveClubImages(rows[0].id, req.files);
+  await saveClubScorecard(rows[0].id, b);
   res.redirect(`/admin/clubs/${rows[0].id}/edit`);
 }));
 
@@ -287,7 +266,7 @@ router.get('/clubs/:id/edit', asyncHandler(async (req, res) => {
   const { rows } = await pool.query(
     `SELECT id, name, slug, address, region, lat, lng, website, contact_email,
             junior_membership_contact, logo_url, description, course_image_url,
-            facebook_url, instagram_url, x_url,
+            facebook_url, instagram_url, x_url, scorecard, par, yardage,
             (logo_image IS NOT NULL) AS has_logo_image,
             (course_photo_image IS NOT NULL) AS has_course_photo_image
      FROM clubs WHERE id = $1`,
@@ -323,6 +302,7 @@ router.post('/clubs/:id/update', clubImageUpload, asyncHandler(async (req, res) 
   );
 
   await saveClubImages(req.params.id, req.files);
+  await saveClubScorecard(req.params.id, b);
 
   if (b.remove_logo_image === 'on') {
     await pool.query(`UPDATE clubs SET logo_image = NULL, logo_image_type = NULL WHERE id = $1`, [req.params.id]);
@@ -333,6 +313,20 @@ router.post('/clubs/:id/update', clubImageUpload, asyncHandler(async (req, res) 
 
   res.redirect(`/admin/clubs/${req.params.id}/edit?saved=1`);
 }));
+
+// Saves the club scorecard textarea plus par/yardage. Par and yardage are
+// worked out from the card when left blank.
+async function saveClubScorecard(clubId, b) {
+  const card = parseJsonField(b.scorecard);
+  // Malformed JSON: leave the saved card alone rather than wiping it
+  if (card && card.__parse_error) return;
+  const valid = isScorecard(card) ? card : null;
+  const totals = deriveTotals(valid);
+  await pool.query(
+    `UPDATE clubs SET scorecard = $1, par = $2, yardage = $3 WHERE id = $4`,
+    [JSON.stringify(valid), b.par || totals.par, b.yardage || totals.yardage, clubId]
+  );
+}
 
 // Saves any uploaded logo/course-photo files for a club. Only touches a
 // column if a new file was actually provided, so an update without a new

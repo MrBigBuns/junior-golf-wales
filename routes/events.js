@@ -56,6 +56,7 @@ router.get('/:slug', asyncHandler(async (req, res) => {
             (c.course_photo_image IS NOT NULL) AS club_has_course_photo,
             (c.logo_image IS NOT NULL) AS club_has_logo_image,
             o.name AS organiser_name, o.slug AS organiser_slug, o.description AS organiser_description,
+            c.scorecard AS club_scorecard, c.par AS club_par, c.yardage AS club_yardage,
             ef.id AS form_id
      FROM events e
      JOIN clubs c ON c.id = e.club_id
@@ -68,6 +69,16 @@ router.get('/:slug', asyncHandler(async (req, res) => {
   if (!rows.length) return res.status(404).render('404');
 
   const event = rows[0];
+
+  // Scorecard: the event's own card is an override; otherwise use the club's.
+  const hasOwnCard = Array.isArray(event.scorecard) && event.scorecard.length > 0;
+  if (!hasOwnCard) {
+    event.scorecard = Array.isArray(event.club_scorecard) && event.club_scorecard.length ? event.club_scorecard : null;
+  }
+  event.scorecard_note = hasOwnCard ? 'Course layout specific to this event.' : null;
+  if (event.par == null) event.par = event.club_par;
+  if (event.yardage == null) event.yardage = event.club_yardage;
+
   event.directions_url = event.address
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.club_name + ', ' + event.address)}`
     : null;

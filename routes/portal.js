@@ -4,6 +4,9 @@ const bcrypt = require('bcryptjs');
 const pool = require('../db/pool');
 const asyncHandler = require('../lib/asyncHandler');
 const { requireClubLogin, requireApprovedClub } = require('../lib/clubAuth');
+const multer = require('multer');
+const scorecardUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+const { extractScorecardFromImage, deriveTotals, isScorecard } = require('../lib/scorecard');
 
 function slugify(str) {
   return str
@@ -77,7 +80,7 @@ router.get('/', requireClubLogin, requireApprovedClub, asyncHandler(async (req, 
      WHERE club_id = $1 ORDER BY date_start DESC`,
     [req.clubUser.club_id]
   );
-  res.render('portal/dashboard', { clubUser: req.clubUser, events });
+  res.render('portal/dashboard', { clubUser: req.clubUser, events, scorecardSaved: req.query.scorecard === 'saved' });
 }));
 
 // ---------- Events (scoped to the logged-in club) ----------
@@ -261,6 +264,49 @@ router.get('/events/:id/form/submissions.csv', requireClubLogin, requireApproved
   res.set('Content-Type', 'text/csv; charset=utf-8');
   res.set('Content-Disposition', `attachment; filename="submissions-${event.id}.csv"`);
   res.send(csv);
+}));
+
+// ---------- Club scorecard (shared by all of this club's events) ----------
+function portalScorecardTarget(clubUser) {
+  return {
+    title: clubUser.club_name,
+    subtitle: 'Your course scorecard — shown on your club page and on all your events.',
+    backUrl: '/club-portal',
+    importUrl: '/club-portal/scorecard',
+    saveUrl: '/club-portal/scorecard/save',
+    saveLabel: 'Save scorecard'
+  };
+}
+
+router.get('/scorecard', requireClubLogin, requireApprovedClub, (req, res) => {
+  res.render('admin/scorecard-import', { target: portalScorecardTarget(req.clubUser), error: null });
+});
+
+router.post('/scorecard', requireClubLogin, requireApprovedClub, scorecardUpload.single('scorecard_image'), asyncHandler(async (req, res) => {
+  const target = portalScorecardTarget(req.clubUser);
+  if (!req.file) return res.render('admin/scorecard-import', { target, error: 'Choose an image first.' });
+  try {
+    const { rawText, parsed, parseError } = await extractScorecardFromImage(req.file.buffer, req.file.mimetype);
+    res.render('admin/scorecard-review', {
+      target, rawText, parsed, parseError,
+      holeCount: Array.isArray(parsed) ? parsed.length : 0
+    });
+  } catch (err) {
+    res.render('admin/scorecard-import', { target, error: err.message });
+  }
+}));
+
+router.post('/scorecard/save', requireClubLogin, requireApprovedClub, asyncHandler(async (req, res) => {
+  let card = null;
+  try { card = JSON.parse(req.body.scorecard_json || ''); } catch (e) { card = null; }
+  if (isScorecard(card)) {
+    const { par, yardage } = deriveTotals(card);
+    await pool.query(
+      `UPDATE clubs SET scorecard = $1, par = COALESCE($2, par), yardage = COALESCE($3, yardage) WHERE id = $4`,
+      [JSON.stringify(card), par, yardage, req.clubUser.club_id]
+    );
+  }
+  res.redirect('/club-portal?scorecard=saved');
 }));
 
 module.exports = router;

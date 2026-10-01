@@ -45,7 +45,7 @@ router.get('/:slug', asyncHandler(async (req, res) => {
   const { rows: clubRows } = await pool.query(
     `SELECT id, name, slug, address, region, lat, lng, website, contact_email,
             junior_membership_contact, logo_url, description, course_image_url,
-            facebook_url, instagram_url, x_url,
+            facebook_url, instagram_url, x_url, scorecard, par, yardage,
             (logo_image IS NOT NULL) AS has_logo_image,
             (course_photo_image IS NOT NULL) AS has_course_photo_image
      FROM clubs WHERE slug = $1`,
