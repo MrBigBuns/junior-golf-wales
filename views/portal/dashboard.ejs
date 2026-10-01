@@ -4,7 +4,8 @@
   <h1><%= clubUser.club_name %></h1>
   <a class="admin-button" href="/club-portal/events/new">+ New event</a>
 </div>
-<p class="subtitle">Logged in as <%= clubUser.name %> (<%= clubUser.email %>) · <a href="/clubs/<%= clubUser.club_slug %>" target="_blank">View club page</a></p>
+<% if (typeof scorecardSaved !== 'undefined' && scorecardSaved) { %><p class="success-message">Scorecard saved — it now shows on your club page and events.</p><% } %>
+<p class="subtitle">Logged in as <%= clubUser.name %> (<%= clubUser.email %>) · <a href="/clubs/<%= clubUser.club_slug %>" target="_blank">View club page</a> · <a href="/club-portal/scorecard">Course scorecard</a></p>
 
 <table class="admin-table">
   <thead><tr><th>Title</th><th>Date</th><th>Status</th><th></th></tr></thead>
