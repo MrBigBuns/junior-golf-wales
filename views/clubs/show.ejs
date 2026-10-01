@@ -43,4 +43,12 @@
   <% }); %>
 </ul>
 
+<% if (Array.isArray(club.scorecard) && club.scorecard.length) { %>
+  <h2>The course</h2>
+  <% if (club.par || club.yardage) { %>
+    <p class="course-address"><% if (club.par) { %>Par <%= club.par %><% } %><% if (club.par && club.yardage) { %> · <% } %><% if (club.yardage) { %><%= club.yardage %> yards<% } %></p>
+  <% } %>
+  <%- include('../partials/scorecard', { scorecard: club.scorecard, scorecardNote: null }) %>
+<% } %>
+
 <%- include('../partials/foot') %>
