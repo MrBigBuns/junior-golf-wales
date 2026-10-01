@@ -129,3 +129,35 @@ ALTER TABLE clubs ADD COLUMN IF NOT EXISTS logo_image BYTEA;
 ALTER TABLE clubs ADD COLUMN IF NOT EXISTS logo_image_type TEXT;
 ALTER TABLE clubs ADD COLUMN IF NOT EXISTS course_photo_image BYTEA;
 ALTER TABLE clubs ADD COLUMN IF NOT EXISTS course_photo_image_type TEXT;
+
+-- Scorecards live on the club (one card per course); an event's own
+-- scorecard/yardage/par are optional overrides (e.g. a short course or a
+-- different course at a multi-course venue). The event page falls back to
+-- the club's values when the event has none.
+ALTER TABLE clubs ADD COLUMN IF NOT EXISTS scorecard JSONB;
+ALTER TABLE clubs ADD COLUMN IF NOT EXISTS yardage INTEGER;
+ALTER TABLE clubs ADD COLUMN IF NOT EXISTS par INTEGER;
+
+-- One-off move (idempotent): copy the most recently updated event scorecard
+-- up to its club where the club has none, then clear event values that just
+-- duplicate the club's so they don't count as overrides.
+UPDATE clubs c
+   SET scorecard = src.scorecard,
+       yardage   = COALESCE(c.yardage, src.yardage),
+       par       = COALESCE(c.par, src.par)
+  FROM (
+    SELECT DISTINCT ON (club_id) club_id, scorecard, yardage, par
+      FROM events
+     WHERE scorecard IS NOT NULL AND jsonb_typeof(scorecard) = 'array'
+     ORDER BY club_id, updated_at DESC
+  ) src
+ WHERE c.id = src.club_id
+   AND (c.scorecard IS NULL OR jsonb_typeof(c.scorecard) <> 'array');
+
+UPDATE events e SET scorecard = NULL FROM clubs c
+ WHERE c.id = e.club_id AND e.scorecard IS NOT NULL
+   AND (jsonb_typeof(e.scorecard) <> 'array' OR e.scorecard = c.scorecard);
+UPDATE events e SET yardage = NULL FROM clubs c
+ WHERE c.id = e.club_id AND e.yardage IS NOT NULL AND e.yardage = c.yardage;
+UPDATE events e SET par = NULL FROM clubs c
+ WHERE c.id = e.club_id AND e.par IS NOT NULL AND e.par = c.par;
