@@ -66,9 +66,29 @@
 
 <% if (!isNew) { %>
   <div class="admin-danger-zone">
-    <form method="post" action="/admin/clubs/<%= club.id %>/delete" onsubmit="return confirm('Delete this club? Events linked to it will break. This cannot be undone.');">
-      <button type="submit" class="admin-delete-button">Delete club</button>
-    </form>
+    <% if (club.archived_at) { %>
+      <p><strong>Removed</strong> on <%= new Date(club.archived_at).toLocaleDateString('en-GB') %><% if (club.archived_reason) { %>: <%= club.archived_reason %><% } %>. Hidden from the public site, portal sign-up and enrichment.</p>
+      <form method="post" action="/admin/clubs/<%= club.id %>/restore">
+        <button type="submit">Restore club</button>
+      </form>
+    <% } else { %>
+      <form method="post" action="/admin/clubs/<%= club.id %>/archive" class="admin-form" onsubmit="return confirm('Remove this club from the site? You can restore it later.');">
+        <label>Reason (optional) <input type="text" name="reason" placeholder="e.g. Closed 2024, merged with ..."></label>
+        <button type="submit" class="admin-delete-button">Remove club</button>
+      </form>
+    <% } %>
+
+    <% if (deleteBlocked) { %>
+      <% const parts = deleteBlocked.split('-'); %>
+      <p class="error-message">Can't delete: this club has <%= parts[0] %> event(s) and <%= parts[1] %> club account(s) linked to it. Use Remove instead.</p>
+    <% } %>
+    <details>
+      <summary class="scorecard-note">Permanently delete (only for clubs added by mistake)</summary>
+      <form method="post" action="/admin/clubs/<%= club.id %>/delete" onsubmit="return confirm('Permanently delete this club? This cannot be undone.');">
+        <p class="scorecard-note">Only works if no events or club accounts are linked. If the club is in the South Wales club list, the list script will add it back; use Remove instead.</p>
+        <button type="submit" class="admin-delete-button">Delete permanently</button>
+      </form>
+    </details>
   </div>
 <% } %>
 

@@ -175,3 +175,9 @@ CREATE TABLE IF NOT EXISTS club_suggestions (
   reviewed_at TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS idx_club_suggestions_status ON club_suggestions(status, created_at);
+
+-- Removed clubs are archived, not deleted: hidden from public lists, portal
+-- sign-up and enrichment, but kept so past events still resolve and the
+-- club-list script doesn't re-add them. Restorable from admin.
+ALTER TABLE clubs ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ;
+ALTER TABLE clubs ADD COLUMN IF NOT EXISTS archived_reason TEXT;

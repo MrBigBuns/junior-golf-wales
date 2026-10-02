@@ -28,6 +28,7 @@
   <p class="error-message"><%= importResult === 'nofile' ? 'Choose a CSV file first.' : 'That file has no id column, so rows cannot be matched to clubs. Start from an export.' %></p>
 <% } %>
 
+<% if (removed) { %><p class="success-message">Club removed. It's hidden from the site and won't be researched again; restore it from Admin &rarr; Clubs if needed.</p><% } %>
 <% if (applied !== null) { %>
   <p class="success-message"><%= applied %> field<%= applied === '1' ? '' : 's' %> applied.</p>
   <% if (applyProblems.length) { %>
@@ -124,15 +125,25 @@
       </div>
       <button type="submit">Apply ticked fields</button>
     </form>
-    <form method="post" action="/admin/club-suggestions/<%= s.id %>/reject" style="display:inline;">
-      <button type="submit" class="admin-delete-button">Reject all</button>
-    </form>
+    <div class="suggestion-actions">
+      <form method="post" action="/admin/club-suggestions/<%= s.id %>/reject" style="display:inline;">
+        <button type="submit" class="admin-delete-button">Reject suggestions</button>
+      </form>
+      <form method="post" action="/admin/clubs/<%= s.club_id %>/archive" class="suggestion-remove" onsubmit="return confirm('Remove <%= s.club_name.replace(/'/g, '') %> from the site? You can restore it from the club page.');">
+        <input type="hidden" name="back" value="suggestions">
+        <input type="text" name="reason" placeholder="Reason (optional), e.g. closed 2023">
+        <button type="submit" class="admin-delete-button">Remove club</button>
+      </form>
+    </div>
   </div>
 <% }); %>
 
 <style>
   .suggestion-card { margin-bottom: 1.5rem; }
   .suggestion-tools { margin-bottom: 1.5rem; }
+  .suggestion-actions { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 0.75rem; }
+  .suggestion-remove { display: flex; gap: 0.5rem; align-items: center; }
+  .suggestion-remove input { min-width: 14rem; }
   .suggestion-warnings { background: #fff6e5; border-left: 3px solid #e0a100; padding: 0.5rem 0.5rem 0.5rem 1.75rem; margin: 0.5rem 0 1rem; font-size: 0.9rem; }
   .suggestion-table td { vertical-align: top; }
   .suggestion-current { color: var(--text-secondary); max-width: 16rem; }

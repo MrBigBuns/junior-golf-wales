@@ -6,7 +6,7 @@ const asyncHandler = require('../lib/asyncHandler');
 router.get('/', asyncHandler(async (req, res) => {
   const [eventsCount, clubsCount, toursCount, thisMonthCount, nextUp, regionCounts, ageCategories] = await Promise.all([
     pool.query(`SELECT COUNT(*) FROM events WHERE date_start >= CURRENT_DATE AND status != 'cancelled'`),
-    pool.query(`SELECT COUNT(*) FROM clubs`),
+    pool.query(`SELECT COUNT(*) FROM clubs WHERE archived_at IS NULL`),
     pool.query(`SELECT COUNT(*) FROM organisers`),
     pool.query(`SELECT COUNT(*) FROM events WHERE date_start >= CURRENT_DATE AND date_start < (date_trunc('month', CURRENT_DATE) + interval '1 month') AND status != 'cancelled'`),
     pool.query(
@@ -18,7 +18,7 @@ router.get('/', asyncHandler(async (req, res) => {
     pool.query(
       `SELECT c.region, COUNT(e.id) AS upcoming_count
        FROM clubs c LEFT JOIN events e ON e.club_id = c.id AND e.date_start >= CURRENT_DATE AND e.status != 'cancelled'
-       WHERE c.region IS NOT NULL
+       WHERE c.region IS NOT NULL AND c.archived_at IS NULL
        GROUP BY c.region`
     ),
     pool.query(

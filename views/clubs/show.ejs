@@ -1,5 +1,9 @@
 <%- include('../partials/head', { pageTitle: club.name + ' — junior golf events' }) %>
 
+<% if (club.archived_at) { %>
+  <p class="error-message">This club is no longer listed on Junior Golf Wales<% if (club.archived_reason) { %> (<%= club.archived_reason %>)<% } %>.</p>
+<% } %>
+
 <% const hasBanner = club.has_course_photo_image || club.course_image_url; %>
 <% const hasLogo = club.has_logo_image; %>
 

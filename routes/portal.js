@@ -18,13 +18,13 @@ function slugify(str) {
 
 // ---------- Signup ----------
 router.get('/signup', asyncHandler(async (req, res) => {
-  const { rows: clubs } = await pool.query(`SELECT id, name FROM clubs ORDER BY name`);
+  const { rows: clubs } = await pool.query(`SELECT id, name FROM clubs WHERE archived_at IS NULL ORDER BY name`);
   res.render('portal/signup', { clubs, error: null });
 }));
 
 router.post('/signup', asyncHandler(async (req, res) => {
   const { name, email, password, club_id } = req.body;
-  const { rows: clubs } = await pool.query(`SELECT id, name FROM clubs ORDER BY name`);
+  const { rows: clubs } = await pool.query(`SELECT id, name FROM clubs WHERE archived_at IS NULL ORDER BY name`);
 
   if (!name || !email || !password || !club_id) {
     return res.render('portal/signup', { clubs, error: 'Please fill in every field.' });

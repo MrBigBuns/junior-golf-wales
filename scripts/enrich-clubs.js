@@ -241,6 +241,7 @@ async function pickClubs() {
   const { rows } = await pool.query(
     `SELECT c.id, c.name, c.slug FROM clubs c
      WHERE c.region = $1
+       AND c.archived_at IS NULL
        AND (c.address IS NULL OR c.website IS NULL OR c.lat IS NULL OR c.par IS NULL
             OR c.description IS NULL OR c.scorecard IS NULL OR c.logo_url IS NULL)
        AND ($2 OR NOT EXISTS (SELECT 1 FROM club_suggestions s WHERE s.club_id = c.id))

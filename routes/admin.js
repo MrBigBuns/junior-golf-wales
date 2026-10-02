@@ -41,7 +41,7 @@ router.get('/', asyncHandler(async (req, res) => {
 
   const [{ rows: eventCount }, { rows: clubCount }, { rows: pendingCount }, { rows: pendingClubAccounts }, { rows: pendingSuggestions }] = await Promise.all([
     pool.query(`SELECT COUNT(*) FROM events`),
-    pool.query(`SELECT COUNT(*) FROM clubs`),
+    pool.query(`SELECT COUNT(*) FROM clubs WHERE archived_at IS NULL`),
     pool.query(`SELECT COUNT(*) FROM submissions WHERE status = 'pending'`),
     pool.query(`SELECT COUNT(*) FROM club_users WHERE status = 'pending'`),
     pool.query(`SELECT COUNT(*) FROM club_suggestions WHERE status = 'pending'`)
@@ -66,7 +66,7 @@ router.get('/events', asyncHandler(async (req, res) => {
 }));
 
 router.get('/events/new', asyncHandler(async (req, res) => {
-  const { rows: clubs } = await pool.query(`SELECT id, name FROM clubs ORDER BY name`);
+  const { rows: clubs } = await pool.query(`SELECT id, name FROM clubs WHERE archived_at IS NULL ORDER BY name`);
   const { rows: organisers } = await pool.query(`SELECT id, name FROM organisers ORDER BY name`);
   res.render('admin/event-form', { event: {}, clubs, organisers, isNew: true, clubCard: null });
 }));
@@ -103,7 +103,9 @@ router.post('/events', asyncHandler(async (req, res) => {
 router.get('/events/:id/edit', asyncHandler(async (req, res) => {
   const { rows } = await pool.query(`SELECT * FROM events WHERE id = $1`, [req.params.id]);
   if (!rows.length) return res.status(404).send('Event not found');
-  const { rows: clubs } = await pool.query(`SELECT id, name FROM clubs ORDER BY name`);
+  const { rows: clubs } = await pool.query(
+    `SELECT id, name FROM clubs WHERE archived_at IS NULL OR id = $1 ORDER BY name`, [rows[0].club_id]
+  );
   const { rows: organisers } = await pool.query(`SELECT id, name FROM organisers ORDER BY name`);
   const { rows: updates } = await pool.query(
     `SELECT * FROM event_updates WHERE event_id = $1 ORDER BY created_at DESC`,
@@ -225,12 +227,15 @@ async function loadScorecardTarget(kind, id) {
 
 // ---------- Clubs ----------
 router.get('/clubs', asyncHandler(async (req, res) => {
-  const { rows: clubs } = await pool.query(`SELECT id, name, slug, region FROM clubs ORDER BY name`);
+  const { rows: clubs } = await pool.query(
+    `SELECT id, name, slug, region, archived_at, archived_reason FROM clubs
+     ORDER BY (archived_at IS NOT NULL), name`
+  );
   res.render('admin/clubs-list', { clubs });
 }));
 
 router.get('/clubs/new', (req, res) => {
-  res.render('admin/club-form', { club: {}, isNew: true });
+  res.render('admin/club-form', { club: {}, isNew: true, deleteBlocked: null });
 });
 
 const clubImageUpload = upload.fields([
@@ -269,14 +274,14 @@ router.get('/clubs/:id/edit', asyncHandler(async (req, res) => {
   const { rows } = await pool.query(
     `SELECT id, name, slug, address, region, lat, lng, website, contact_email,
             junior_membership_contact, logo_url, description, course_image_url,
-            facebook_url, instagram_url, x_url, scorecard, par, yardage,
+            facebook_url, instagram_url, x_url, scorecard, par, yardage, archived_at, archived_reason,
             (logo_image IS NOT NULL) AS has_logo_image,
             (course_photo_image IS NOT NULL) AS has_course_photo_image
      FROM clubs WHERE id = $1`,
     [req.params.id]
   );
   if (!rows.length) return res.status(404).send('Club not found');
-  res.render('admin/club-form', { club: rows[0], isNew: false });
+  res.render('admin/club-form', { club: rows[0], isNew: false, deleteBlocked: req.query.delete_blocked || null });
 }));
 
 router.post('/clubs/:id/update', clubImageUpload, asyncHandler(async (req, res) => {
@@ -345,7 +350,33 @@ async function saveClubImages(clubId, files) {
   }
 }
 
+// Remove = archive. Hidden from the public site, portal sign-up and
+// enrichment; kept so past events still resolve and scripts don't re-add it.
+router.post('/clubs/:id/archive', asyncHandler(async (req, res) => {
+  const reason = (req.body.reason || '').trim() || null;
+  await pool.query(`UPDATE clubs SET archived_at = now(), archived_reason = $1 WHERE id = $2`, [reason, req.params.id]);
+  await pool.query(
+    `UPDATE club_suggestions SET status = 'rejected', reviewed_at = now() WHERE club_id = $1 AND status = 'pending'`,
+    [req.params.id]
+  );
+  res.redirect(req.body.back === 'suggestions' ? '/admin/club-suggestions?removed=1' : `/admin/clubs/${req.params.id}/edit`);
+}));
+
+router.post('/clubs/:id/restore', asyncHandler(async (req, res) => {
+  await pool.query(`UPDATE clubs SET archived_at = NULL, archived_reason = NULL WHERE id = $1`, [req.params.id]);
+  res.redirect(`/admin/clubs/${req.params.id}/edit`);
+}));
+
+// Hard delete only for clubs nothing refers to (e.g. added by mistake).
 router.post('/clubs/:id/delete', asyncHandler(async (req, res) => {
+  const { rows } = await pool.query(
+    `SELECT (SELECT COUNT(*) FROM events WHERE club_id = $1)::int AS events,
+            (SELECT COUNT(*) FROM club_users WHERE club_id = $1)::int AS accounts`,
+    [req.params.id]
+  );
+  if (rows[0].events || rows[0].accounts) {
+    return res.redirect(`/admin/clubs/${req.params.id}/edit?delete_blocked=${rows[0].events}-${rows[0].accounts}`);
+  }
   await pool.query(`DELETE FROM clubs WHERE id = $1`, [req.params.id]);
   res.redirect('/admin/clubs');
 }));
@@ -360,7 +391,7 @@ router.get('/club-suggestions', asyncHandler(async (req, res) => {
             c.address, c.website, c.contact_email, c.facebook_url, c.instagram_url, c.x_url,
             c.description, c.par, c.yardage, c.scorecard, c.logo_url
      FROM club_suggestions s JOIN clubs c ON c.id = s.club_id
-     WHERE s.status = 'pending'
+     WHERE s.status = 'pending' AND c.archived_at IS NULL
      ORDER BY c.name`
   );
   const { rows: counts } = await pool.query(
@@ -370,6 +401,7 @@ router.get('/club-suggestions', asyncHandler(async (req, res) => {
     suggestions, fields: SUGGESTION_FIELDS,
     counts: Object.fromEntries(counts.map(r => [r.status, r.n])),
     applied: req.query.applied || null,
+    removed: req.query.removed || null,
     importResult: req.query.import || null,
     importChanged: req.query.changed || 0,
     importProblems: req.query.import === 'ok' ? (req.session.importProblems || []) : [],
@@ -401,7 +433,7 @@ router.get('/club-suggestions/export.csv', asyncHandler(async (req, res) => {
        SELECT data, warnings FROM club_suggestions
        WHERE club_id = c.id AND status = 'pending' ORDER BY created_at DESC LIMIT 1
      ) s ON true
-     WHERE ($1::text IS NULL OR c.region = $1)
+     WHERE ($1::text IS NULL OR c.region = $1) AND c.archived_at IS NULL
      ORDER BY c.region, c.name`,
     [region]
   );
