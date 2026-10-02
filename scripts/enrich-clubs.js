@@ -42,8 +42,9 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 const FIELDS = ['county', 'address', 'website', 'contact_email', 'facebook_url', 'instagram_url', 'x_url',
   'description', 'par', 'yardage', 'scorecard', 'logo_url'];
 
-function prompt(clubName) {
-  return `Research the golf club "${clubName}" in South Wales, UK, using web search. Prefer the club's own official website; Visit Wales, Companies House and Wales Golf are good secondary sources.
+function prompt(clubName, region) {
+  const where = region ? `${region} Wales` : 'Wales';
+  return `Research the golf club "${clubName}" in ${where}, UK, using web search. Prefer the club's own official website; Visit Wales, Companies House and Wales Golf are good secondary sources.
 
 Return ONLY a JSON object (no markdown, no commentary) in exactly this shape:
 {
@@ -61,7 +62,8 @@ Return ONLY a JSON object (no markdown, no commentary) in exactly this shape:
 
 Rules:
 - Only include values you actually found on a web page. Use null for anything you could not find. Never guess or estimate.
-- par and yardage are for the main 18-hole course from the longest standard tee (usually white), as integers.
+- par and yardage are for ONE round of the main course as built, from the longest standard tee (usually white), as integers. For a nine-hole course give the nine-hole par and yardage, not the figures for going round twice.
+- The description must only describe the club. Never comment on your research, the request, or corrections (e.g. do not write "it is not in South Wales").
 - "scorecard" must be null unless you found hole-by-hole data. If found, it is an array like
   [{"hole":1,"par":4,"strokeIndex":13,"yards":{"white":319,"yellow":296,"red":254}}, ...]
   with lowercase tee colours, only tees actually listed.
@@ -69,7 +71,7 @@ Rules:
 - "sources" gives the page URL each value came from.`;
 }
 
-async function askClaude(clubName) {
+async function askClaude(clubName, region) {
   const res = await fetch(`${API_BASE}/v1/messages`, {
     method: 'POST',
     headers: {
@@ -81,7 +83,7 @@ async function askClaude(clubName) {
       model: MODEL,
       max_tokens: 4000,
       tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 6 }],
-      messages: [{ role: 'user', content: prompt(clubName) }]
+      messages: [{ role: 'user', content: prompt(clubName, region) }]
     })
   });
   if (!res.ok) throw new Error(`Anthropic API ${res.status}: ${(await res.text()).slice(0, 300)}`);
@@ -160,7 +162,10 @@ function scrapeHomepage(html, baseUrl) {
   if (logoImg) logo = logoImg.match(/src=["']([^"']+)["']/i)[1];
   else if (touchIcon) logo = touchIcon[1];
   else if (ogImage) logo = ogImage[1];
-  out.logo_url = logo && !logo.startsWith('data:') ? absolute(logo, baseUrl) : null;
+  // Ignore the hosting platform's own branding (WordPress.com, Wix, Squarespace, etc.)
+  const PLATFORM_LOGO = /wordpress\.com|wp\.com\/i\/logo|wpcom|wix(static)?\.com\/.*(logo|wix)|squarespace|godaddy|weebly|jimdo|gravatar|facebook\.com|fbcdn/i;
+  const resolved = logo && !logo.startsWith('data:') ? absolute(logo, baseUrl) : null;
+  out.logo_url = resolved && !PLATFORM_LOGO.test(resolved) ? resolved : null;
   return out;
 }
 
@@ -175,7 +180,7 @@ function cleanUrl(u) {
 
 async function research(club) {
   const warnings = [];
-  const found = await askClaude(club.name);
+  const found = await askClaude(club.name, club.region);
   const sources = found.sources || {};
 
   const county = typeof found.county === 'string'
@@ -241,11 +246,11 @@ async function research(club) {
 
 async function pickClubs() {
   if (ONE_CLUB) {
-    const { rows } = await pool.query(`SELECT id, name, slug FROM clubs WHERE slug = $1`, [ONE_CLUB]);
+    const { rows } = await pool.query(`SELECT id, name, slug, region FROM clubs WHERE slug = $1`, [ONE_CLUB]);
     return rows;
   }
   const { rows } = await pool.query(
-    `SELECT c.id, c.name, c.slug FROM clubs c
+    `SELECT c.id, c.name, c.slug, c.region FROM clubs c
      WHERE c.region = $1
        AND c.archived_at IS NULL
        AND (c.county IS NULL OR c.address IS NULL OR c.website IS NULL OR c.lat IS NULL OR c.par IS NULL

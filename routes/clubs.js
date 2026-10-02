@@ -143,8 +143,9 @@ router.get('/:slug', asyncHandler(async (req, res) => {
   if (club.address) has.push('address and map');
   if (club.website || club.contact_email) has.push('contact details');
   if (club.holes) has.push('course scorecard');
+  const clip = (t, n) => t.length <= n ? t : t.slice(0, t.lastIndexOf(' ', n - 1)).replace(/[,.;:\s]+$/, '') + '…';
   const pageDescription = club.description
-    ? club.description.slice(0, 155)
+    ? clip(club.description, 155)
     : metaParts.join('. ') + '.' + (has.length ? ' ' + has.join(', ').replace(/^./, c => c.toUpperCase()) + '.' : '');
 
   const county = club.county ? countyByName(club.county) : null;
