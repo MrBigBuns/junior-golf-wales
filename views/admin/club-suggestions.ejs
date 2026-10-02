@@ -29,8 +29,10 @@
 <% } %>
 
 <% if (removed) { %><p class="success-message">Club removed. It's hidden from the site and won't be researched again; restore it from Admin &rarr; Clubs if needed.</p><% } %>
-<% if (applied !== null) { %>
-  <p class="success-message"><%= applied %> field<%= applied === '1' ? '' : 's' %> applied.</p>
+<% if (bulk === 'none') { %>
+  <p class="error-message">Nothing was ticked, so nothing was applied.</p>
+<% } else if (applied !== null) { %>
+  <p class="success-message"><% if (bulk) { %>Applied <%= applied %> field<%= applied === '1' ? '' : 's' %> across <%= bulk %> club<%= bulk === '1' ? '' : 's' %>. Clubs with nothing ticked are still below.<% } else { %><%= applied %> field<%= applied === '1' ? '' : 's' %> applied.<% } %></p>
   <% if (applyProblems.length) { %>
     <ul class="suggestion-warnings"><% applyProblems.forEach(function(p) { %><li><%= p %></li><% }); %></ul>
   <% } %>
@@ -62,6 +64,13 @@
   }
   function isUrl(v) { return typeof v === 'string' && /^https?:\/\//.test(v); }
 %>
+
+<% if (suggestions.length) { %>
+  <div class="bulk-bar">
+    <button type="button" class="bulk-apply-button">Apply all ticked</button>
+    <span class="muted small"><span class="bulk-summary"></span> Applies every club's ticked fields in one go, using what's in the boxes. Clubs with nothing ticked stay in the queue.</span>
+  </div>
+<% } %>
 
 <% suggestions.forEach(function(s) { %>
   <div class="detail-card suggestion-card">
@@ -143,8 +152,20 @@
   </div>
 <% }); %>
 
+<% if (suggestions.length) { %>
+  <div class="bulk-bar">
+    <button type="button" class="bulk-apply-button">Apply all ticked</button>
+    <span class="muted small"><span class="bulk-summary"></span></span>
+  </div>
+  <form id="bulk-apply-form" method="post" action="/admin/club-suggestions/apply-all" style="display:none;">
+    <input type="hidden" name="payload" id="bulk-payload">
+  </form>
+<% } %>
+
 <style>
   .suggestion-card { margin-bottom: 1.5rem; }
+  .bulk-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin: 1rem 0 1.5rem; padding: 0.75rem 1rem; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; }
+  .bulk-bar .bulk-summary { font-weight: 600; color: var(--text-primary); }
   .suggestion-tools { margin-bottom: 1.5rem; }
   .suggestion-actions { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 0.75rem; }
   .suggestion-remove { display: flex; gap: 0.5rem; align-items: center; }
@@ -167,6 +188,59 @@
       if (tick) tick.checked = box.value.trim() !== '';
     });
   });
+</script>
+
+
+<script>
+  (function () {
+    const applyForms = Array.from(document.querySelectorAll('form[action$="/apply"]'))
+      .filter(f => /\/admin\/club-suggestions\/\d+\/apply$/.test(f.getAttribute('action')));
+
+    function gather() {
+      const payload = {};
+      let clubs = 0, fields = 0;
+      applyForms.forEach(function (form) {
+        const id = form.getAttribute('action').match(/club-suggestions\/(\d+)\/apply/)[1];
+        const ticked = Array.from(form.querySelectorAll('input[type=checkbox][name=fields]:checked')).map(cb => cb.value);
+        if (!ticked.length) return;
+        const values = {};
+        ticked.forEach(function (f) {
+          const box = form.querySelector('[name="value_' + f + '"]');
+          if (!box) return;
+          const original = box.tagName === 'SELECT'
+            ? (Array.from(box.options).find(o => o.defaultSelected) || { value: '' }).value
+            : box.defaultValue;
+          if (box.value !== original) values[f] = box.value;   // edited: send it; otherwise the stored value is used
+        });
+        payload[id] = { fields: ticked, values: values };
+        clubs++; fields += ticked.length;
+      });
+      return { payload, clubs, fields };
+    }
+
+    function refresh() {
+      const g = gather();
+      document.querySelectorAll('.bulk-summary').forEach(el => {
+        el.textContent = g.fields ? g.fields + ' ticked field' + (g.fields === 1 ? '' : 's') + ' across ' + g.clubs + ' club' + (g.clubs === 1 ? '' : 's') + '.' : 'Nothing ticked yet.';
+      });
+    }
+
+    document.addEventListener('change', function (e) { if (e.target.matches('input[type=checkbox][name=fields], .suggestion-edit select')) refresh(); });
+    document.addEventListener('input', function (e) { if (e.target.closest('.suggestion-edit')) setTimeout(refresh, 0); });
+
+    document.querySelectorAll('.bulk-apply-button').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const g = gather();
+        if (!g.fields) { alert('Nothing is ticked.'); return; }
+        if (!confirm('Apply ' + g.fields + ' ticked field' + (g.fields === 1 ? '' : 's') + ' across ' + g.clubs + ' club' + (g.clubs === 1 ? '' : 's') + '?')) return;
+        document.getElementById('bulk-payload').value = JSON.stringify(g.payload);
+        btn.disabled = true; btn.textContent = 'Applying...';
+        document.getElementById('bulk-apply-form').submit();
+      });
+    });
+
+    refresh();
+  })();
 </script>
 
 <%- include('../partials/foot') %>

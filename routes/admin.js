@@ -406,6 +406,7 @@ router.get('/club-suggestions', asyncHandler(async (req, res) => {
     suggestions, fields: SUGGESTION_FIELDS,
     counts: Object.fromEntries(counts.map(r => [r.status, r.n])),
     applied: req.query.applied || null,
+    bulk: req.query.bulk || null,
     removed: req.query.removed || null,
     importResult: req.query.import || null,
     importChanged: req.query.changed || 0,
@@ -537,19 +538,16 @@ router.post('/club-suggestions/import', upload.single('csv'), asyncHandler(async
   res.redirect(`/admin/club-suggestions?import=ok&changed=${changedClubs}&problems=${problems.length}`);
 }));
 
-router.post('/club-suggestions/:id/apply', asyncHandler(async (req, res) => {
-  const { rows } = await pool.query(`SELECT * FROM club_suggestions WHERE id = $1`, [req.params.id]);
-  if (!rows.length) return res.status(404).send('Suggestion not found');
-  const s = rows[0];
-  const chosen = [].concat(req.body.fields || []).filter(f => SUGGESTION_FIELDS.includes(f));
-
-  // Values come from the editable boxes on the review page; fall back to the
-  // stored suggestion if a box wasn't submitted.
+// Applies one suggestion: `chosen` are the ticked field names; `submitted(f)`
+// returns the (possibly edited) box value, or undefined to use the stored
+// suggestion. Shared by the per-club Apply button and "Apply all ticked".
+async function applySuggestion(s, chosen, submitted) {
+  chosen = chosen.filter(f => SUGGESTION_FIELDS.includes(f));
   const problems = [];
   const values = {};
   for (const f of chosen) {
-    const submitted = req.body['value_' + f];
-    const raw = submitted !== undefined ? String(submitted).trim() : null;
+    const sub = submitted(f);
+    const raw = sub !== undefined && sub !== null ? String(sub).trim() : null;
     if (raw === null) { if (s.data[f] != null) values[f] = s.data[f]; continue; }
     if (raw === '') { problems.push(`${f}: empty, skipped`); continue; }
     if (f === 'holes' && ![9, 18, 27, 36].includes(Number(raw))) { problems.push('holes should be 9, 18, 27 or 36'); continue; }
@@ -602,8 +600,47 @@ router.post('/club-suggestions/:id/apply', asyncHandler(async (req, res) => {
     await pool.query(`UPDATE clubs SET ${sets.join(', ')} WHERE id = $${vals.length}`, vals);
   }
   await pool.query(`UPDATE club_suggestions SET status = 'accepted', reviewed_at = now() WHERE id = $1`, [s.id]);
+  return { count: Object.keys(values).length, problems };
+}
+
+router.post('/club-suggestions/:id/apply', asyncHandler(async (req, res) => {
+  const { rows } = await pool.query(`SELECT * FROM club_suggestions WHERE id = $1`, [req.params.id]);
+  if (!rows.length) return res.status(404).send('Suggestion not found');
+  const chosen = [].concat(req.body.fields || []);
+  const { count, problems } = await applySuggestion(rows[0], chosen, f => req.body['value_' + f]);
   req.session.applyProblems = problems;
-  res.redirect(`/admin/club-suggestions?applied=${Object.keys(values).length}`);
+  res.redirect(`/admin/club-suggestions?applied=${count}`);
+}));
+
+// "Apply all ticked": the page sends one JSON payload of
+// { suggestionId: { fields: [...], values: { field: editedValue } } }.
+// Only edited values are sent; unedited ticked fields use the stored suggestion.
+// Clubs with nothing ticked are left in the queue.
+router.post('/club-suggestions/apply-all', asyncHandler(async (req, res) => {
+  let payload = {};
+  try { payload = JSON.parse(req.body.payload || '{}'); } catch (e) { payload = {}; }
+  const ids = Object.keys(payload).map(Number).filter(Boolean);
+  if (!ids.length) return res.redirect('/admin/club-suggestions?bulk=none');
+
+  const { rows } = await pool.query(
+    `SELECT s.*, c.name AS club_name FROM club_suggestions s JOIN clubs c ON c.id = s.club_id
+     WHERE s.id = ANY($1) AND s.status = 'pending' ORDER BY s.id`,
+    [ids]
+  );
+  let clubs = 0, fields = 0;
+  const problems = [];
+  for (const s of rows) {
+    const item = payload[s.id] || {};
+    const chosen = Array.isArray(item.fields) ? item.fields : [];
+    if (!chosen.length) continue;
+    const values = item.values && typeof item.values === 'object' ? item.values : {};
+    const result = await applySuggestion(s, chosen, f => (Object.prototype.hasOwnProperty.call(values, f) ? values[f] : undefined));
+    clubs++;
+    fields += result.count;
+    result.problems.forEach(p => problems.push(`${s.club_name}: ${p}`));
+  }
+  req.session.applyProblems = problems;
+  res.redirect(`/admin/club-suggestions?bulk=${clubs}&applied=${fields}`);
 }));
 
 router.post('/club-suggestions/:id/reject', asyncHandler(async (req, res) => {
