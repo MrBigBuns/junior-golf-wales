@@ -1,0 +1,19 @@
+<%- include('../partials/head', { pageTitle: 'Import scorecard — ' + target.title }) %>
+
+<p><a href="<%= target.backUrl %>">&larr; Back</a></p>
+<h1>Import scorecard from photo</h1>
+<p class="course-address">For: <strong><%= target.title %></strong></p>
+<p class="scorecard-note"><%= target.subtitle %></p>
+
+<% if (error) { %><p class="error-message"><%= error %></p><% } %>
+
+<form method="post" action="<%= target.importUrl %>" enctype="multipart/form-data" class="admin-form">
+  <label>Scorecard photo (jpg or png)
+    <input type="file" name="scorecard_image" accept="image/*" required>
+  </label>
+  <button type="submit">Extract scorecard</button>
+</form>
+
+<p class="scorecard-note">Uses Claude's vision to read the card. You'll get a chance to review and correct before it's saved — nothing is written automatically.</p>
+
+<%- include('../partials/foot') %>

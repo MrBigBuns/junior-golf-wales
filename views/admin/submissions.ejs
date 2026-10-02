@@ -1,0 +1,37 @@
+<%- include('../partials/head', { pageTitle: 'Admin — Submissions' }) %>
+
+<h1>Submissions</h1>
+<p><a href="/admin">&larr; Dashboard</a></p>
+
+<% if (submissions.length === 0) { %>
+  <p>No submissions yet.</p>
+<% } %>
+
+<% submissions.forEach(function(s) { %>
+  <div class="detail-card">
+    <p><strong><%= s.raw_data.event_title %></strong> — <%= s.raw_data.club_name %></p>
+    <p class="course-address">
+      Date: <%= s.raw_data.event_date %> ·
+      Fee: <%= s.raw_data.entry_fee || 'not given' %> ·
+      From: <%= s.submitted_by_email %> ·
+      <span class="status-pill status-<%= s.status %>"><%= s.status %></span>
+    </p>
+    <% if (s.raw_data.entry_info) { %><p>How to enter: <%= s.raw_data.entry_info %></p><% } %>
+    <% if (s.raw_data.notes) { %><p>Notes: <%= s.raw_data.notes %></p><% } %>
+    <p class="course-address">Submitted <%= new Date(s.created_at).toLocaleDateString('en-GB') %></p>
+
+    <% if (s.status === 'pending') { %>
+      <form method="post" action="/admin/submissions/<%= s.id %>/status" style="display:inline">
+        <input type="hidden" name="status" value="approved">
+        <button type="submit">Approve</button>
+      </form>
+      <form method="post" action="/admin/submissions/<%= s.id %>/status" style="display:inline">
+        <input type="hidden" name="status" value="rejected">
+        <button type="submit" class="admin-delete-button">Reject</button>
+      </form>
+      <p class="scorecard-note">Approving just marks it reviewed — create the actual event via "+ New event" using these details.</p>
+    <% } %>
+  </div>
+<% }); %>
+
+<%- include('../partials/foot') %>
