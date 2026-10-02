@@ -545,3 +545,48 @@ body {
 .club-banner-image-small { height: 120px; border-radius: 10px; }
 .club-banner-logo-small { width: 52px; height: 52px; left: 14px; bottom: -20px; border-width: 3px; }
 .course-club-name.has-overlapping-logo-small { margin-left: 80px; margin-top: -2px; min-height: 24px; }
+
+/* ---------- Club profile page ---------- */
+.club-title-row { display: flex; align-items: center; gap: 12px; }
+.club-title-row h1 { margin: 0.25rem 0; }
+.club-logo-header { width: 56px; height: 56px; object-fit: contain; border-radius: 8px; background: #fff; border: 1px solid var(--border); padding: 4px; }
+.club-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 0.75rem 0 1.5rem; }
+.club-action {
+  display: inline-block; padding: 8px 14px; border-radius: 999px; font-size: 0.9rem;
+  border: 1px solid var(--border); color: var(--text-primary); text-decoration: none; background: #fff;
+}
+.club-action:hover { border-color: var(--wales-green); color: var(--wales-green); }
+.club-action.primary { background: var(--wales-green); border-color: var(--wales-green); color: #fff; }
+.club-action.primary:hover { opacity: 0.9; color: #fff; }
+.club-description { line-height: 1.6; margin: 0.5rem 0 0; }
+.muted { color: var(--text-secondary); }
+.small { font-size: 0.85rem; }
+.tee-list { list-style: none; padding: 0; margin: 0; }
+.tee-list li { padding: 2px 0; }
+.tee-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; border: 1px solid #999; vertical-align: middle; background: #ccc; }
+.tee-dot-white { background: #fff; }
+.tee-dot-yellow { background: #f2c94c; }
+.tee-dot-red { background: #d64545; }
+.tee-dot-blue { background: #2f6fd6; }
+.tee-dot-black { background: #222; }
+.tee-dot-green { background: #3a9b3a; }
+.tee-dot-gold { background: #c9a227; }
+.tee-dot-orange { background: #f08a24; }
+.tee-dot-purple { background: #7b4fc9; }
+.club-event-list { list-style: none; padding: 0; margin: 0.5rem 0 0; }
+.club-event-list li + li { border-top: 1px solid var(--border); }
+.club-event { display: flex; gap: 12px; align-items: center; padding: 10px 0; color: inherit; text-decoration: none; }
+.club-event:hover strong { color: var(--wales-green); }
+.club-event-date {
+  flex: 0 0 52px; text-align: center; border: 1px solid var(--border); border-radius: 8px; padding: 4px 0; background: var(--surface);
+}
+.club-event-day { display: block; font-size: 1.3rem; font-weight: 700; line-height: 1.1; }
+.club-event-month { display: block; font-size: 0.7rem; text-transform: uppercase; color: var(--text-secondary); }
+.club-event-body { display: flex; flex-direction: column; gap: 2px; }
+.related-list.compact li { padding: 4px 0; }
+.nearby-clubs { list-style: none; padding: 0; margin: 0.5rem 0 0; }
+.nearby-clubs li { display: flex; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+.nearby-clubs li:last-child { border-bottom: 0; }
+.nearby-clubs a { color: var(--wales-green); text-decoration: none; }
+.nearby-clubs .small { white-space: nowrap; }
+.club-claim { background: var(--surface); }

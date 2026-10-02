@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool');
 const asyncHandler = require('../lib/asyncHandler');
+const { getForecastForDate } = require('../lib/weather');
 
 router.get('/', asyncHandler(async (req, res) => {
   const { rows: clubs } = await pool.query(
@@ -56,14 +57,96 @@ router.get('/:slug', asyncHandler(async (req, res) => {
   if (!clubRows.length) return res.status(404).render('404');
   const club = clubRows[0];
 
-  const { rows: events } = await pool.query(
-    `SELECT slug, title, date_start, entry_fee FROM events
-     WHERE club_id = $1 AND date_start >= CURRENT_DATE
-     ORDER BY date_start ASC`,
-    [club.id]
-  );
+  // Images: uploaded files win over URLs (e.g. a logo accepted from enrichment)
+  club.logo_src = club.has_logo_image ? `/clubs/${club.id}/logo-image` : (club.logo_url || null);
+  club.banner_src = club.has_course_photo_image ? `/clubs/${club.id}/course-photo-image` : (club.course_image_url || null);
 
-  res.render('clubs/show', { club, events });
+  // Course at a glance, worked out from the scorecard where we have one
+  const card = Array.isArray(club.scorecard) && club.scorecard.length ? club.scorecard : null;
+  club.holes = card ? card.length : null;
+  if (card && club.par == null) club.par = card.reduce((t, h) => t + (Number(h.par) || 0), 0) || null;
+  club.tees = [];
+  if (card) {
+    const totals = {};
+    card.forEach(h => Object.entries(h.yards || {}).forEach(([tee, y]) => { totals[tee] = (totals[tee] || 0) + (Number(y) || 0); }));
+    club.tees = Object.entries(totals).filter(([, y]) => y > 0).sort((a, b) => b[1] - a[1]).map(([tee, yards]) => ({ tee, yards }));
+    if (club.yardage == null && club.tees.length) club.yardage = club.tees[0].yards;
+  }
+
+  const placeQuery = club.lat != null ? `${club.lat},${club.lng}` : (club.address ? `${club.name}, ${club.address}` : null);
+  club.directions_url = placeQuery
+    ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(club.address ? club.name + ', ' + club.address : placeQuery)}`
+    : null;
+  club.map_embed_url = placeQuery
+    ? `https://www.google.com/maps?q=${encodeURIComponent(club.address ? club.name + ', ' + club.address : placeQuery)}&output=embed`
+    : null;
+  club.nearby_hotels_url = club.address ? `https://www.google.com/maps/search/hotels+near+${encodeURIComponent(club.address)}` : null;
+  club.nearby_things_url = club.address ? `https://www.google.com/maps/search/things+to+do+near+${encodeURIComponent(club.address)}` : null;
+
+  const [{ rows: events }, { rows: pastEvents }, { rows: nearbyClubs }] = await Promise.all([
+    pool.query(
+      `SELECT e.slug, e.title, e.date_start, e.entry_fee, e.status, e.age_category, o.name AS organiser_name
+       FROM events e LEFT JOIN organisers o ON o.id = e.organiser_id
+       WHERE e.club_id = $1 AND e.date_start >= CURRENT_DATE
+       ORDER BY e.date_start ASC`,
+      [club.id]
+    ),
+    pool.query(
+      `SELECT slug, title, date_start FROM events
+       WHERE club_id = $1 AND date_start < CURRENT_DATE AND date_start >= CURRENT_DATE - INTERVAL '2 years'
+       ORDER BY date_start DESC LIMIT 6`,
+      [club.id]
+    ),
+    club.lat != null
+      ? pool.query(
+          `SELECT c.name, c.slug, c.region,
+                  ROUND((3958.8 * 2 * ASIN(SQRT(
+                    POWER(SIN(RADIANS(c.lat - $1) / 2), 2) +
+                    COS(RADIANS($1)) * COS(RADIANS(c.lat)) * POWER(SIN(RADIANS(c.lng - $2) / 2), 2)
+                  )))::numeric, 1) AS miles,
+                  (SELECT COUNT(*) FROM events e WHERE e.club_id = c.id AND e.date_start >= CURRENT_DATE)::int AS upcoming
+           FROM clubs c
+           WHERE c.id <> $3 AND c.lat IS NOT NULL AND c.archived_at IS NULL
+           ORDER BY miles ASC LIMIT 6`,
+          [club.lat, club.lng, club.id]
+        )
+      : Promise.resolve({ rows: [] })
+  ]);
+
+  // Today's conditions at the course (Open-Meteo; null on any failure)
+  let weather = null;
+  if (club.lat != null && !club.archived_at) {
+    try { weather = await getForecastForDate(club.lat, club.lng, new Date().toISOString().slice(0, 10)); } catch (e) { weather = null; }
+  }
+
+  // Structured data so search engines can show the club as a place
+  const sameAs = [club.website, club.facebook_url, club.instagram_url, club.x_url].filter(Boolean);
+  const ld = {
+    '@context': 'https://schema.org',
+    '@type': 'GolfCourse',
+    name: club.name,
+    url: `https://junior-golf-wales.onrender.com/clubs/${club.slug}`
+  };
+  if (club.description) ld.description = club.description;
+  if (club.address) ld.address = { '@type': 'PostalAddress', streetAddress: club.address, addressRegion: `${club.region} Wales`, addressCountry: 'GB' };
+  if (club.lat != null) ld.geo = { '@type': 'GeoCoordinates', latitude: Number(club.lat), longitude: Number(club.lng) };
+  if (club.contact_email) ld.email = club.contact_email;
+  if (sameAs.length) ld.sameAs = sameAs;
+  if (club.logo_src && /^https?:/.test(club.logo_src)) ld.logo = club.logo_src;
+  const jsonLd = JSON.stringify(ld).replace(/</g, '\\u003c');
+
+  const metaParts = [`${club.name} — golf club in ${club.region} Wales`];
+  if (club.holes) metaParts.push(`${club.holes} holes${club.par ? ', par ' + club.par : ''}${club.yardage ? ', ' + club.yardage + ' yards' : ''}`);
+  if (events.length) metaParts.push(`${events.length} upcoming junior event${events.length === 1 ? '' : 's'}`);
+  const has = [];
+  if (club.address) has.push('address and map');
+  if (club.website || club.contact_email) has.push('contact details');
+  if (club.holes) has.push('course scorecard');
+  const pageDescription = club.description
+    ? club.description.slice(0, 155)
+    : metaParts.join('. ') + '.' + (has.length ? ' ' + has.join(', ').replace(/^./, c => c.toUpperCase()) + '.' : '');
+
+  res.render('clubs/show', { club, events, pastEvents, nearbyClubs, weather, jsonLd, pageDescription });
 }));
 
 module.exports = router;

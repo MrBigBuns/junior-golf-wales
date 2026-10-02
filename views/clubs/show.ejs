@@ -1,58 +1,203 @@
-<%- include('../partials/head', { pageTitle: club.name + ' — junior golf events' }) %>
+<%- include('../partials/head', {
+  pageTitle: club.name + ' — ' + club.region + ' Wales golf club',
+  pageDescription: pageDescription,
+  ogImage: club.banner_src && /^https?:/.test(club.banner_src) ? club.banner_src : null
+}) %>
+
+<%
+  function fmtDate(d, opts) { return new Date(d).toLocaleDateString('en-GB', opts || { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }); }
+  function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : s; }
+  function host(u) { try { return new URL(u).hostname.replace(/^www\./, ''); } catch (e) { return u; } }
+  const juniorContact = club.junior_membership_contact;
+  const juniorIsEmail = juniorContact && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(juniorContact.trim());
+  const hasSocial = club.facebook_url || club.instagram_url || club.x_url;
+%>
+
+<nav class="breadcrumb">
+  <a href="/clubs">Clubs</a> / <span><%= club.region %> Wales</span>
+</nav>
 
 <% if (club.archived_at) { %>
   <p class="error-message">This club is no longer listed on Junior Golf Wales<% if (club.archived_reason) { %> (<%= club.archived_reason %>)<% } %>.</p>
 <% } %>
 
-<% const hasBanner = club.has_course_photo_image || club.course_image_url; %>
-<% const hasLogo = club.has_logo_image; %>
-
-<% if (hasBanner) { %>
+<% if (club.banner_src) { %>
   <div class="club-banner-wrap">
-    <img class="club-banner-image" src="<%= club.has_course_photo_image ? '/clubs/' + club.id + '/course-photo-image' : club.course_image_url %>" alt="<%= club.name %>">
-    <% if (hasLogo) { %>
-      <img class="club-banner-logo" src="/clubs/<%= club.id %>/logo-image" alt="<%= club.name %> logo">
-    <% } %>
+    <img class="club-banner-image" src="<%= club.banner_src %>" alt="<%= club.name %> course">
+    <% if (club.logo_src) { %><img class="club-banner-logo" src="<%= club.logo_src %>" alt="<%= club.name %> logo"><% } %>
   </div>
 <% } %>
 
-<div class="club-header-info <%= hasBanner && hasLogo ? 'has-overlapping-logo' : '' %>">
-  <% if (!hasBanner && hasLogo) { %>
-    <div style="display:flex;align-items:center;gap:10px;">
-      <img src="/clubs/<%= club.id %>/logo-image" alt="<%= club.name %> logo" class="club-logo-inline">
-      <h1><%= club.name %></h1>
-    </div>
-  <% } else { %>
+<div class="club-header-info <%= club.banner_src && club.logo_src ? 'has-overlapping-logo' : '' %>">
+  <div class="club-title-row">
+    <% if (!club.banner_src && club.logo_src) { %><img src="<%= club.logo_src %>" alt="<%= club.name %> logo" class="club-logo-header"><% } %>
     <h1><%= club.name %></h1>
-  <% } %>
+  </div>
   <p class="subtitle"><%= club.region %> Wales<% if (club.address) { %> · <%= club.address %><% } %></p>
 </div>
 
-<% if (club.website) { %><p><a href="<%= club.website %>" target="_blank" rel="noopener">Club website</a></p><% } %>
-<% if (club.facebook_url || club.instagram_url || club.x_url) { %>
-  <div class="social-links">
-    <% if (club.facebook_url) { %><a href="<%= club.facebook_url %>" target="_blank" rel="noopener" aria-label="Facebook"><%- include('../partials/icon-facebook') %></a><% } %>
-    <% if (club.instagram_url) { %><a href="<%= club.instagram_url %>" target="_blank" rel="noopener" aria-label="Instagram"><%- include('../partials/icon-instagram') %></a><% } %>
-    <% if (club.x_url) { %><a href="<%= club.x_url %>" target="_blank" rel="noopener" aria-label="X"><%- include('../partials/icon-x') %></a><% } %>
+<div class="club-actions">
+  <% if (club.website) { %><a class="club-action primary" href="<%= club.website %>" target="_blank" rel="noopener">Visit website</a><% } %>
+  <% if (club.directions_url) { %><a class="club-action" href="<%= club.directions_url %>" target="_blank" rel="noopener">Get directions</a><% } %>
+  <% if (club.contact_email) { %><a class="club-action" href="mailto:<%= club.contact_email %>">Email the club</a><% } %>
+  <% if (events.length) { %><a class="club-action" href="#events"><%= events.length %> upcoming event<%= events.length === 1 ? '' : 's' %></a><% } %>
+  <% if (club.holes) { %><a class="club-action" href="#scorecard">Scorecard</a><% } %>
+</div>
+
+<div class="event-detail-grid">
+  <div>
+    <% if (club.description) { %>
+      <div class="detail-card">
+        <h3 class="detail-card-heading">About the club</h3>
+        <p class="club-description"><%= club.description %></p>
+      </div>
+    <% } %>
+
+    <div class="detail-card">
+      <h3 class="detail-card-heading">The course at a glance</h3>
+      <% if (club.holes || club.par || club.yardage) { %>
+        <table class="details-table">
+          <% if (club.holes) { %><tr><td>Holes</td><td><%= club.holes %></td></tr><% } %>
+          <% if (club.par) { %><tr><td>Par</td><td><%= club.par %></td></tr><% } %>
+          <% if (club.yardage) { %><tr><td>Length</td><td><%= Number(club.yardage).toLocaleString('en-GB') %> yards<% if (club.tees.length) { %> <span class="muted">(<%= club.tees[0].tee %> tees)</span><% } %></td></tr><% } %>
+          <% if (club.tees.length > 1) { %>
+            <tr><td>Tees</td><td>
+              <ul class="tee-list">
+                <% club.tees.forEach(function(t) { %><li><span class="tee-dot tee-dot-<%= t.tee %>"></span><%= cap(t.tee) %> · <%= t.yards.toLocaleString('en-GB') %> yds</li><% }); %>
+              </ul>
+            </td></tr>
+          <% } %>
+        </table>
+        <% if (club.holes) { %><p class="muted small"><a href="#scorecard">Full hole-by-hole scorecard below &darr;</a></p><% } %>
+      <% } else { %>
+        <p class="muted">Course details aren't available yet.</p>
+      <% } %>
+    </div>
+
+    <div class="detail-card" id="events">
+      <h3 class="detail-card-heading">Upcoming junior events</h3>
+      <% if (events.length === 0) { %>
+        <p class="muted">No upcoming junior events listed here yet. <a href="/events">Browse all events in Wales</a> or <a href="/submit-event">tell us about one</a>.</p>
+      <% } else { %>
+        <ul class="club-event-list">
+          <% events.forEach(function(e) { %>
+            <li>
+              <a href="/events/<%= e.slug %>" class="club-event">
+                <span class="club-event-date">
+                  <span class="club-event-day"><%= new Date(e.date_start).getDate() %></span>
+                  <span class="club-event-month"><%= fmtDate(e.date_start, { month: 'short', year: '2-digit' }) %></span>
+                </span>
+                <span class="club-event-body">
+                  <strong><%= e.title %></strong><% if (e.status === 'cancelled') { %> <span class="badge">Cancelled</span><% } %>
+                  <span class="muted small">
+                    <%= fmtDate(e.date_start) %><% if (e.age_category) { %> · <%= e.age_category %><% } %><% if (e.entry_fee) { %> · £<%= e.entry_fee %><% } %><% if (e.organiser_name) { %> · <%= e.organiser_name %><% } %>
+                  </span>
+                </span>
+              </a>
+            </li>
+          <% }); %>
+        </ul>
+      <% } %>
+    </div>
+
+    <% if (juniorContact || pastEvents.length) { %>
+      <div class="detail-card">
+        <h3 class="detail-card-heading">Juniors at <%= club.name %></h3>
+        <% if (juniorContact) { %>
+          <p><strong>Junior membership:</strong>
+            <% if (juniorIsEmail) { %><a href="mailto:<%= juniorContact.trim() %>"><%= juniorContact %></a><% } else { %><%= juniorContact %><% } %>
+          </p>
+        <% } %>
+        <% if (pastEvents.length) { %>
+          <p class="muted small">Recent junior events held here:</p>
+          <ul class="related-list compact">
+            <% pastEvents.forEach(function(e) { %>
+              <li><a href="/events/<%= e.slug %>"><%= e.title %></a> <span class="muted small">· <%= fmtDate(e.date_start, { month: 'short', year: 'numeric' }) %></span></li>
+            <% }); %>
+          </ul>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+
+  <div>
+    <div class="detail-card">
+      <h3 class="detail-card-heading">Contact</h3>
+      <% if (club.address) { %><p class="course-address"><%= club.address %></p><% } %>
+      <div class="course-links">
+        <% if (club.website) { %><a href="<%= club.website %>" target="_blank" rel="noopener"><%= host(club.website) %></a><% } %>
+        <% if (club.contact_email) { %><a href="mailto:<%= club.contact_email %>"><%= club.contact_email %></a><% } %>
+        <% if (club.directions_url) { %><a href="<%= club.directions_url %>" target="_blank" rel="noopener">Directions</a><% } %>
+      </div>
+      <% if (hasSocial) { %>
+        <div class="social-links">
+          <% if (club.facebook_url) { %><a href="<%= club.facebook_url %>" target="_blank" rel="noopener" aria-label="Facebook"><%- include('../partials/icon-facebook') %></a><% } %>
+          <% if (club.instagram_url) { %><a href="<%= club.instagram_url %>" target="_blank" rel="noopener" aria-label="Instagram"><%- include('../partials/icon-instagram') %></a><% } %>
+          <% if (club.x_url) { %><a href="<%= club.x_url %>" target="_blank" rel="noopener" aria-label="X"><%- include('../partials/icon-x') %></a><% } %>
+        </div>
+      <% } %>
+      <% if (!club.address && !club.website && !club.contact_email && !hasSocial) { %><p class="muted">Contact details aren't available yet.</p><% } %>
+    </div>
+
+    <% if (club.map_embed_url) { %>
+      <div class="detail-card">
+        <h3 class="detail-card-heading">Location</h3>
+        <iframe class="map-embed" loading="lazy" title="Map of <%= club.name %>" src="<%= club.map_embed_url %>"></iframe>
+        <% if (club.lat != null) { %><p class="muted small">Coordinates: <%= Number(club.lat).toFixed(5) %>, <%= Number(club.lng).toFixed(5) %></p><% } %>
+      </div>
+    <% } %>
+
+    <% if (weather) { %>
+      <div class="detail-card">
+        <h3 class="detail-card-heading">Today at the course</h3>
+        <div class="weather-row">
+          <span class="weather-temp"><%= weather.maxTemp %>&deg;<span class="weather-temp-low"> / <%= weather.minTemp %>&deg;</span></span>
+        </div>
+        <p class="weather-detail"><%= weather.rainChance %>% chance of rain · wind up to <%= weather.windSpeed %> km/h</p>
+      </div>
+    <% } %>
+
+    <% if (nearbyClubs.length) { %>
+      <div class="detail-card">
+        <h3 class="detail-card-heading">Nearby golf clubs</h3>
+        <ul class="nearby-clubs">
+          <% nearbyClubs.forEach(function(n) { %>
+            <li>
+              <a href="/clubs/<%= n.slug %>"><%= n.name %></a>
+              <span class="muted small"><%= n.miles %> mi<% if (n.upcoming) { %> · <%= n.upcoming %> event<%= n.upcoming === 1 ? '' : 's' %><% } %></span>
+            </li>
+          <% }); %>
+        </ul>
+      </div>
+    <% } %>
+
+    <% if (club.nearby_hotels_url || club.nearby_things_url) { %>
+      <div class="detail-card">
+        <h3 class="detail-card-heading">Visiting</h3>
+        <div class="course-links">
+          <% if (club.nearby_hotels_url) { %><a href="<%= club.nearby_hotels_url %>" target="_blank" rel="noopener">Accommodation nearby</a><% } %>
+          <% if (club.nearby_things_url) { %><a href="<%= club.nearby_things_url %>" target="_blank" rel="noopener">Things to do nearby</a><% } %>
+        </div>
+      </div>
+    <% } %>
+
+    <div class="detail-card club-claim">
+      <h3 class="detail-card-heading">Is this your club?</h3>
+      <p class="muted small">Keep your details, scorecard and junior events up to date with a free club account.</p>
+      <div class="course-links">
+        <a href="/club-portal/signup">Create a club account</a>
+        <a href="/club-portal/login">Club login</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<% if (club.holes) { %>
+  <div id="scorecard">
+    <%- include('../partials/scorecard', { scorecard: club.scorecard, scorecardNote: null }) %>
   </div>
 <% } %>
 
-<h2>Upcoming junior events</h2>
-<% if (events.length === 0) { %>
-  <p>No upcoming junior events listed for this club yet.</p>
-<% } %>
-<ul class="related-list">
-  <% events.forEach(function(e) { %>
-    <li><a href="/events/<%= e.slug %>"><%= e.title %> — <%= new Date(e.date_start).toLocaleDateString('en-GB') %></a></li>
-  <% }); %>
-</ul>
-
-<% if (Array.isArray(club.scorecard) && club.scorecard.length) { %>
-  <h2>The course</h2>
-  <% if (club.par || club.yardage) { %>
-    <p class="course-address"><% if (club.par) { %>Par <%= club.par %><% } %><% if (club.par && club.yardage) { %> · <% } %><% if (club.yardage) { %><%= club.yardage %> yards<% } %></p>
-  <% } %>
-  <%- include('../partials/scorecard', { scorecard: club.scorecard, scorecardNote: null }) %>
-<% } %>
+<script type="application/ld+json"><%- jsonLd %></script>
 
 <%- include('../partials/foot') %>

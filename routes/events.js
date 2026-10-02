@@ -55,6 +55,7 @@ router.get('/:slug', asyncHandler(async (req, res) => {
             c.facebook_url AS club_facebook_url, c.instagram_url AS club_instagram_url, c.x_url AS club_x_url,
             (c.course_photo_image IS NOT NULL) AS club_has_course_photo,
             (c.logo_image IS NOT NULL) AS club_has_logo_image,
+            c.logo_url AS club_logo_url,
             o.name AS organiser_name, o.slug AS organiser_slug, o.description AS organiser_description,
             c.scorecard AS club_scorecard, c.par AS club_par, c.yardage AS club_yardage,
             ef.id AS form_id
