@@ -16,7 +16,7 @@ const CLUBS = {
     'Milford Haven Golf Club', 'St Davids City Golf Club', 'Newport Links Golf Club'],
   Ceredigion: ['Cardigan Golf Club'],
   Carmarthenshire: ['Ashburnham Golf Club', 'Machynys Peninsula Golf Club', 'Carmarthen Golf Club', 'Derllys Court Golf Club',
-    'Garnant Park Golf Club', 'Glynhir Golf Club', 'Glyn Abbey Golf Club'],
+    'Garnant Park Golf Club', 'Glynhir Golf Club', 'Glyn Abbey Golf Club', 'Saron Golf Club'],
   Swansea: ['Pennard Golf Club', 'Langland Bay Golf Club', 'Clyne Golf Club', 'Fairwood Park Golf Club', 'Gower Golf Club',
     'Morriston Golf Club', 'Pontardulais Golf Club', 'Mond Valley Golf Club'],
   'Neath Port Talbot': ['Neath Golf Club', 'Swansea Bay Golf Club', 'Lakeside (Margam) Golf Club', 'Glynneath Golf Club',
@@ -33,7 +33,8 @@ const CLUBS = {
     'Bryn Meadows Golf Club', 'Blackwood Golf Club'],
   'Torfaen and Blaenau Gwent': ['Pontypool Golf Club', 'Pontnewydd Golf Club', 'Greenmeadow Golf Club',
     'West Monmouthshire Golf Club'],
-  Newport: ['Celtic Manor Resort', 'Newport Golf Club', 'Llanwern Golf Club', 'Parc Golf Club', 'Tredegar Park Golf Club'],
+  Newport: ['Celtic Manor Resort', 'Newport Golf Club', 'Llanwern Golf Club', 'Parc Golf Club', 'Tredegar Park Golf Club',
+    'Caerleon Golf Club'],
   Monmouthshire: ['St Pierre Golf & Country Club', 'Dewstow Golf Club', 'Monmouth Golf Club', 'Monmouthshire Golf Club',
     'Rolls of Monmouth Golf Club', 'Raglan Parc Golf Club', 'Wernddu Golf Club', 'Woodlake Park Golf Club',
     'Alice Springs Golf Club']
