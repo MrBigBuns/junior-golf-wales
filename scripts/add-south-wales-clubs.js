@@ -20,7 +20,7 @@ const CLUBS = {
   Swansea: ['Pennard Golf Club', 'Langland Bay Golf Club', 'Clyne Golf Club', 'Fairwood Park Golf Club', 'Gower Golf Club',
     'Morriston Golf Club', 'Pontardulais Golf Club', 'Mond Valley Golf Club'],
   'Neath Port Talbot': ['Neath Golf Club', 'Swansea Bay Golf Club', 'Lakeside (Margam) Golf Club', 'Glynneath Golf Club',
-    'Pontardawe Golf Club'],
+    'Pontardawe Golf Club', 'Earlswood Golf Club'],
   Bridgend: ['Royal Porthcawl Golf Club', 'Pyle & Kenfig Golf Club', 'Southerndown Golf Club', 'Grove Golf Club',
     'Maesteg Golf Club', 'Coed-y-Mwstwr Golf Club'],
   'Rhondda Cynon Taf and Merthyr': ['Llantrisant & Pontyclun Golf Club', 'Pontypridd Golf Club', 'Rhondda Golf Club',
@@ -30,9 +30,9 @@ const CLUBS = {
   'Vale of Glamorgan': ['Vale Resort', 'Cottrell Park Golf Club', 'Wenvoe Castle Golf Club', 'Dinas Powis Golf Club',
     'Glamorganshire Golf Club', 'Brynhill Golf Club', 'St Andrews Major Golf Club', 'St Athan Golf Club'],
   Caerphilly: ['Caerphilly Golf Club', 'Ridgeway Golf Club', 'Virginia Park Golf Club', 'Bargoed Golf Club',
-    'Bryn Meadows Golf Club', 'Blackwood Golf Club'],
+    'Bryn Meadows Golf Club', 'Blackwood Golf Club', 'Whitehall Golf Club', 'Oakdale Golf Club'],
   'Torfaen and Blaenau Gwent': ['Pontypool Golf Club', 'Pontnewydd Golf Club', 'Greenmeadow Golf Club',
-    'West Monmouthshire Golf Club'],
+    'West Monmouthshire Golf Club', 'Llanyrafon Golf Club'],
   Newport: ['Celtic Manor Resort', 'Newport Golf Club', 'Llanwern Golf Club', 'Parc Golf Club', 'Tredegar Park Golf Club',
     'Caerleon Golf Club'],
   Monmouthshire: ['St Pierre Golf & Country Club', 'Dewstow Golf Club', 'Monmouth Golf Club', 'Monmouthshire Golf Club',
@@ -48,7 +48,7 @@ const GOLF_COUNTY = {
   Caerphilly: 'Glamorgan', 'Torfaen and Blaenau Gwent': 'Gwent', Newport: 'Gwent', Monmouthshire: 'Gwent'
 };
 // Clubs east of the Rhymney sit in historic Monmouthshire (Gwent)
-const COUNTY_EXCEPTIONS = { 'Bryn Meadows Golf Club': 'Gwent', 'Blackwood Golf Club': 'Gwent' };
+const COUNTY_EXCEPTIONS = { 'Bryn Meadows Golf Club': 'Gwent', 'Blackwood Golf Club': 'Gwent', 'Oakdale Golf Club': 'Gwent' };
 
 async function run() {
   let added = 0, existing = 0;
