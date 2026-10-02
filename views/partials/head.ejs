@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= typeof pageTitle !== 'undefined' ? pageTitle : 'Wales Junior Golf' %></title>
+  <meta name="description" content="<%= typeof pageDescription !== 'undefined' ? pageDescription : 'Every junior golf event in Wales, in one place — county opens, national tours and club competitions for boys and girls, all ages.' %>">
+  <meta property="og:title" content="<%= typeof pageTitle !== 'undefined' ? pageTitle : 'Wales Junior Golf' %>">
+  <meta property="og:description" content="<%= typeof pageDescription !== 'undefined' ? pageDescription : 'Every junior golf event in Wales, in one place.' %>">
+  <% if (typeof canonicalUrl !== 'undefined' && !(typeof noIndex !== 'undefined' && noIndex)) { %><link rel="canonical" href="<%= canonicalUrl %>">
+  <meta property="og:url" content="<%= canonicalUrl %>"><% } %>
+  <% if (typeof noIndex !== 'undefined' && noIndex) { %><meta name="robots" content="noindex"><% } %>
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="en_GB">
+  <meta property="og:site_name" content="Wales Junior Golf">
+  <% if (typeof ogImage !== 'undefined' && ogImage) { %><meta property="og:image" content="<%= ogImage %>"><% } %>
+  <meta name="twitter:card" content="summary">
+  <link rel="stylesheet" href="/css/main.css">
+</head>
+<body>
+  <div class="top-stripe"><span class="stripe-red"></span><span class="stripe-gap"></span><span class="stripe-green"></span></div>
+  <header class="site-header">
+    <a href="/" class="logo">🏴 Wales Junior Golf</a>
+    <nav>
+      <a href="/events">Events</a>
+      <a href="/clubs">Clubs</a>
+      <a href="/map">Map</a>
+      <a href="/club-portal/login">Club login</a>
+      <a href="/admin">Admin</a>
+    </nav>
+    <a href="/submit-event" class="nav-cta">Submit an event</a>
+  </header>
+  <main class="container">

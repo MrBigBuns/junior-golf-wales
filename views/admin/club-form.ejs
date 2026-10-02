@@ -1,0 +1,101 @@
+<%- include('../partials/head', { pageTitle: isNew ? 'New club' : 'Edit club' }) %>
+
+<p><a href="/admin/clubs">&larr; All clubs</a></p>
+<h1><%= isNew ? 'New club' : 'Edit: ' + club.name %></h1>
+
+<form method="post" action="<%= isNew ? '/admin/clubs' : '/admin/clubs/' + club.id + '/update' %>" class="admin-form" enctype="multipart/form-data">
+  <label>Name <input type="text" name="name" value="<%= club.name || '' %>" required></label>
+  <label>Slug <input type="text" name="slug" value="<%= club.slug || '' %>" placeholder="auto-generated if blank"></label>
+  <label>Region
+    <select name="region">
+      <option value="">— select —</option>
+      <option value="North" <%= club.region === 'North' ? 'selected' : '' %>>North Wales</option>
+      <option value="Mid" <%= club.region === 'Mid' ? 'selected' : '' %>>Mid Wales</option>
+      <option value="South" <%= club.region === 'South' ? 'selected' : '' %>>South Wales</option>
+    </select>
+  </label>
+  <label>County
+    <select name="county">
+      <option value="">— not set —</option>
+      <% counties.forEach(function(c) { %><option value="<%= c.name %>" <%= club.county === c.name ? 'selected' : '' %>><%= c.name %> (<%= c.areas.join(', ') %>)</option><% }); %>
+    </select>
+  </label>
+  <label>Address <input type="text" name="address" value="<%= club.address || '' %>"></label>
+  <label>Latitude <input type="text" name="lat" value="<%= club.lat || '' %>" placeholder="auto-filled from address if left blank, but unreliable — enter manually if known"></label>
+  <label>Longitude <input type="text" name="lng" value="<%= club.lng || '' %>" placeholder="auto-filled from address if left blank, but unreliable — enter manually if known"></label>
+  <label>Website <input type="text" name="website" value="<%= club.website || '' %>"></label>
+  <label>Facebook URL <input type="text" name="facebook_url" value="<%= club.facebook_url || '' %>"></label>
+  <label>Instagram URL <input type="text" name="instagram_url" value="<%= club.instagram_url || '' %>"></label>
+  <label>X / Twitter URL <input type="text" name="x_url" value="<%= club.x_url || '' %>"></label>
+  <label>Contact email <input type="email" name="contact_email" value="<%= club.contact_email || '' %>"></label>
+  <label>Junior membership contact <input type="text" name="junior_membership_contact" value="<%= club.junior_membership_contact || '' %>"></label>
+
+  <label>Logo
+    <% if (!isNew && club.has_logo_image) { %>
+      <img src="/clubs/<%= club.id %>/logo-image" alt="Current logo" class="admin-image-preview">
+      <span class="fb-required-toggle"><input type="checkbox" name="remove_logo_image"> Remove uploaded logo</span>
+    <% } %>
+    <input type="file" name="logo_image" accept="image/*">
+  </label>
+  <label>Logo URL (used only if no image is uploaded above) <input type="text" name="logo_url" value="<%= club.logo_url || '' %>"></label>
+
+  <label>Course photo
+    <% if (!isNew && club.has_course_photo_image) { %>
+      <img src="/clubs/<%= club.id %>/course-photo-image" alt="Current course photo" class="admin-image-preview">
+      <span class="fb-required-toggle"><input type="checkbox" name="remove_course_photo"> Remove uploaded photo</span>
+    <% } %>
+    <input type="file" name="course_photo" accept="image/*">
+  </label>
+  <label>Course image URL (used only if no photo is uploaded above) <input type="text" name="course_image_url" value="<%= club.course_image_url || '' %>"></label>
+
+  <label>Description <textarea name="description" rows="4"><%= club.description || '' %></textarea></label>
+
+  <fieldset>
+    <legend>Course scorecard</legend>
+    <p class="scorecard-note">Used by every event at this club, unless an event sets its own override.</p>
+    <% const hasCard = Array.isArray(club.scorecard) && club.scorecard.length > 0; %>
+    <% if (!isNew) { %>
+      <p><a href="/admin/clubs/<%= club.id %>/scorecard-import"><%= hasCard ? 'Replace scorecard from a photo' : 'Import scorecard from a photo' %> &rarr;</a></p>
+    <% } else { %>
+      <p class="scorecard-note">Save the club first to import a scorecard from a photo.</p>
+    <% } %>
+    <label>Par <input type="number" name="par" value="<%= club.par || '' %>"></label>
+    <label>Yardage <input type="number" name="yardage" value="<%= club.yardage || '' %>"></label>
+    <p class="scorecard-note">Leave par and yardage blank to work them out from the scorecard (yardage uses the first tee listed).</p>
+    <label>Scorecard (JSON — array of holes)
+      <textarea name="scorecard" rows="4" placeholder='[{"hole":1,"par":4,"strokeIndex":13,"yards":{"white":319,"yellow":296,"red":254}}, ...]'><%= hasCard ? JSON.stringify(club.scorecard) : '' %></textarea>
+    </label>
+  </fieldset>
+
+  <button type="submit">Save club</button>
+</form>
+
+<% if (!isNew) { %>
+  <div class="admin-danger-zone">
+    <% if (club.archived_at) { %>
+      <p><strong>Removed</strong> on <%= new Date(club.archived_at).toLocaleDateString('en-GB') %><% if (club.archived_reason) { %>: <%= club.archived_reason %><% } %>. Hidden from the public site, portal sign-up and enrichment.</p>
+      <form method="post" action="/admin/clubs/<%= club.id %>/restore">
+        <button type="submit">Restore club</button>
+      </form>
+    <% } else { %>
+      <form method="post" action="/admin/clubs/<%= club.id %>/archive" class="admin-form" onsubmit="return confirm('Remove this club from the site? You can restore it later.');">
+        <label>Reason (optional) <input type="text" name="reason" placeholder="e.g. Closed 2024, merged with ..."></label>
+        <button type="submit" class="admin-delete-button">Remove club</button>
+      </form>
+    <% } %>
+
+    <% if (deleteBlocked) { %>
+      <% const parts = deleteBlocked.split('-'); %>
+      <p class="error-message">Can't delete: this club has <%= parts[0] %> event(s) and <%= parts[1] %> club account(s) linked to it. Use Remove instead.</p>
+    <% } %>
+    <details>
+      <summary class="scorecard-note">Permanently delete (only for clubs added by mistake)</summary>
+      <form method="post" action="/admin/clubs/<%= club.id %>/delete" onsubmit="return confirm('Permanently delete this club? This cannot be undone.');">
+        <p class="scorecard-note">Only works if no events or club accounts are linked. If the club is in the South Wales club list, the list script will add it back; use Remove instead.</p>
+        <button type="submit" class="admin-delete-button">Delete permanently</button>
+      </form>
+    </details>
+  </div>
+<% } %>
+
+<%- include('../partials/foot') %>
