@@ -39,7 +39,7 @@ const REDO = argv.includes('--redo');
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-const FIELDS = ['county', 'address', 'website', 'contact_email', 'facebook_url', 'instagram_url', 'x_url',
+const FIELDS = ['county', 'holes', 'address', 'website', 'contact_email', 'facebook_url', 'instagram_url', 'x_url',
   'description', 'par', 'yardage', 'scorecard', 'logo_url'];
 
 function prompt(clubName, region) {
@@ -53,6 +53,7 @@ Return ONLY a JSON object (no markdown, no commentary) in exactly this shape:
   "website": "official club website homepage URL, or null",
   "contact_email": "general club/office email, or null",
   "facebook_url": null, "instagram_url": null, "x_url": null,
+  "holes": 18,
   "par": 72, "yardage": 6500,
   "yardage_tee": "tee colour the yardage refers to, or null",
   "description": "2-3 factual sentences in your own words: course type (links/parkland/heathland), year founded, designer, notable features or championships. null if you cannot verify.",
@@ -62,6 +63,7 @@ Return ONLY a JSON object (no markdown, no commentary) in exactly this shape:
 
 Rules:
 - Only include values you actually found on a web page. Use null for anything you could not find. Never guess or estimate.
+- holes is the number of holes on the main course as built: 9, 18, 27 or 36.
 - par and yardage are for ONE round of the main course as built, from the longest standard tee (usually white), as integers. For a nine-hole course give the nine-hole par and yardage, not the figures for going round twice.
 - The description must only describe the club. Never comment on your research, the request, or corrections (e.g. do not write "it is not in South Wales").
 - "scorecard" must be null unless you found hole-by-hole data. If found, it is an array like
@@ -196,6 +198,7 @@ async function research(club) {
     instagram_url: cleanUrl(found.instagram_url),
     x_url: cleanUrl(found.x_url),
     description: typeof found.description === 'string' ? found.description.trim() : null,
+    holes: [9, 18, 27, 36].includes(found.holes) ? found.holes : null,
     par: Number.isInteger(found.par) ? found.par : null,
     yardage: Number.isInteger(found.yardage) ? found.yardage : null,
     scorecard: isScorecard(found.scorecard) ? found.scorecard : null,
@@ -218,7 +221,7 @@ async function research(club) {
   }
 
   // Plausibility checks
-  if (data.par && (data.par < 27 || data.par > 75)) { warnings.push(`Par ${data.par} looks wrong; dropped.`); data.par = null; }
+  if (data.par && (data.par < 27 || data.par > 75 || (data.holes === 18 && data.par < 54))) { warnings.push(`Par ${data.par} looks wrong; dropped.`); data.par = null; }
   if (data.yardage && (data.yardage < 1000 || data.yardage > 7800)) { warnings.push(`Yardage ${data.yardage} looks wrong; dropped.`); data.yardage = null; }
   if (data.scorecard) {
     const holes = data.scorecard.length;
@@ -254,7 +257,7 @@ async function pickClubs() {
     `SELECT c.id, c.name, c.slug, c.region FROM clubs c
      WHERE c.region = $1
        AND c.archived_at IS NULL
-       AND (c.county IS NULL OR c.address IS NULL OR c.website IS NULL OR c.lat IS NULL OR c.par IS NULL
+       AND (c.county IS NULL OR c.holes IS NULL OR c.address IS NULL OR c.website IS NULL OR c.lat IS NULL OR c.par IS NULL
             OR c.description IS NULL OR c.scorecard IS NULL OR c.logo_url IS NULL)
        AND ($2 OR NOT EXISTS (SELECT 1 FROM club_suggestions s WHERE s.club_id = c.id))
      ORDER BY c.name

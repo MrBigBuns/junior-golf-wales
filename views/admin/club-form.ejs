@@ -59,6 +59,13 @@
     <% } else { %>
       <p class="scorecard-note">Save the club first to import a scorecard from a photo.</p>
     <% } %>
+    <label>Holes
+      <select name="holes">
+        <option value="">— not set —</option>
+        <% [9, 18, 27, 36].forEach(function(h) { %><option value="<%= h %>" <%= club.holes === h ? 'selected' : '' %>><%= h %></option><% }); %>
+      </select>
+    </label>
+    <p class="scorecard-note">For a 9-hole course, enter par and yardage for one 9-hole round; the site shows the 18-hole equivalent automatically.</p>
     <label>Par <input type="number" name="par" value="<%= club.par || '' %>"></label>
     <label>Yardage <input type="number" name="yardage" value="<%= club.yardage || '' %>"></label>
     <p class="scorecard-note">Leave par and yardage blank to work them out from the scorecard (yardage uses the first tee listed).</p>

@@ -268,8 +268,8 @@ router.post('/clubs', clubImageUpload, asyncHandler(async (req, res) => {
 
   await saveClubImages(rows[0].id, req.files);
   await saveClubScorecard(rows[0].id, b);
-  await pool.query(`UPDATE clubs SET county = $1 WHERE id = $2`,
-    [COUNTY_NAMES.includes(b.county) ? b.county : null, rows[0].id]);
+  await pool.query(`UPDATE clubs SET county = $1, holes = $2 WHERE id = $3`,
+    [COUNTY_NAMES.includes(b.county) ? b.county : null, [9, 18, 27, 36].includes(Number(b.holes)) ? Number(b.holes) : null, rows[0].id]);
   res.redirect(`/admin/clubs/${rows[0].id}/edit`);
 }));
 
@@ -277,7 +277,7 @@ router.get('/clubs/:id/edit', asyncHandler(async (req, res) => {
   const { rows } = await pool.query(
     `SELECT id, name, slug, address, region, lat, lng, website, contact_email,
             junior_membership_contact, logo_url, description, course_image_url,
-            facebook_url, instagram_url, x_url, scorecard, par, yardage, archived_at, archived_reason, county,
+            facebook_url, instagram_url, x_url, scorecard, par, yardage, archived_at, archived_reason, county, holes,
             (logo_image IS NOT NULL) AS has_logo_image,
             (course_photo_image IS NOT NULL) AS has_course_photo_image
      FROM clubs WHERE id = $1`,
@@ -314,8 +314,8 @@ router.post('/clubs/:id/update', clubImageUpload, asyncHandler(async (req, res) 
 
   await saveClubImages(req.params.id, req.files);
   await saveClubScorecard(req.params.id, b);
-  await pool.query(`UPDATE clubs SET county = $1 WHERE id = $2`,
-    [COUNTY_NAMES.includes(b.county) ? b.county : null, req.params.id]);
+  await pool.query(`UPDATE clubs SET county = $1, holes = $2 WHERE id = $3`,
+    [COUNTY_NAMES.includes(b.county) ? b.county : null, [9, 18, 27, 36].includes(Number(b.holes)) ? Number(b.holes) : null, req.params.id]);
 
   if (b.remove_logo_image === 'on') {
     await pool.query(`UPDATE clubs SET logo_image = NULL, logo_image_type = NULL WHERE id = $1`, [req.params.id]);
@@ -387,14 +387,14 @@ router.post('/clubs/:id/delete', asyncHandler(async (req, res) => {
 }));
 
 // ---------- Club suggestions (from scripts/enrich-clubs.js) ----------
-const SUGGESTION_FIELDS = ['county', 'address', 'website', 'contact_email', 'facebook_url', 'instagram_url', 'x_url',
+const SUGGESTION_FIELDS = ['county', 'holes', 'address', 'website', 'contact_email', 'facebook_url', 'instagram_url', 'x_url',
   'description', 'par', 'yardage', 'scorecard', 'logo_url'];
 
 router.get('/club-suggestions', asyncHandler(async (req, res) => {
   const { rows: suggestions } = await pool.query(
     `SELECT s.*, c.name AS club_name, c.slug AS club_slug,
             c.address, c.website, c.contact_email, c.facebook_url, c.instagram_url, c.x_url,
-            c.description, c.par, c.yardage, c.scorecard, c.logo_url, c.county
+            c.description, c.par, c.yardage, c.scorecard, c.logo_url, c.county, c.holes
      FROM club_suggestions s JOIN clubs c ON c.id = s.club_id
      WHERE s.status = 'pending' AND c.archived_at IS NULL
      ORDER BY c.name`
@@ -419,7 +419,7 @@ router.get('/club-suggestions', asyncHandler(async (req, res) => {
 // Export shows the proposed value where one is pending, otherwise the live
 // value. Import turns any cell that differs from the live club into (or onto)
 // a pending suggestion, so edits still go through the normal review/apply.
-const CSV_FIELDS = ['county', 'address', 'website', 'contact_email', 'facebook_url', 'instagram_url', 'x_url',
+const CSV_FIELDS = ['county', 'holes', 'address', 'website', 'contact_email', 'facebook_url', 'instagram_url', 'x_url',
   'description', 'par', 'yardage', 'logo_url', 'scorecard'];
 const WELSH_POSTCODE_AREAS = ['CF', 'NP', 'SA', 'LD', 'SY', 'LL', 'CH'];
 
@@ -484,7 +484,8 @@ router.post('/club-suggestions/import', upload.single('csv'), asyncHandler(async
       if (raw === '') continue; // blank cells never clear data
 
       let value = raw;
-      if (f === 'par' || f === 'yardage') {
+      if (f === 'holes' && ![9, 18, 27, 36].includes(Number(raw))) { problems.push(`${label}: holes "${raw}" should be 9, 18, 27 or 36`); continue; }
+      if (f === 'par' || f === 'yardage' || f === 'holes') {
         value = Number(raw.replace(/,/g, ''));
         if (!Number.isInteger(value)) { problems.push(`${label}: ${f} "${raw}" is not a whole number`); continue; }
       } else if (f === 'scorecard') {
@@ -551,7 +552,8 @@ router.post('/club-suggestions/:id/apply', asyncHandler(async (req, res) => {
     const raw = submitted !== undefined ? String(submitted).trim() : null;
     if (raw === null) { if (s.data[f] != null) values[f] = s.data[f]; continue; }
     if (raw === '') { problems.push(`${f}: empty, skipped`); continue; }
-    if (f === 'par' || f === 'yardage') {
+    if (f === 'holes' && ![9, 18, 27, 36].includes(Number(raw))) { problems.push('holes should be 9, 18, 27 or 36'); continue; }
+    if (f === 'par' || f === 'yardage' || f === 'holes') {
       const n = Number(raw.replace(/,/g, ''));
       if (!Number.isInteger(n)) { problems.push(`${f} "${raw}" is not a whole number`); continue; }
       values[f] = n;

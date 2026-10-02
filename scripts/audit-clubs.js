@@ -42,7 +42,7 @@ async function run() {
   if (REGION) { params.push(REGION); where.push(`region = $${params.length}`); }
   if (ONE) { params.push(ONE); where.push(`slug = $${params.length}`); }
   const { rows: clubs } = await pool.query(
-    `SELECT id, name, slug, region, county, address, lat, lng, website, contact_email,
+    `SELECT id, name, slug, region, county, holes, address, lat, lng, website, contact_email,
             facebook_url, instagram_url, x_url, description, par, yardage, scorecard, logo_url,
             (logo_image IS NOT NULL) AS has_logo_image
      FROM clubs WHERE ${where.join(' AND ')} ORDER BY region, name`,
@@ -102,8 +102,11 @@ async function run() {
     }
 
     // Course figures
-    const nineHole = (c.description && NINE.test(c.description)) || (card && card.length === 9);
-    if (nineHole && c.par > 40) flag(issues, 'nine-hole', `described as a 9-hole course but par ${c.par}${c.yardage ? ` / ${c.yardage} yds` : ''}; check holes and figures`);
+    const saysNine = c.description && NINE.test(c.description);
+    if (c.holes == null && saysNine) flag(issues, 'holes', 'described as a 9-hole course but holes not set');
+    if (c.holes === 18 && saysNine) flag(issues, 'holes', 'holes is 18 but the description says 9-hole');
+    if (c.holes && card && card.length !== c.holes) flag(issues, 'holes', `holes is ${c.holes} but the scorecard has ${card.length}`);
+    if (c.holes === 18 && c.par && c.par < 54) flag(issues, 'holes', `holes is 18 but par is only ${c.par}`);
     if (c.par && (c.par < 27 || c.par > 74)) flag(issues, 'course', `par ${c.par} is implausible`);
     if (c.yardage && (c.yardage < 1200 || c.yardage > 7800)) flag(issues, 'course', `yardage ${c.yardage} is implausible`);
     const sameYds = c.yardage ? others(byYardage, c.yardage, c.name) : [];
@@ -161,6 +164,7 @@ async function run() {
       if (!c.website) missing.push('website');
       if (!c.contact_email) missing.push('email');
       if (!c.description) missing.push('description');
+      if (!c.holes) missing.push('holes');
       if (!c.par) missing.push('par');
       if (!c.yardage) missing.push('yardage');
       if (!card) missing.push('scorecard');

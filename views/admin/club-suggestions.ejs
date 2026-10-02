@@ -50,7 +50,7 @@
 
 <%
   const labels = {
-    county: 'County', address: 'Address', website: 'Website', contact_email: 'Email', facebook_url: 'Facebook',
+    county: 'County', holes: 'Holes', address: 'Address', website: 'Website', contact_email: 'Email', facebook_url: 'Facebook',
     instagram_url: 'Instagram', x_url: 'X / Twitter', description: 'Description', par: 'Par',
     yardage: 'Yardage', scorecard: 'Scorecard', logo_url: 'Logo'
   };
@@ -112,7 +112,7 @@
                   </select>
                 <% } else if (f === 'description') { %>
                   <textarea name="value_description" rows="3" placeholder="Not found — type to add"><%= boxValue %></textarea>
-                <% } else if (f === 'par' || f === 'yardage') { %>
+                <% } else if (f === 'par' || f === 'yardage' || f === 'holes') { %>
                   <input type="number" name="value_<%= f %>" value="<%= boxValue %>" placeholder="Not found">
                   <% if (f === 'yardage' && s.sources && s.sources.yardage_tee) { %><span class="scorecard-note"><%= s.sources.yardage_tee %> tees</span><% } %>
                 <% } else { %>

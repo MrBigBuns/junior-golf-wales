@@ -6,12 +6,13 @@ const { getForecastForDate } = require('../lib/weather');
 const { SITE_URL, countyByName } = require('../lib/site');
 
 router.get('/', asyncHandler(async (req, res) => {
+  const nineOnly = req.query.holes === '9';
   const { rows: clubs } = await pool.query(
-    `SELECT c.id, c.name, c.slug, c.region, c.county, c.course_image_url,
+    `SELECT c.id, c.name, c.slug, c.region, c.county, c.course_image_url, c.holes,
             COUNT(e.id) FILTER (WHERE e.date_start >= CURRENT_DATE) AS upcoming_count
      FROM clubs c
      LEFT JOIN events e ON e.club_id = c.id
-     WHERE c.archived_at IS NULL
+     WHERE c.archived_at IS NULL ${nineOnly ? 'AND c.holes = 9' : ''}
      GROUP BY c.id
      ORDER BY
        CASE c.region WHEN 'North' THEN 1 WHEN 'Mid' THEN 2 WHEN 'South' THEN 3 ELSE 4 END,
@@ -25,7 +26,7 @@ router.get('/', asyncHandler(async (req, res) => {
     grouped[key].push(c);
   });
 
-  res.render('clubs/index', { grouped });
+  res.render('clubs/index', { grouped, nineOnly, total: clubs.length });
 }));
 
 router.get('/:id/logo-image', asyncHandler(async (req, res) => {
@@ -46,7 +47,7 @@ router.get('/:id/course-photo-image', asyncHandler(async (req, res) => {
 
 router.get('/:slug', asyncHandler(async (req, res) => {
   const { rows: clubRows } = await pool.query(
-    `SELECT id, name, slug, address, region, county, lat, lng, website, contact_email,
+    `SELECT id, name, slug, address, region, county, holes, lat, lng, website, contact_email,
             junior_membership_contact, logo_url, description, course_image_url,
             facebook_url, instagram_url, x_url, scorecard, par, yardage, archived_at, archived_reason,
             (logo_image IS NOT NULL) AS has_logo_image,
@@ -64,7 +65,8 @@ router.get('/:slug', asyncHandler(async (req, res) => {
 
   // Course at a glance, worked out from the scorecard where we have one
   const card = Array.isArray(club.scorecard) && club.scorecard.length ? club.scorecard : null;
-  club.holes = card ? card.length : null;
+  club.has_card = !!card;
+  if (club.holes == null && card) club.holes = card.length;
   if (card && club.par == null) club.par = card.reduce((t, h) => t + (Number(h.par) || 0), 0) || null;
   club.tees = [];
   if (card) {
@@ -72,6 +74,24 @@ router.get('/:slug', asyncHandler(async (req, res) => {
     card.forEach(h => Object.entries(h.yards || {}).forEach(([tee, y]) => { totals[tee] = (totals[tee] || 0) + (Number(y) || 0); }));
     club.tees = Object.entries(totals).filter(([, y]) => y > 0).sort((a, b) => b[1] - a[1]).map(([tee, yards]) => ({ tee, yards }));
     if (club.yardage == null && club.tees.length) club.yardage = club.tees[0].yards;
+  }
+
+  // Nine-hole courses: show the 9-hole figures with the 18-hole (twice round)
+  // equivalent. Older records may hold the 18-hole figures, so infer which.
+  club.par_display = club.par ? String(club.par) : null;
+  club.yardage_display = club.yardage ? `${Number(club.yardage).toLocaleString('en-GB')} yards` : null;
+  if (club.holes === 9) {
+    if (club.par) {
+      club.par_display = club.par > 45
+        ? `${club.par} for 18 holes (twice round)`
+        : `${club.par} <span class="muted">(${club.par * 2} for 18 holes)</span>`;
+    }
+    if (club.yardage) {
+      const y = Number(club.yardage);
+      club.yardage_display = y > 3800
+        ? `${y.toLocaleString('en-GB')} yards for 18 holes (twice round)`
+        : `${y.toLocaleString('en-GB')} yards <span class="muted">(${(y * 2).toLocaleString('en-GB')} for 18 holes)</span>`;
+    }
   }
 
   const placeQuery = club.lat != null ? `${club.lat},${club.lng}` : (club.address ? `${club.name}, ${club.address}` : null);

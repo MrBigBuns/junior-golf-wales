@@ -225,3 +225,12 @@ FROM (VALUES
   ('wrexham-golf-club','Clwyd'),('padeswood-and-buckley-golf-club','Clwyd')
 ) AS m(slug, county)
 WHERE c.slug = m.slug AND c.county IS NULL;
+
+-- Number of holes on the club's main course (9, 18, 27...). Par and yardage
+-- describe one round of the course as built, so a 9-hole course stores its
+-- 9-hole figures; the pages show the 18-hole (twice round) equivalent too.
+ALTER TABLE clubs ADD COLUMN IF NOT EXISTS holes INTEGER;
+-- CASE guarantees the type check runs before the length (WHERE order isn't guaranteed)
+UPDATE clubs SET holes = jsonb_array_length(scorecard)
+ WHERE holes IS NULL
+   AND (CASE WHEN jsonb_typeof(scorecard) = 'array' THEN jsonb_array_length(scorecard) ELSE 0 END) IN (9, 18);

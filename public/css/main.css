@@ -605,3 +605,5 @@ body {
 .county-links { display: flex; flex-wrap: wrap; gap: 8px; margin: 0.5rem 0 2rem; }
 .filters select + select { margin-left: 0.25rem; }
 .footer-note { font-size: 0.8rem; color: var(--text-secondary); max-width: 46rem; margin: 0.5rem auto 0; }
+.badge-nine { background: #eaf3df; color: #3d6b14; border: 1px solid #c9e0ad; font-size: 0.72rem; padding: 1px 7px; border-radius: 999px; vertical-align: middle; }
+.club-filter { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0.5rem 0 1rem; }

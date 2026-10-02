@@ -1,9 +1,14 @@
 <%- include('../partials/head', {
-  pageTitle: 'Golf Clubs in Wales — Course Details, Scorecards & Junior Opens',
+  pageTitle: nineOnly ? '9-Hole Golf Courses in Wales — Ideal for Junior Golfers' : 'Golf Clubs in Wales — Course Details, Scorecards & Junior Opens',
   pageDescription: 'A guide to golf clubs across Wales: addresses, maps, course details, scorecards and upcoming junior golf competitions, by region and county.'
 }) %>
 
-<h1>Golf clubs in Wales</h1>
+<h1><%= nineOnly ? '9-hole golf courses in Wales' : 'Golf clubs in Wales' %></h1>
+<p class="club-filter">
+  <% if (nineOnly) { %><a class="club-action" href="/clubs">All clubs</a> <span class="club-action primary">9-hole courses (<%= total %>)</span>
+  <% } else { %><span class="club-action primary">All clubs (<%= total %>)</span> <a class="club-action" href="/clubs?holes=9">9-hole courses</a><% } %>
+  <span class="muted small">Nine-hole courses are often the friendliest place for young golfers to start.</span>
+</p>
 <p class="subtitle">Course details, scorecards, contacts and upcoming junior competitions. Browse by county:
   <% counties.forEach(function(c, i) { %><a href="/county/<%= c.slug %>"><%= c.name %></a><%= i < counties.length - 1 ? ' · ' : '' %><% }); %>
 </p>
@@ -17,7 +22,7 @@
       <% grouped[region].forEach(function(c) { %>
         <a class="event-card" href="/clubs/<%= c.slug %>">
           <p class="event-card-title"><%= c.name %></p>
-          <p class="event-card-meta"><% if (c.county) { %><%= c.county %> · <% } %><%= c.upcoming_count %> upcoming event<%= c.upcoming_count == 1 ? '' : 's' %></p>
+          <p class="event-card-meta"><% if (c.holes === 9) { %><span class="badge badge-nine">9 holes</span> <% } %><% if (c.county) { %><%= c.county %> · <% } %><%= c.upcoming_count %> upcoming event<%= c.upcoming_count == 1 ? '' : 's' %></p>
         </a>
       <% }); %>
     </div>

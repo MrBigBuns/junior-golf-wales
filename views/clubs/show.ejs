@@ -41,7 +41,7 @@
   <% if (club.directions_url) { %><a class="club-action" href="<%= club.directions_url %>" target="_blank" rel="noopener">Get directions</a><% } %>
   <% if (club.contact_email) { %><a class="club-action" href="mailto:<%= club.contact_email %>">Email the club</a><% } %>
   <% if (events.length) { %><a class="club-action" href="#events"><%= events.length %> upcoming event<%= events.length === 1 ? '' : 's' %></a><% } %>
-  <% if (club.holes) { %><a class="club-action" href="#scorecard">Scorecard</a><% } %>
+  <% if (club.has_card) { %><a class="club-action" href="#scorecard">Scorecard</a><% } %>
 </div>
 
 <div class="event-detail-grid">
@@ -57,9 +57,9 @@
       <h3 class="detail-card-heading">The course at a glance</h3>
       <% if (club.holes || club.par || club.yardage) { %>
         <table class="details-table">
-          <% if (club.holes) { %><tr><td>Holes</td><td><%= club.holes %></td></tr><% } %>
-          <% if (club.par) { %><tr><td>Par</td><td><%= club.par %></td></tr><% } %>
-          <% if (club.yardage) { %><tr><td>Length</td><td><%= Number(club.yardage).toLocaleString('en-GB') %> yards<% if (club.tees.length) { %> <span class="muted">(<%= club.tees[0].tee %> tees)</span><% } %></td></tr><% } %>
+          <% if (club.holes) { %><tr><td>Holes</td><td><%= club.holes %><% if (club.holes === 9) { %> <span class="badge badge-nine">9-hole course</span><% } %></td></tr><% } %>
+          <% if (club.par_display) { %><tr><td>Par</td><td><%- club.par_display %></td></tr><% } %>
+          <% if (club.yardage_display) { %><tr><td>Length</td><td><%- club.yardage_display %><% if (club.tees.length && club.holes !== 9) { %> <span class="muted">(<%= club.tees[0].tee %> tees)</span><% } %></td></tr><% } %>
           <% if (club.tees.length > 1) { %>
             <tr><td>Tees</td><td>
               <ul class="tee-list">
@@ -68,7 +68,7 @@
             </td></tr>
           <% } %>
         </table>
-        <% if (club.holes) { %><p class="muted small"><a href="#scorecard">Full hole-by-hole scorecard below &darr;</a></p><% } %>
+        <% if (club.has_card) { %><p class="muted small"><a href="#scorecard">Full hole-by-hole scorecard below &darr;</a></p><% } %>
       <% } else { %>
         <p class="muted">Course details aren't available yet.</p>
       <% } %>
@@ -192,7 +192,7 @@
   </div>
 </div>
 
-<% if (club.holes) { %>
+<% if (club.has_card) { %>
   <div id="scorecard">
     <%- include('../partials/scorecard', { scorecard: club.scorecard, scorecardNote: null }) %>
   </div>
