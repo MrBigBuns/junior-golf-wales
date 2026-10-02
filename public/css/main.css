@@ -255,7 +255,14 @@ body {
 .tee-yellow td { background: #fdf6d8; }
 .tee-red td { background: #fbe4e0; }
 .tee-blue td { background: #e3edfa; }
-.tee-white td:first-child, .tee-yellow td:first-child, .tee-red td:first-child, .tee-blue td:first-child { font-weight: 500; }
+.tee-black td { background: #e6e6e6; }
+.tee-gold td { background: #f7edcf; }
+.tee-orange td { background: #fde8d4; }
+.tee-green td { background: #e2f1df; }
+.tee-purple td { background: #ece4f7; }
+.tee-silver td { background: #eef0f2; }
+.tee-other td { background: #f6f6f4; }
+.tee-row td:first-child { font-weight: 500; white-space: nowrap; }
 
 .tour-name { font-weight: 600; margin: 0.5rem 0 4px; }
 .tour-desc { color: var(--text-secondary); font-size: 0.9rem; margin: 0 0 0.75rem; }
@@ -573,6 +580,8 @@ body {
 .tee-dot-gold { background: #c9a227; }
 .tee-dot-orange { background: #f08a24; }
 .tee-dot-purple { background: #7b4fc9; }
+.tee-dot-silver { background: #c0c4c8; }
+.tee-dot-other { background: #fff; border-style: dashed; }
 .club-event-list { list-style: none; padding: 0; margin: 0.5rem 0 0; }
 .club-event-list li + li { border-top: 1px solid var(--border); }
 .club-event { display: flex; gap: 12px; align-items: center; padding: 10px 0; color: inherit; text-decoration: none; }

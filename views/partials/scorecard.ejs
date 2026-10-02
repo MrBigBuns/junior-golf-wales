@@ -2,7 +2,12 @@
 <% if (scorecard && scorecard.length) { %>
   <% const frontNine = scorecard.slice(0, 9); %>
   <% const backNine = scorecard.slice(9, 18); %>
-  <% const teeColors = { white: 'tee-white', yellow: 'tee-yellow', red: 'tee-red', blue: 'tee-blue' }; %>
+  <%
+    // Row shading per tee colour; unknown names (e.g. a club's own tee name) get a neutral shade
+    const knownTees = ['white', 'yellow', 'red', 'blue', 'black', 'gold', 'orange', 'green', 'purple', 'silver'];
+    function teeClass(tee) { const t = String(tee).toLowerCase(); return 'tee-row ' + (knownTees.includes(t) ? 'tee-' + t : 'tee-other'); }
+    function teeLabel(tee) { const t = String(tee).toLowerCase(); const name = (t.charAt(0).toUpperCase() + t.slice(1)).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); return '<span class="tee-dot tee-dot-' + (knownTees.includes(t) ? t : 'other') + '"></span>' + name + ' yds'; }
+  %>
   <% const teeTotals = {}; scorecard.forEach(function(h) { Object.keys(h.yards || {}).forEach(function(t) { teeTotals[t] = (teeTotals[t] || 0) + (Number(h.yards[t]) || 0); }); }); %>
   <% const tees = Object.keys(teeTotals).sort(function(a, b) { return teeTotals[b] - teeTotals[a]; }); %>
 
@@ -24,7 +29,7 @@
         <% } %>
         <% if (tees.length) { %>
           <% tees.forEach(function(tee) { %>
-            <tr class="<%= teeColors[tee] || '' %>"><td><%= tee.charAt(0).toUpperCase() + tee.slice(1) %> yds</td><% frontNine.forEach(function(h) { %><td><%= (h.yards || {})[tee] %></td><% }); %><td><%= frontNine.reduce((s, h) => s + ((h.yards || {})[tee] || 0), 0) %></td></tr>
+            <tr class="<%= teeClass(tee) %>"><td><%- teeLabel(tee) %></td><% frontNine.forEach(function(h) { %><td><%= (h.yards || {})[tee] %></td><% }); %><td><%= frontNine.reduce((s, h) => s + ((h.yards || {})[tee] || 0), 0) %></td></tr>
           <% }); %>
         <% } %>
       </tbody>
@@ -45,7 +50,7 @@
           <% } %>
           <% if (tees.length) { %>
             <% tees.forEach(function(tee) { %>
-              <tr class="<%= teeColors[tee] || '' %>"><td><%= tee.charAt(0).toUpperCase() + tee.slice(1) %> yds</td><% backNine.forEach(function(h) { %><td><%= (h.yards || {})[tee] %></td><% }); %><td><%= backNine.reduce((s, h) => s + ((h.yards || {})[tee] || 0), 0) %></td></tr>
+              <tr class="<%= teeClass(tee) %>"><td><%- teeLabel(tee) %></td><% backNine.forEach(function(h) { %><td><%= (h.yards || {})[tee] %></td><% }); %><td><%= backNine.reduce((s, h) => s + ((h.yards || {})[tee] || 0), 0) %></td></tr>
             <% }); %>
           <% } %>
         </tbody>
