@@ -595,3 +595,4 @@ body {
 .hero-eyebrow { margin: 0 0 0.25rem; font-weight: 600; color: var(--wales-green); letter-spacing: 0.02em; }
 .county-links { display: flex; flex-wrap: wrap; gap: 8px; margin: 0.5rem 0 2rem; }
 .filters select + select { margin-left: 0.25rem; }
+.footer-note { font-size: 0.8rem; color: var(--text-secondary); max-width: 46rem; margin: 0.5rem auto 0; }

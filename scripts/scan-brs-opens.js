@@ -28,7 +28,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function get(url) {
   const res = await fetch(url, {
     headers: {
-      'User-Agent': 'JuniorGolfWales/0.1 (junior event listings; contact via ' + SITE_URL + ')',
+      'User-Agent': 'WalesJuniorGolf/0.1 (junior event listings; contact via ' + SITE_URL + ')',
       'Accept-Language': 'en-GB'
     }
   });

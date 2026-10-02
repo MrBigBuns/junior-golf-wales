@@ -137,7 +137,7 @@ router.get('/:slug/calendar.ics', asyncHandler(async (req, res) => {
   const ics = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
-    'PRODID:-//Junior Golf Wales//EN',
+    'PRODID:-//Wales Junior Golf//EN',
     'BEGIN:VEVENT',
     `UID:${req.params.slug}@junior-golf-wales.onrender.com`,
     `DTSTAMP:${nowStamp}`,
