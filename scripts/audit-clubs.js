@@ -22,10 +22,13 @@ const WELSH_AREAS = ['CF', 'NP', 'SA', 'LD', 'SY', 'LL', 'CH'];
 const REGION_AREAS = { South: ['CF', 'NP', 'SA'], Mid: ['SY', 'LD', 'LL', 'SA', 'NP'], North: ['LL', 'CH', 'SY'] };
 // County sits in a different region only for Ceredigion (Dyfed) and Meirionnydd (Gwynedd) clubs listed as Mid
 const ALLOWED_COUNTY_REGION = new Set(['Mid|Dyfed', 'Mid|Gwynedd']);
-const PLATFORM_LOGO = /wordpress\.com|wp\.com\/i\/logo|wpcom|wixstatic|wix\.com|squarespace|godaddy|weebly|jimdo|gravatar|facebook\.com|fbcdn/i;
+// Wix/Squarespace image servers host clubs' own logos, so only flag platform
+// branding and Facebook image links (which expire after a few weeks)
+const PLATFORM_LOGO = /s-ssl\.wordpress\.com\/i\/logo|wpcom-|gravatar\.com|fbcdn\.net|facebook\.com/i;
 const ARTEFACT = /\b(it is not in|is not located in|i (could|was unable|found|cannot|can't)|unable to (find|verify)|could not (find|verify)|no (information|details) (was|were)? ?(found|available)|search results?|as an ai|the request|not (to be )?confused with)\b/i;
 const CLOSED = /\b(closed|ceased|no longer (operat|open|trad)|went into administration|liquidat)/i;
-const NINE = /\b(nine[- ]hole|9[- ]hole)\b/i;
+// The course itself is nine holes (not 'originally nine holes' or 'plus a nine-hole academy')
+const NINE = /\b(is|has) an? (\w+ )?(nine|9)[- ]hole (course|layout|parkland|heathland|links|moorland|golf course)\b/i;
 
 function postcodeArea(address) {
   const m = (address || '').match(/\b([A-Z]{1,2})[0-9][A-Z0-9]?\s*[0-9][A-Z]{2}\b/i);
@@ -100,7 +103,7 @@ async function run() {
 
     // Course figures
     const nineHole = (c.description && NINE.test(c.description)) || (card && card.length === 9);
-    if (nineHole && c.par > 40) flag(issues, 'nine-hole', `9-hole course but par ${c.par}${c.yardage ? ` / ${c.yardage} yds` : ''} looks like 18-hole (twice round) figures`);
+    if (nineHole && c.par > 40) flag(issues, 'nine-hole', `described as a 9-hole course but par ${c.par}${c.yardage ? ` / ${c.yardage} yds` : ''}; check holes and figures`);
     if (c.par && (c.par < 27 || c.par > 74)) flag(issues, 'course', `par ${c.par} is implausible`);
     if (c.yardage && (c.yardage < 1200 || c.yardage > 7800)) flag(issues, 'course', `yardage ${c.yardage} is implausible`);
     const sameYds = c.yardage ? others(byYardage, c.yardage, c.name) : [];
@@ -128,6 +131,7 @@ async function run() {
       }
       card.forEach(h => Object.entries(h.yards || {}).forEach(([t, y]) => {
         const par = Number(h.par);
+        if (/^(green|grange|orange|purple|junior|forward)/i.test(t)) return; // junior tees are short by design
         if (par && y && (y < (par === 3 ? 60 : 180) || y > (par === 3 ? 260 : par === 4 ? 520 : 680))) {
           flag(issues, 'scorecard', `hole ${h.hole} ${t} ${y} yds looks wrong for a par ${par}`);
         }
@@ -135,7 +139,7 @@ async function run() {
     }
 
     // Links and images
-    if (c.logo_url && PLATFORM_LOGO.test(c.logo_url)) flag(issues, 'logo', `hosting platform's logo, not the club's: ${c.logo_url}`);
+    if (c.logo_url && PLATFORM_LOGO.test(c.logo_url)) flag(issues, 'logo', `${/fbcdn|facebook/i.test(c.logo_url) ? 'Facebook image link (expires)' : "hosting platform's logo, not the club's"}: ${c.logo_url.slice(0, 80)}`);
     const sameLogo = c.logo_url ? others(byLogo, c.logo_url, c.name) : [];
     if (sameLogo.length) flag(issues, 'logo', `same logo as ${sameLogo.join(', ')}`);
     if (c.website) {

@@ -163,7 +163,8 @@ function scrapeHomepage(html, baseUrl) {
   else if (touchIcon) logo = touchIcon[1];
   else if (ogImage) logo = ogImage[1];
   // Ignore the hosting platform's own branding (WordPress.com, Wix, Squarespace, etc.)
-  const PLATFORM_LOGO = /wordpress\.com|wp\.com\/i\/logo|wpcom|wix(static)?\.com\/.*(logo|wix)|squarespace|godaddy|weebly|jimdo|gravatar|facebook\.com|fbcdn/i;
+  // (Wix and Squarespace image servers host clubs' own logos, so those are fine.)
+  const PLATFORM_LOGO = /s-ssl\.wordpress\.com\/i\/logo|wpcom-|gravatar\.com|fbcdn\.net|facebook\.com/i;
   const resolved = logo && !logo.startsWith('data:') ? absolute(logo, baseUrl) : null;
   out.logo_url = resolved && !PLATFORM_LOGO.test(resolved) ? resolved : null;
   return out;
