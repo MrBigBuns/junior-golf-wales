@@ -39,16 +39,27 @@ const CLUBS = {
     'Alice Springs Golf Club']
 };
 
+// Modern area -> golf county used by the site's county pages
+const GOLF_COUNTY = {
+  Pembrokeshire: 'Dyfed', Ceredigion: 'Dyfed', Carmarthenshire: 'Dyfed',
+  Swansea: 'Glamorgan', 'Neath Port Talbot': 'Glamorgan', Bridgend: 'Glamorgan',
+  'Rhondda Cynon Taf and Merthyr': 'Glamorgan', Cardiff: 'Glamorgan', 'Vale of Glamorgan': 'Glamorgan',
+  Caerphilly: 'Glamorgan', 'Torfaen and Blaenau Gwent': 'Gwent', Newport: 'Gwent', Monmouthshire: 'Gwent'
+};
+// Clubs east of the Rhymney sit in historic Monmouthshire (Gwent)
+const COUNTY_EXCEPTIONS = { 'Bryn Meadows Golf Club': 'Gwent', 'Blackwood Golf Club': 'Gwent' };
+
 async function run() {
   let added = 0, existing = 0;
   for (const [county, names] of Object.entries(CLUBS)) {
     for (const name of names) {
-      const { rowCount } = await pool.query(
-        `INSERT INTO clubs (name, slug, region) VALUES ($1, $2, 'South')
-         ON CONFLICT (slug) DO NOTHING`,
-        [name, slugify(name)]
+      const { rows } = await pool.query(
+        `INSERT INTO clubs (name, slug, region, county) VALUES ($1, $2, 'South', $3)
+         ON CONFLICT (slug) DO UPDATE SET county = COALESCE(clubs.county, EXCLUDED.county)
+         RETURNING (xmax = 0) AS inserted`,
+        [name, slugify(name), COUNTY_EXCEPTIONS[name] || GOLF_COUNTY[county] || null]
       );
-      if (rowCount) { added++; console.log(`Added: ${name} (${county})`); } else { existing++; }
+      if (rows[0] && rows[0].inserted) { added++; console.log(`Added: ${name} (${county})`); } else { existing++; }
     }
   }
   console.log(`\n${added} club(s) added, ${existing} already present.`);

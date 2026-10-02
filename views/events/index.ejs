@@ -1,6 +1,11 @@
-<%- include('../partials/head', { pageTitle: 'Upcoming junior golf events in Wales' }) %>
+<% const place = county ? county : (region ? region + ' Wales' : 'Wales'); %>
+<%- include('../partials/head', {
+  pageTitle: 'Junior Golf Competitions in ' + place + ' ' + seasonYear + ' — Opens, Tours & Club Events',
+  pageDescription: 'Every upcoming junior golf competition in ' + place + ': junior opens, the PING Welsh Junior Tour, Mini Masters and club events for boys and girls of all ages, ' + seasonYear + ' season.'
+}) %>
 
-<h1>Upcoming junior golf events</h1>
+<h1>Junior golf competitions in <%= place %> <%= seasonYear %></h1>
+<p class="subtitle">Junior opens, national tours and club competitions for boys and girls<% if (!county) { %> · <a href="/county">Browse by county</a><% } %></p>
 
 <form method="get" class="filters">
   <input type="text" name="q" value="<%= q || '' %>" placeholder="Search by event, club, or tour">
@@ -10,13 +15,17 @@
     <option value="Mid" <%= region === 'Mid' ? 'selected' : '' %>>Mid Wales</option>
     <option value="South" <%= region === 'South' ? 'selected' : '' %>>South Wales</option>
   </select>
+  <select name="county" onchange="this.form.submit()">
+    <option value="">Any county</option>
+    <% counties.forEach(function(c) { %><option value="<%= c.name %>" <%= county === c.name ? 'selected' : '' %>><%= c.name %></option><% }); %>
+  </select>
   <% if (age) { %><input type="hidden" name="age" value="<%= age %>"><% } %>
   <button type="submit">Search</button>
 </form>
 <% if (age) { %><p class="scorecard-note">Filtered by category: <%= age %> — <a href="/events<%= region ? '?region=' + region : '' %>">clear</a></p><% } %>
 
 <% if (totalCount === 0) { %>
-  <p>No upcoming events found. <a href="/submit-event">Submit one?</a></p>
+  <p>No upcoming competitions found<%= county || region ? ' for this area' : '' %>. <a href="/events">See all of Wales</a> or <a href="/submit-event">submit one</a>.</p>
 <% } %>
 
 <% ['North', 'Mid', 'South', 'Other'].forEach(function(r) { %>

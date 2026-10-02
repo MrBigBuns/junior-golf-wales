@@ -3,10 +3,11 @@ const router = express.Router();
 const pool = require('../db/pool');
 const asyncHandler = require('../lib/asyncHandler');
 const { getForecastForDate } = require('../lib/weather');
+const { SITE_URL, countyByName } = require('../lib/site');
 
 router.get('/', asyncHandler(async (req, res) => {
   const { rows: clubs } = await pool.query(
-    `SELECT c.id, c.name, c.slug, c.region, c.course_image_url,
+    `SELECT c.id, c.name, c.slug, c.region, c.county, c.course_image_url,
             COUNT(e.id) FILTER (WHERE e.date_start >= CURRENT_DATE) AS upcoming_count
      FROM clubs c
      LEFT JOIN events e ON e.club_id = c.id
@@ -45,7 +46,7 @@ router.get('/:id/course-photo-image', asyncHandler(async (req, res) => {
 
 router.get('/:slug', asyncHandler(async (req, res) => {
   const { rows: clubRows } = await pool.query(
-    `SELECT id, name, slug, address, region, lat, lng, website, contact_email,
+    `SELECT id, name, slug, address, region, county, lat, lng, website, contact_email,
             junior_membership_contact, logo_url, description, course_image_url,
             facebook_url, instagram_url, x_url, scorecard, par, yardage, archived_at, archived_reason,
             (logo_image IS NOT NULL) AS has_logo_image,
@@ -125,17 +126,17 @@ router.get('/:slug', asyncHandler(async (req, res) => {
     '@context': 'https://schema.org',
     '@type': 'GolfCourse',
     name: club.name,
-    url: `https://junior-golf-wales.onrender.com/clubs/${club.slug}`
+    url: `${SITE_URL}/clubs/${club.slug}`
   };
   if (club.description) ld.description = club.description;
-  if (club.address) ld.address = { '@type': 'PostalAddress', streetAddress: club.address, addressRegion: `${club.region} Wales`, addressCountry: 'GB' };
+  if (club.address) ld.address = { '@type': 'PostalAddress', streetAddress: club.address, addressRegion: club.county || `${club.region} Wales`, addressCountry: 'GB' };
   if (club.lat != null) ld.geo = { '@type': 'GeoCoordinates', latitude: Number(club.lat), longitude: Number(club.lng) };
   if (club.contact_email) ld.email = club.contact_email;
   if (sameAs.length) ld.sameAs = sameAs;
   if (club.logo_src && /^https?:/.test(club.logo_src)) ld.logo = club.logo_src;
   const jsonLd = JSON.stringify(ld).replace(/</g, '\\u003c');
 
-  const metaParts = [`${club.name} — golf club in ${club.region} Wales`];
+  const metaParts = [`${club.name} — golf club in ${club.county ? club.county + ', ' : ''}${club.region} Wales`];
   if (club.holes) metaParts.push(`${club.holes} holes${club.par ? ', par ' + club.par : ''}${club.yardage ? ', ' + club.yardage + ' yards' : ''}`);
   if (events.length) metaParts.push(`${events.length} upcoming junior event${events.length === 1 ? '' : 's'}`);
   const has = [];
@@ -146,7 +147,8 @@ router.get('/:slug', asyncHandler(async (req, res) => {
     ? club.description.slice(0, 155)
     : metaParts.join('. ') + '.' + (has.length ? ' ' + has.join(', ').replace(/^./, c => c.toUpperCase()) + '.' : '');
 
-  res.render('clubs/show', { club, events, pastEvents, nearbyClubs, weather, jsonLd, pageDescription });
+  const county = club.county ? countyByName(club.county) : null;
+  res.render('clubs/show', { club, events, pastEvents, nearbyClubs, weather, jsonLd, pageDescription, countySlug: county ? county.slug : null });
 }));
 
 module.exports = router;

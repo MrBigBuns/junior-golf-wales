@@ -590,3 +590,8 @@ body {
 .nearby-clubs a { color: var(--wales-green); text-decoration: none; }
 .nearby-clubs .small { white-space: nowrap; }
 .club-claim { background: var(--surface); }
+
+/* ---------- SEO / county pages ---------- */
+.hero-eyebrow { margin: 0 0 0.25rem; font-weight: 600; color: var(--wales-green); letter-spacing: 0.02em; }
+.county-links { display: flex; flex-wrap: wrap; gap: 8px; margin: 0.5rem 0 2rem; }
+.filters select + select { margin-left: 0.25rem; }

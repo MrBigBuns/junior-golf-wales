@@ -8,6 +8,7 @@ const { geocodeAddress } = require('../lib/geocode');
 const { purgeOldSubmissions } = require('../lib/retention');
 const { extractScorecardFromImage, deriveTotals, isScorecard } = require('../lib/scorecard');
 const { toCsv, parseCsv, decodeUpload } = require('../lib/csv');
+const { COUNTY_NAMES } = require('../lib/site');
 
 function slugify(str) {
   return str
@@ -267,6 +268,8 @@ router.post('/clubs', clubImageUpload, asyncHandler(async (req, res) => {
 
   await saveClubImages(rows[0].id, req.files);
   await saveClubScorecard(rows[0].id, b);
+  await pool.query(`UPDATE clubs SET county = $1 WHERE id = $2`,
+    [COUNTY_NAMES.includes(b.county) ? b.county : null, rows[0].id]);
   res.redirect(`/admin/clubs/${rows[0].id}/edit`);
 }));
 
@@ -274,7 +277,7 @@ router.get('/clubs/:id/edit', asyncHandler(async (req, res) => {
   const { rows } = await pool.query(
     `SELECT id, name, slug, address, region, lat, lng, website, contact_email,
             junior_membership_contact, logo_url, description, course_image_url,
-            facebook_url, instagram_url, x_url, scorecard, par, yardage, archived_at, archived_reason,
+            facebook_url, instagram_url, x_url, scorecard, par, yardage, archived_at, archived_reason, county,
             (logo_image IS NOT NULL) AS has_logo_image,
             (course_photo_image IS NOT NULL) AS has_course_photo_image
      FROM clubs WHERE id = $1`,
@@ -311,6 +314,8 @@ router.post('/clubs/:id/update', clubImageUpload, asyncHandler(async (req, res) 
 
   await saveClubImages(req.params.id, req.files);
   await saveClubScorecard(req.params.id, b);
+  await pool.query(`UPDATE clubs SET county = $1 WHERE id = $2`,
+    [COUNTY_NAMES.includes(b.county) ? b.county : null, req.params.id]);
 
   if (b.remove_logo_image === 'on') {
     await pool.query(`UPDATE clubs SET logo_image = NULL, logo_image_type = NULL WHERE id = $1`, [req.params.id]);
@@ -382,14 +387,14 @@ router.post('/clubs/:id/delete', asyncHandler(async (req, res) => {
 }));
 
 // ---------- Club suggestions (from scripts/enrich-clubs.js) ----------
-const SUGGESTION_FIELDS = ['address', 'website', 'contact_email', 'facebook_url', 'instagram_url', 'x_url',
+const SUGGESTION_FIELDS = ['county', 'address', 'website', 'contact_email', 'facebook_url', 'instagram_url', 'x_url',
   'description', 'par', 'yardage', 'scorecard', 'logo_url'];
 
 router.get('/club-suggestions', asyncHandler(async (req, res) => {
   const { rows: suggestions } = await pool.query(
     `SELECT s.*, c.name AS club_name, c.slug AS club_slug,
             c.address, c.website, c.contact_email, c.facebook_url, c.instagram_url, c.x_url,
-            c.description, c.par, c.yardage, c.scorecard, c.logo_url
+            c.description, c.par, c.yardage, c.scorecard, c.logo_url, c.county
      FROM club_suggestions s JOIN clubs c ON c.id = s.club_id
      WHERE s.status = 'pending' AND c.archived_at IS NULL
      ORDER BY c.name`
@@ -414,7 +419,7 @@ router.get('/club-suggestions', asyncHandler(async (req, res) => {
 // Export shows the proposed value where one is pending, otherwise the live
 // value. Import turns any cell that differs from the live club into (or onto)
 // a pending suggestion, so edits still go through the normal review/apply.
-const CSV_FIELDS = ['address', 'website', 'contact_email', 'facebook_url', 'instagram_url', 'x_url',
+const CSV_FIELDS = ['county', 'address', 'website', 'contact_email', 'facebook_url', 'instagram_url', 'x_url',
   'description', 'par', 'yardage', 'logo_url', 'scorecard'];
 const WELSH_POSTCODE_AREAS = ['CF', 'NP', 'SA', 'LD', 'SY', 'LL', 'CH'];
 
@@ -487,6 +492,9 @@ router.post('/club-suggestions/import', upload.single('csv'), asyncHandler(async
         if (!isScorecard(value)) { problems.push(`${label}: scorecard must be a list of holes`); continue; }
       } else if (/_url$|^website$/.test(f) && !/^https?:\/\//i.test(raw)) {
         problems.push(`${label}: ${f} should start with http:// or https://`); continue;
+      } else if (f === 'county') {
+        value = COUNTY_NAMES.find(n => n.toLowerCase() === raw.toLowerCase());
+        if (!value) { problems.push(`${label}: county "${raw}" must be one of ${COUNTY_NAMES.join(', ')}`); continue; }
       }
 
       if (JSON.stringify(value) !== JSON.stringify(club[f])) edits[f] = value;
@@ -554,6 +562,10 @@ router.post('/club-suggestions/:id/apply', asyncHandler(async (req, res) => {
       values[f] = card;
     } else if (/_url$|^website$/.test(f) && !/^https?:\/\//i.test(raw)) {
       problems.push(`${f} should start with http:// or https://`); continue;
+    } else if (f === 'county') {
+      const match = COUNTY_NAMES.find(n => n.toLowerCase() === raw.toLowerCase());
+      if (!match) { problems.push(`county must be one of ${COUNTY_NAMES.join(', ')}`); continue; }
+      values[f] = match;
     } else if (f === 'contact_email' && !raw.includes('@')) {
       problems.push('email looks invalid'); continue;
     } else {

@@ -10,6 +10,7 @@
 // as "pending", and events already on the site (same club + date) or already
 // queued (same BRS competition id) are skipped, so it is safe to re-run.
 require('dotenv').config();
+const { SITE_URL } = require('../lib/site');
 const pool = require('../db/pool');
 
 const BASE = 'https://www.brsgolf.com/opencomps';
@@ -27,7 +28,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 async function get(url) {
   const res = await fetch(url, {
     headers: {
-      'User-Agent': 'JuniorGolfWales/0.1 (junior event listings; contact via junior-golf-wales.onrender.com)',
+      'User-Agent': 'JuniorGolfWales/0.1 (junior event listings; contact via ' + SITE_URL + ')',
       'Accept-Language': 'en-GB'
     }
   });

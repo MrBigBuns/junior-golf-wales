@@ -1,5 +1,5 @@
 <%- include('../partials/head', {
-  pageTitle: club.name + ' — ' + club.region + ' Wales golf club',
+  pageTitle: club.name + (club.county ? ', ' + club.county : '') + ' — Course, Scorecard & Junior Golf',
   pageDescription: pageDescription,
   ogImage: club.banner_src && /^https?:/.test(club.banner_src) ? club.banner_src : null
 }) %>
@@ -14,7 +14,7 @@
 %>
 
 <nav class="breadcrumb">
-  <a href="/clubs">Clubs</a> / <span><%= club.region %> Wales</span>
+  <a href="/clubs">Clubs</a> / <% if (countySlug) { %><a href="/county/<%= countySlug %>"><%= club.county %></a><% } else { %><span><%= club.region %> Wales</span><% } %>
 </nav>
 
 <% if (club.archived_at) { %>
@@ -33,7 +33,7 @@
     <% if (!club.banner_src && club.logo_src) { %><img src="<%= club.logo_src %>" alt="<%= club.name %> logo" class="club-logo-header"><% } %>
     <h1><%= club.name %></h1>
   </div>
-  <p class="subtitle"><%= club.region %> Wales<% if (club.address) { %> · <%= club.address %><% } %></p>
+  <p class="subtitle"><% if (club.county) { %><%= club.county %>, <% } %><%= club.region %> Wales<% if (club.address) { %> · <%= club.address %><% } %></p>
 </div>
 
 <div class="club-actions">

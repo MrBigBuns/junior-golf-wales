@@ -1,7 +1,12 @@
-<%- include('../partials/head', { pageTitle: 'Wales golf clubs — Junior Golf Wales' }) %>
+<%- include('../partials/head', {
+  pageTitle: 'Golf Clubs in Wales — Course Details, Scorecards & Junior Opens',
+  pageDescription: 'A guide to golf clubs across Wales: addresses, maps, course details, scorecards and upcoming junior golf competitions, by region and county.'
+}) %>
 
-<h1>Clubs</h1>
-<p class="subtitle">Every club we track junior events for.</p>
+<h1>Golf clubs in Wales</h1>
+<p class="subtitle">Course details, scorecards, contacts and upcoming junior competitions. Browse by county:
+  <% counties.forEach(function(c, i) { %><a href="/county/<%= c.slug %>"><%= c.name %></a><%= i < counties.length - 1 ? ' · ' : '' %><% }); %>
+</p>
 
 <% ['North', 'Mid', 'South', 'Other'].forEach(function(region) { %>
   <% if (grouped[region] && grouped[region].length) { %>
@@ -12,7 +17,7 @@
       <% grouped[region].forEach(function(c) { %>
         <a class="event-card" href="/clubs/<%= c.slug %>">
           <p class="event-card-title"><%= c.name %></p>
-          <p class="event-card-meta"><%= c.upcoming_count %> upcoming event<%= c.upcoming_count == 1 ? '' : 's' %></p>
+          <p class="event-card-meta"><% if (c.county) { %><%= c.county %> · <% } %><%= c.upcoming_count %> upcoming event<%= c.upcoming_count == 1 ? '' : 's' %></p>
         </a>
       <% }); %>
     </div>

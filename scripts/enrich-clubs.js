@@ -22,6 +22,7 @@ require('dotenv').config();
 const pool = require('../db/pool');
 const { geocodeAddress } = require('../lib/geocode');
 const { deriveTotals, isScorecard } = require('../lib/scorecard');
+const { COUNTY_NAMES } = require('../lib/site');
 
 const API_BASE = process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com';
 const MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-5-5';
@@ -38,7 +39,7 @@ const REDO = argv.includes('--redo');
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-const FIELDS = ['address', 'website', 'contact_email', 'facebook_url', 'instagram_url', 'x_url',
+const FIELDS = ['county', 'address', 'website', 'contact_email', 'facebook_url', 'instagram_url', 'x_url',
   'description', 'par', 'yardage', 'scorecard', 'logo_url'];
 
 function prompt(clubName) {
@@ -46,6 +47,7 @@ function prompt(clubName) {
 
 Return ONLY a JSON object (no markdown, no commentary) in exactly this shape:
 {
+  "county": "one of Glamorgan, Gwent, Dyfed, Powys, Gwynedd, Clwyd (the golf county the club is in), or null",
   "address": "full postal address including postcode, or null",
   "website": "official club website homepage URL, or null",
   "contact_email": "general club/office email, or null",
@@ -176,7 +178,11 @@ async function research(club) {
   const found = await askClaude(club.name);
   const sources = found.sources || {};
 
+  const county = typeof found.county === 'string'
+    ? COUNTY_NAMES.find(n => n.toLowerCase() === found.county.trim().toLowerCase()) || null
+    : null;
   const data = {
+    county,
     address: typeof found.address === 'string' ? found.address.trim() : null,
     website: cleanUrl(found.website),
     contact_email: typeof found.contact_email === 'string' && found.contact_email.includes('@') ? found.contact_email.trim() : null,
@@ -242,7 +248,7 @@ async function pickClubs() {
     `SELECT c.id, c.name, c.slug FROM clubs c
      WHERE c.region = $1
        AND c.archived_at IS NULL
-       AND (c.address IS NULL OR c.website IS NULL OR c.lat IS NULL OR c.par IS NULL
+       AND (c.county IS NULL OR c.address IS NULL OR c.website IS NULL OR c.lat IS NULL OR c.par IS NULL
             OR c.description IS NULL OR c.scorecard IS NULL OR c.logo_url IS NULL)
        AND ($2 OR NOT EXISTS (SELECT 1 FROM club_suggestions s WHERE s.club_id = c.id))
      ORDER BY c.name

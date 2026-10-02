@@ -1,0 +1,22 @@
+<%- include('../partials/head', {
+  pageTitle: 'Junior Golf Opens & Competitions by County in Wales ' + seasonYear,
+  pageDescription: 'Find junior golf opens, competitions and golf clubs in Glamorgan, Gwent, Dyfed, Powys, Gwynedd and Clwyd for the ' + seasonYear + ' season.'
+}) %>
+
+<nav class="breadcrumb"><a href="/events">Competitions</a> / <span>Counties</span></nav>
+
+<h1>Junior golf competitions by county</h1>
+<p class="subtitle">Junior opens, tours and club competitions across Wales for <%= seasonYear %>, grouped by golf county.</p>
+
+<div class="event-list">
+  <% counties.forEach(function(c) { %>
+    <% const n = counts[c.name] || { clubs: 0, upcoming: 0 }; %>
+    <a class="event-card" href="/county/<%= c.slug %>">
+      <p class="event-card-title"><%= c.name %></p>
+      <p class="event-card-meta"><%= n.upcoming %> upcoming competition<%= n.upcoming === 1 ? '' : 's' %> · <%= n.clubs %> club<%= n.clubs === 1 ? '' : 's' %></p>
+      <p class="event-card-meta muted small"><%= c.areas.join(', ') %></p>
+    </a>
+  <% }); %>
+</div>
+
+<%- include('../partials/foot') %>

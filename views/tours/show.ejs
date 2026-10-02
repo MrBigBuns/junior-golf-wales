@@ -1,10 +1,13 @@
-<%- include('../partials/head', { pageTitle: organiser.name + ' — Junior Golf Wales' }) %>
+<%- include('../partials/head', {
+  pageTitle: organiser.name + ' ' + seasonYear + ' — Dates, Venues & Entry',
+  pageDescription: organiser.name + ' ' + seasonYear + ': upcoming dates and venues' + (events.length ? ' (' + events.length + ' listed)' : '') + ', plus how the series works. ' + (organiser.description ? organiser.description.slice(0, 90) : '')
+}) %>
 
-<h1><%= organiser.name %></h1>
+<h1><%= organiser.name %> <%= seasonYear %></h1>
 <% if (organiser.description) { %><p class="subtitle"><%= organiser.description %></p><% } %>
 <% if (organiser.website) { %><p><a href="<%= organiser.website %>" target="_blank" rel="noopener">Official site</a></p><% } %>
 
-<h2>Upcoming events</h2>
+<h2>Upcoming dates and venues</h2>
 <% if (events.length === 0) { %>
   <p>No upcoming events listed for this tour yet.</p>
 <% } %>

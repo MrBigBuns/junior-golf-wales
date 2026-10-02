@@ -1,5 +1,6 @@
+<% const eventYear = new Date(event.date_start).getFullYear(); %>
 <%- include('../partials/head', {
-  pageTitle: event.title + ' at ' + event.club_name,
+  pageTitle: event.title + (String(event.title).includes(String(eventYear)) ? '' : ' ' + eventYear) + ' at ' + event.club_name + (event.club_county ? ', ' + event.club_county : ''),
   pageDescription: event.meta_description || (event.title + ' at ' + event.club_name + ', ' + event.region + ' Wales — ' + new Date(event.date_start).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) + '.'),
   ogImage: event.club_course_image_url || null
 }) %>

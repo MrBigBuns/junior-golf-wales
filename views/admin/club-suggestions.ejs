@@ -50,7 +50,7 @@
 
 <%
   const labels = {
-    address: 'Address', website: 'Website', contact_email: 'Email', facebook_url: 'Facebook',
+    county: 'County', address: 'Address', website: 'Website', contact_email: 'Email', facebook_url: 'Facebook',
     instagram_url: 'Instagram', x_url: 'X / Twitter', description: 'Description', par: 'Par',
     yardage: 'Yardage', scorecard: 'Scorecard', logo_url: 'Logo'
   };
@@ -105,6 +105,11 @@
                     </details>
                   <% } %>
                   <textarea name="value_scorecard" rows="3" placeholder="JSON list of holes, or import a photo from the club page"><%= boxValue %></textarea>
+                <% } else if (f === 'county') { %>
+                  <select name="value_county">
+                    <option value="">—</option>
+                    <% counties.forEach(function(c) { %><option value="<%= c.name %>" <%= boxValue === c.name ? 'selected' : '' %>><%= c.name %></option><% }); %>
+                  </select>
                 <% } else if (f === 'description') { %>
                   <textarea name="value_description" rows="3" placeholder="Not found — type to add"><%= boxValue %></textarea>
                 <% } else if (f === 'par' || f === 'yardage') { %>
@@ -155,8 +160,8 @@
 
 <script>
   // Typing in a box ticks its Apply checkbox
-  document.querySelectorAll('.suggestion-edit input, .suggestion-edit textarea').forEach(function (box) {
-    box.addEventListener('input', function () {
+  document.querySelectorAll('.suggestion-edit input, .suggestion-edit textarea, .suggestion-edit select').forEach(function (box) {
+    box.addEventListener(box.tagName === 'SELECT' ? 'change' : 'input', function () {
       const row = box.closest('tr');
       const tick = row && row.querySelector('input[type=checkbox][name=fields]');
       if (tick) tick.checked = box.value.trim() !== '';

@@ -1,0 +1,70 @@
+<%
+  const areaList = county.areas.slice(0, -1).join(', ') + (county.areas.length > 1 ? ' and ' : '') + county.areas[county.areas.length - 1];
+  function fmtDate(d, opts) { return new Date(d).toLocaleDateString('en-GB', opts || { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }); }
+%>
+<%- include('../partials/head', {
+  pageTitle: 'Junior Golf Opens & Competitions in ' + county.name + ' ' + seasonYear,
+  pageDescription: events.length
+    ? events.length + ' upcoming junior golf open' + (events.length === 1 ? '' : 's') + ' and competitions in ' + county.name + ' (' + county.areas.slice(0, 3).join(', ') + '), plus ' + clubs.length + ' golf clubs with course details and scorecards.'
+    : 'Junior golf opens, competitions and golf clubs in ' + county.name + ' (' + county.areas.slice(0, 3).join(', ') + ') for the ' + seasonYear + ' season.'
+}) %>
+
+<nav class="breadcrumb"><a href="/county">Counties</a> / <span><%= county.name %></span></nav>
+
+<h1>Junior golf opens &amp; competitions in <%= county.name %></h1>
+<p class="subtitle">Covering <%= areaList %> · <%= county.region %> Wales · <%= seasonYear %> season</p>
+
+<div class="event-detail-grid">
+  <div>
+    <div class="detail-card">
+      <h2 class="detail-card-heading">Upcoming junior competitions</h2>
+      <% if (!events.length) { %>
+        <p class="muted">No upcoming junior opens are listed in <%= county.name %> yet. Most clubs publish their dates in the spring. <a href="/events">See all competitions in Wales</a> or <a href="/submit-event">tell us about one</a>.</p>
+      <% } else { %>
+        <ul class="club-event-list">
+          <% events.forEach(function(e) { %>
+            <li>
+              <a href="/events/<%= e.slug %>" class="club-event">
+                <span class="club-event-date">
+                  <span class="club-event-day"><%= new Date(e.date_start).getDate() %></span>
+                  <span class="club-event-month"><%= fmtDate(e.date_start, { month: 'short', year: '2-digit' }) %></span>
+                </span>
+                <span class="club-event-body">
+                  <strong><%= e.title %></strong>
+                  <span class="muted small"><%= e.club_name %> · <%= fmtDate(e.date_start) %><% if (e.age_category) { %> · <%= e.age_category %><% } %><% if (e.entry_fee) { %> · £<%= e.entry_fee %><% } %><% if (e.organiser_name) { %> · <%= e.organiser_name %><% } %></span>
+                </span>
+              </a>
+            </li>
+          <% }); %>
+        </ul>
+      <% } %>
+    </div>
+  </div>
+
+  <div>
+    <div class="detail-card">
+      <h2 class="detail-card-heading">Golf clubs in <%= county.name %></h2>
+      <% if (!clubs.length) { %>
+        <p class="muted">No clubs listed yet.</p>
+      <% } else { %>
+        <ul class="nearby-clubs">
+          <% clubs.forEach(function(c) { %>
+            <li>
+              <a href="/clubs/<%= c.slug %>"><%= c.name %></a>
+              <span class="muted small"><% if (c.upcoming) { %><%= c.upcoming %> event<%= c.upcoming === 1 ? '' : 's' %><% } else if (c.par) { %>Par <%= c.par %><% } %></span>
+            </li>
+          <% }); %>
+        </ul>
+      <% } %>
+    </div>
+
+    <div class="detail-card">
+      <h2 class="detail-card-heading">Other counties</h2>
+      <div class="course-links">
+        <% others.forEach(function(o) { %><a href="/county/<%= o.slug %>">Junior golf in <%= o.name %></a><% }); %>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('../partials/foot') %>

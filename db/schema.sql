@@ -181,3 +181,47 @@ CREATE INDEX IF NOT EXISTS idx_club_suggestions_status ON club_suggestions(statu
 -- club-list script doesn't re-add them. Restorable from admin.
 ALTER TABLE clubs ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ;
 ALTER TABLE clubs ADD COLUMN IF NOT EXISTS archived_reason TEXT;
+
+-- Golf county (Glamorgan, Gwent, Dyfed, Powys, Gwynedd, Clwyd) for county
+-- pages and filters. Known clubs are filled in below; only empty values are
+-- set, so edits made in admin are never overwritten.
+ALTER TABLE clubs ADD COLUMN IF NOT EXISTS county TEXT;
+CREATE INDEX IF NOT EXISTS idx_clubs_county ON clubs(county);
+
+UPDATE clubs c SET county = m.county
+FROM (VALUES
+  ('tenby-golf-club','Dyfed'),('trefloyne-golf-club','Dyfed'),('south-pembrokeshire-golf-club','Dyfed'),
+  ('haverfordwest-golf-club','Dyfed'),('milford-haven-golf-club','Dyfed'),('st-davids-city-golf-club','Dyfed'),
+  ('newport-links-golf-club','Dyfed'),('cardigan-golf-club','Dyfed'),('ashburnham-golf-club','Dyfed'),
+  ('machynys-peninsula-golf-club','Dyfed'),('carmarthen-golf-club','Dyfed'),('derllys-court-golf-club','Dyfed'),
+  ('garnant-park-golf-club','Dyfed'),('glynhir-golf-club','Dyfed'),('glyn-abbey-golf-club','Dyfed'),
+  ('penrhos-park-golf-club','Dyfed'),
+  ('pennard-golf-club','Glamorgan'),('langland-bay-golf-club','Glamorgan'),('clyne-golf-club','Glamorgan'),
+  ('fairwood-park-golf-club','Glamorgan'),('gower-golf-club','Glamorgan'),('morriston-golf-club','Glamorgan'),
+  ('pontardulais-golf-club','Glamorgan'),('mond-valley-golf-club','Glamorgan'),('neath-golf-club','Glamorgan'),
+  ('swansea-bay-golf-club','Glamorgan'),('lakeside-margam-golf-club','Glamorgan'),('glynneath-golf-club','Glamorgan'),
+  ('pontardawe-golf-club','Glamorgan'),('royal-porthcawl-golf-club','Glamorgan'),('pyle-and-kenfig-golf-club','Glamorgan'),
+  ('southerndown-golf-club','Glamorgan'),('grove-golf-club','Glamorgan'),('maesteg-golf-club','Glamorgan'),
+  ('coed-y-mwstwr-golf-club','Glamorgan'),('llantrisant-and-pontyclun-golf-club','Glamorgan'),
+  ('pontypridd-golf-club','Glamorgan'),('rhondda-golf-club','Glamorgan'),('aberdare-golf-club','Glamorgan'),
+  ('mountain-ash-golf-club','Glamorgan'),('morlais-castle-golf-club','Glamorgan'),('cardiff-golf-club','Glamorgan'),
+  ('whitchurch-golf-club','Glamorgan'),('radyr-golf-club','Glamorgan'),('llanishen-golf-club','Glamorgan'),
+  ('creigiau-golf-club','Glamorgan'),('st-mellons-golf-club','Glamorgan'),('peterstone-lakes-golf-club','Glamorgan'),
+  ('vale-resort','Glamorgan'),('cottrell-park-golf-club','Glamorgan'),('wenvoe-castle-golf-club','Glamorgan'),
+  ('dinas-powis-golf-club','Glamorgan'),('glamorganshire-golf-club','Glamorgan'),('brynhill-golf-club','Glamorgan'),
+  ('st-andrews-major-golf-club','Glamorgan'),('st-athan-golf-club','Glamorgan'),('caerphilly-golf-club','Glamorgan'),
+  ('ridgeway-golf-club','Glamorgan'),('virginia-park-golf-club','Glamorgan'),('bargoed-golf-club','Glamorgan'),
+  ('bryn-meadows-golf-club','Gwent'),('blackwood-golf-club','Gwent'),('pontypool-golf-club','Gwent'),
+  ('pontnewydd-golf-club','Gwent'),('greenmeadow-golf-club','Gwent'),('west-monmouthshire-golf-club','Gwent'),
+  ('celtic-manor-resort','Gwent'),('newport-golf-club','Gwent'),('llanwern-golf-club','Gwent'),
+  ('parc-golf-club','Gwent'),('tredegar-park-golf-club','Gwent'),('st-pierre-golf-and-country-club','Gwent'),
+  ('dewstow-golf-club','Gwent'),('monmouth-golf-club','Gwent'),('monmouthshire-golf-club','Gwent'),
+  ('rolls-of-monmouth-golf-club','Gwent'),('raglan-parc-golf-club','Gwent'),('wernddu-golf-club','Gwent'),
+  ('woodlake-park-golf-club','Gwent'),('alice-springs-golf-club','Gwent'),
+  ('builth-wells-golf-club','Powys'),
+  ('conwy-golf-club','Gwynedd'),('llandudno-maesdu-golf-club','Gwynedd'),('royal-st-david-s-golf-club','Gwynedd'),
+  ('caernarfon-golf-club','Gwynedd'),
+  ('abergele-golf-club','Clwyd'),('st-melyd-golf-club','Clwyd'),('vale-of-llangollen-golf-club','Clwyd'),
+  ('wrexham-golf-club','Clwyd'),('padeswood-and-buckley-golf-club','Clwyd')
+) AS m(slug, county)
+WHERE c.slug = m.slug AND c.county IS NULL;

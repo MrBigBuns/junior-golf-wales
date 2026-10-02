@@ -6,13 +6,17 @@ const { getForecastForDate } = require('../lib/weather');
 
 // GET /events — filterable list
 router.get('/', asyncHandler(async (req, res) => {
-  const { region, age, q } = req.query;
+  const { region, age, q, county } = req.query;
   const conditions = ["e.date_start >= CURRENT_DATE", "e.status != 'cancelled'"];
   const params = [];
 
   if (region) {
     params.push(region);
     conditions.push(`c.region = $${params.length}`);
+  }
+  if (county) {
+    params.push(county);
+    conditions.push(`c.county = $${params.length}`);
   }
   if (age) {
     params.push(age);
@@ -24,7 +28,7 @@ router.get('/', asyncHandler(async (req, res) => {
   }
 
   const { rows: events } = await pool.query(
-    `SELECT e.*, c.name AS club_name, c.slug AS club_slug, c.region
+    `SELECT e.*, c.name AS club_name, c.slug AS club_slug, c.region, c.county
      FROM events e
      JOIN clubs c ON c.id = e.club_id
      WHERE ${conditions.join(' AND ')}
@@ -43,7 +47,7 @@ router.get('/', asyncHandler(async (req, res) => {
     grouped[key].push(e);
   });
 
-  res.render('events/index', { grouped, totalCount: events.length, region, age, q });
+  res.render('events/index', { grouped, totalCount: events.length, region, age, q, county });
 }));
 
 // GET /events/:slug — detail page
@@ -55,7 +59,7 @@ router.get('/:slug', asyncHandler(async (req, res) => {
             c.facebook_url AS club_facebook_url, c.instagram_url AS club_instagram_url, c.x_url AS club_x_url,
             (c.course_photo_image IS NOT NULL) AS club_has_course_photo,
             (c.logo_image IS NOT NULL) AS club_has_logo_image,
-            c.logo_url AS club_logo_url,
+            c.logo_url AS club_logo_url, c.county AS club_county,
             o.name AS organiser_name, o.slug AS organiser_slug, o.description AS organiser_description,
             c.scorecard AS club_scorecard, c.par AS club_par, c.yardage AS club_yardage,
             ef.id AS form_id
