@@ -1,4 +1,4 @@
-# Junior Golf Wales
+# Wales Junior Golf
 
 Every junior golf event in Wales, in one place. Node/Express/Postgres, deployed
 on Render.

@@ -12,7 +12,10 @@ const adminRouter = require('./routes/admin');
 const mapRouter = require('./routes/map');
 const staticRouter = require('./routes/static');
 const portalRouter = require('./routes/portal');
+const countiesRouter = require('./routes/counties');
+const seoRouter = require('./routes/seo');
 const adminAuth = require('./lib/adminAuth');
+const { SITE_URL, seasonYear, COUNTIES } = require('./lib/site');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -36,7 +39,32 @@ app.use(session({
   cookie: { maxAge: 30 * 24 * 60 * 60 * 1000 } // 30 days
 }));
 
+// One public address: once SITE_URL is set, requests arriving on any other
+// host (juniorgolf.wales, www., the onrender.com address) get a permanent
+// redirect to the same path on the primary domain, so search engines see a
+// single site. Local development and requests without a Host are left alone.
+if (process.env.SITE_URL) {
+  const primaryHost = new URL(SITE_URL).host;
+  app.use((req, res, next) => {
+    const host = (req.headers.host || '').toLowerCase();
+    if (!host || host === primaryHost || host.startsWith('localhost') || host.startsWith('127.0.0.1')) return next();
+    res.redirect(301, SITE_URL + req.originalUrl);
+  });
+}
+
+// Values every page template can use: canonical URL (always the public
+// domain, no query string), the season year for titles, and the counties.
+app.use((req, res, next) => {
+  res.locals.siteUrl = SITE_URL;
+  res.locals.canonicalUrl = SITE_URL + (req.path === '/' ? '/' : req.path.replace(/\/+$/, ''));
+  res.locals.seasonYear = seasonYear();
+  res.locals.counties = COUNTIES;
+  next();
+});
+
+app.use('/', seoRouter);
 app.use('/', homeRouter);
+app.use('/county', countiesRouter);
 app.use('/events', eventsRouter);
 app.use('/clubs', clubsRouter);
 app.use('/tours', toursRouter);
@@ -61,4 +89,4 @@ app.use((err, req, res, next) => {
 process.on('unhandledRejection', (err) => console.error('Unhandled rejection:', err));
 process.on('uncaughtException', (err) => console.error('Uncaught exception:', err));
 
-app.listen(PORT, () => console.log(`Junior Golf Wales running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Wales Junior Golf running on port ${PORT}`));

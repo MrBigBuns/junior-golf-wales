@@ -1,6 +1,6 @@
 # TODO — Event registration forms (clubs host via us)
 
-Idea: let clubs create/host their event entry forms through Junior Golf Wales
+Idea: let clubs create/host their event entry forms through Wales Junior Golf
 instead of cobbling together a Google Form each season. Possible ~£10/year
 per club. NOT STARTED — scoping only so far.
 
