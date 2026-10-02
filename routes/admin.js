@@ -372,9 +372,10 @@ router.get('/club-suggestions', asyncHandler(async (req, res) => {
     applied: req.query.applied || null,
     importResult: req.query.import || null,
     importChanged: req.query.changed || 0,
-    importProblems: req.query.import === 'ok' ? (req.session.importProblems || []) : []
+    importProblems: req.query.import === 'ok' ? (req.session.importProblems || []) : [],
+    applyProblems: req.query.applied ? (req.session.applyProblems || []) : []
   });
-  if (req.session) delete req.session.importProblems;
+  if (req.session) { delete req.session.importProblems; delete req.session.applyProblems; }
 }));
 
 // ---- Spreadsheet round trip: export, fill gaps in Excel, import back ----
@@ -499,22 +500,55 @@ router.post('/club-suggestions/:id/apply', asyncHandler(async (req, res) => {
   const { rows } = await pool.query(`SELECT * FROM club_suggestions WHERE id = $1`, [req.params.id]);
   if (!rows.length) return res.status(404).send('Suggestion not found');
   const s = rows[0];
-  const chosen = [].concat(req.body.fields || []).filter(f => SUGGESTION_FIELDS.includes(f) && s.data[f] != null);
+  const chosen = [].concat(req.body.fields || []).filter(f => SUGGESTION_FIELDS.includes(f));
+
+  // Values come from the editable boxes on the review page; fall back to the
+  // stored suggestion if a box wasn't submitted.
+  const problems = [];
+  const values = {};
+  for (const f of chosen) {
+    const submitted = req.body['value_' + f];
+    const raw = submitted !== undefined ? String(submitted).trim() : null;
+    if (raw === null) { if (s.data[f] != null) values[f] = s.data[f]; continue; }
+    if (raw === '') { problems.push(`${f}: empty, skipped`); continue; }
+    if (f === 'par' || f === 'yardage') {
+      const n = Number(raw.replace(/,/g, ''));
+      if (!Number.isInteger(n)) { problems.push(`${f} "${raw}" is not a whole number`); continue; }
+      values[f] = n;
+    } else if (f === 'scorecard') {
+      let card;
+      try { card = JSON.parse(raw); } catch (e) { problems.push('scorecard is not valid JSON'); continue; }
+      if (!isScorecard(card)) { problems.push('scorecard must be a list of holes'); continue; }
+      values[f] = card;
+    } else if (/_url$|^website$/.test(f) && !/^https?:\/\//i.test(raw)) {
+      problems.push(`${f} should start with http:// or https://`); continue;
+    } else if (f === 'contact_email' && !raw.includes('@')) {
+      problems.push('email looks invalid'); continue;
+    } else {
+      values[f] = raw;
+    }
+  }
 
   const sets = [];
   const vals = [];
   const add = (col, val) => { vals.push(val); sets.push(`${col} = $${vals.length}`); };
+  for (const [f, v] of Object.entries(values)) add(f, f === 'scorecard' ? JSON.stringify(v) : v);
 
-  for (const f of chosen) add(f, f === 'scorecard' ? JSON.stringify(s.data[f]) : s.data[f]);
-  if (chosen.includes('address') && s.data.lat != null && s.data.lng != null) {
-    add('lat', s.data.lat);
-    add('lng', s.data.lng);
+  // Coordinates: reuse the researched ones if the address is unchanged, otherwise geocode
+  if (values.address) {
+    let lat = null, lng = null;
+    if (values.address === s.data.address && s.data.lat != null) { lat = s.data.lat; lng = s.data.lng; }
+    else {
+      const geo = await geocodeAddress(values.address);
+      if (geo) { lat = geo.lat; lng = geo.lng; } else problems.push('address saved but did not geocode; check the postcode');
+    }
+    if (lat != null) { add('lat', lat); add('lng', lng); }
   }
   // Fill par/yardage from an accepted scorecard if the club has none
-  if (chosen.includes('scorecard')) {
-    const t = deriveTotals(s.data.scorecard);
-    if (!chosen.includes('par') && t.par) sets.push(`par = COALESCE(par, ${Number(t.par)})`);
-    if (!chosen.includes('yardage') && t.yardage) sets.push(`yardage = COALESCE(yardage, ${Number(t.yardage)})`);
+  if (values.scorecard) {
+    const t = deriveTotals(values.scorecard);
+    if (values.par == null && t.par) sets.push(`par = COALESCE(par, ${Number(t.par)})`);
+    if (values.yardage == null && t.yardage) sets.push(`yardage = COALESCE(yardage, ${Number(t.yardage)})`);
   }
 
   if (sets.length) {
@@ -522,7 +556,8 @@ router.post('/club-suggestions/:id/apply', asyncHandler(async (req, res) => {
     await pool.query(`UPDATE clubs SET ${sets.join(', ')} WHERE id = $${vals.length}`, vals);
   }
   await pool.query(`UPDATE club_suggestions SET status = 'accepted', reviewed_at = now() WHERE id = $1`, [s.id]);
-  res.redirect(`/admin/club-suggestions?applied=${chosen.length}`);
+  req.session.applyProblems = problems;
+  res.redirect(`/admin/club-suggestions?applied=${Object.keys(values).length}`);
 }));
 
 router.post('/club-suggestions/:id/reject', asyncHandler(async (req, res) => {

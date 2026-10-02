@@ -28,10 +28,15 @@
   <p class="error-message"><%= importResult === 'nofile' ? 'Choose a CSV file first.' : 'That file has no id column, so rows cannot be matched to clubs. Start from an export.' %></p>
 <% } %>
 
-<% if (applied !== null) { %><p class="success-message"><%= applied %> field<%= applied === '1' ? '' : 's' %> applied.</p><% } %>
+<% if (applied !== null) { %>
+  <p class="success-message"><%= applied %> field<%= applied === '1' ? '' : 's' %> applied.</p>
+  <% if (applyProblems.length) { %>
+    <ul class="suggestion-warnings"><% applyProblems.forEach(function(p) { %><li><%= p %></li><% }); %></ul>
+  <% } %>
+<% } %>
 
 <p class="course-address">
-  Proposed details from <code>scripts/enrich-clubs.js</code>. Fields that would fill a gap, and your own spreadsheet edits, are ticked;
+  Proposed details from <code>scripts/enrich-clubs.js</code>. Every box is editable, including fields that weren't found; typing in a box ticks it, and Apply saves what's in the ticked boxes. Fields that would fill a gap, and your own spreadsheet edits, are ticked;
   researched values that would overwrite existing data are not. Check anything marked with a warning against its source.
   <% if (counts.accepted || counts.rejected) { %>
     <br>Reviewed so far: <%= counts.accepted || 0 %> accepted, <%= counts.rejected || 0 %> rejected.
@@ -71,15 +76,19 @@
     <form method="post" action="/admin/club-suggestions/<%= s.id %>/apply">
       <div class="scorecard-scroll">
       <table class="admin-table suggestion-table">
-        <thead><tr><th></th><th>Field</th><th>Current</th><th>Proposed</th><th>Source</th></tr></thead>
+        <thead><tr><th>Apply</th><th>Field</th><th>Current</th><th>Proposed (editable)</th><th>Source</th></tr></thead>
         <tbody>
           <% fields.forEach(function(f) { %>
-            <% const proposed = s.data[f]; if (proposed == null) return; %>
+            <% const proposed = s.data[f]; %>
             <% const current = s[f]; %>
             <% const hasCurrent = current != null && current !== '' && !(Array.isArray(current) && !current.length); %>
-            <% const same = hasCurrent && JSON.stringify(current) === JSON.stringify(proposed); %>
-            <tr class="<%= same ? 'suggestion-same' : '' %>">
-              <td><input type="checkbox" name="fields" value="<%= f %>" <%= (!hasCurrent || (s.sources && s.sources[f] === 'manual')) && !same ? 'checked' : '' %> <%= same ? 'disabled' : '' %>></td>
+            <% const hasProposed = proposed != null; %>
+            <% const same = hasCurrent && hasProposed && JSON.stringify(current) === JSON.stringify(proposed); %>
+            <% const manual = s.sources && s.sources[f] === 'manual'; %>
+            <% const ticked = hasProposed && !same && (!hasCurrent || manual); %>
+            <% const boxValue = hasProposed ? (f === 'scorecard' ? JSON.stringify(proposed) : proposed) : ''; %>
+            <tr class="<%= same ? 'suggestion-same' : '' %> <%= !hasProposed ? 'suggestion-missing' : '' %>">
+              <td><input type="checkbox" name="fields" value="<%= f %>" <%= ticked ? 'checked' : '' %>></td>
               <td><%= labels[f] %></td>
               <td class="suggestion-current">
                 <% if (!hasCurrent) { %><em>empty</em>
@@ -87,21 +96,27 @@
                 <% } else if (f === 'logo_url') { %><img src="<%= current %>" alt="" class="suggestion-logo">
                 <% } else { %><%= current %><% } %>
               </td>
-              <td>
+              <td class="suggestion-edit">
                 <% if (f === 'scorecard') { %>
-                  <details><summary><%= cardSummary(proposed) %></summary>
-                    <%- include('../partials/scorecard', { scorecard: proposed, scorecardNote: null }) %>
-                  </details>
-                <% } else if (f === 'logo_url') { %>
-                  <img src="<%= proposed %>" alt="Proposed logo" class="suggestion-logo"><br><a href="<%= proposed %>" target="_blank" class="scorecard-note">open image</a>
-                <% } else if (isUrl(proposed)) { %>
-                  <a href="<%= proposed %>" target="_blank"><%= proposed %></a>
+                  <% if (hasProposed) { %>
+                    <details><summary><%= cardSummary(proposed) %></summary>
+                      <%- include('../partials/scorecard', { scorecard: proposed, scorecardNote: null }) %>
+                    </details>
+                  <% } %>
+                  <textarea name="value_scorecard" rows="3" placeholder="JSON list of holes, or import a photo from the club page"><%= boxValue %></textarea>
+                <% } else if (f === 'description') { %>
+                  <textarea name="value_description" rows="3" placeholder="Not found — type to add"><%= boxValue %></textarea>
+                <% } else if (f === 'par' || f === 'yardage') { %>
+                  <input type="number" name="value_<%= f %>" value="<%= boxValue %>" placeholder="Not found">
+                  <% if (f === 'yardage' && s.sources && s.sources.yardage_tee) { %><span class="scorecard-note"><%= s.sources.yardage_tee %> tees</span><% } %>
                 <% } else { %>
-                  <%= proposed %><% if (f === 'yardage' && s.sources && s.sources.yardage_tee) { %> (<%= s.sources.yardage_tee %> tees)<% } %>
-                  <% if (f === 'address' && s.data.lat != null) { %><br><span class="scorecard-note">Geocoded: <%= s.data.lat %>, <%= s.data.lng %></span><% } %>
+                  <% if (f === 'logo_url' && hasProposed) { %><img src="<%= proposed %>" alt="Proposed logo" class="suggestion-logo"><br><% } %>
+                  <input type="<%= f === 'contact_email' ? 'email' : 'text' %>" name="value_<%= f %>" value="<%= boxValue %>" placeholder="Not found — type to add">
+                  <% if (f === 'address' && s.data.lat != null) { %><span class="scorecard-note">Geocoded: <%= s.data.lat %>, <%= s.data.lng %> (re-checked if you edit the address)</span><% } %>
+                  <% if (isUrl(proposed)) { %><a href="<%= proposed %>" target="_blank" class="scorecard-note">open link</a><% } %>
                 <% } %>
               </td>
-              <td><% if (s.sources && s.sources[f] === 'manual') { %><strong>your edit</strong><% } else if (s.sources && isUrl(s.sources[f])) { %><a href="<%= s.sources[f] %>" target="_blank">source</a><% } else { %><span class="scorecard-note">none</span><% } %></td>
+              <td><% if (manual) { %><strong>your edit</strong><% } else if (s.sources && isUrl(s.sources[f])) { %><a href="<%= s.sources[f] %>" target="_blank">source</a><% } else if (hasProposed) { %><span class="scorecard-note">none</span><% } %></td>
             </tr>
           <% }); %>
         </tbody>
@@ -122,7 +137,20 @@
   .suggestion-table td { vertical-align: top; }
   .suggestion-current { color: var(--text-secondary); max-width: 16rem; }
   .suggestion-same { opacity: 0.5; }
+  .suggestion-edit input, .suggestion-edit textarea { width: 100%; min-width: 16rem; box-sizing: border-box; }
+  .suggestion-missing td:nth-child(2) { color: var(--text-secondary); }
   .suggestion-logo { max-height: 48px; max-width: 160px; background: #f4f4f4; padding: 4px; border-radius: 4px; }
 </style>
+
+<script>
+  // Typing in a box ticks its Apply checkbox
+  document.querySelectorAll('.suggestion-edit input, .suggestion-edit textarea').forEach(function (box) {
+    box.addEventListener('input', function () {
+      const row = box.closest('tr');
+      const tick = row && row.querySelector('input[type=checkbox][name=fields]');
+      if (tick) tick.checked = box.value.trim() !== '';
+    });
+  });
+</script>
 
 <%- include('../partials/foot') %>
