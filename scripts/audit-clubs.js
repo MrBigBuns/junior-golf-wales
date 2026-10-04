@@ -176,6 +176,27 @@ async function run() {
     if (issues.length) report.push(`${c.name} (${c.region || 'no region'}${c.county ? ', ' + c.county : ''}) /clubs/${c.slug}\n${issues.join('\n')}`);
   }
 
+  // Additional courses at multi-course venues
+  const { rows: extra } = await pool.query(
+    `SELECT cc.name, cc.slug, cc.holes, cc.par, cc.yardage, cc.scorecard, c.name AS club_name, c.slug AS club_slug
+     FROM club_courses cc JOIN clubs c ON c.id = cc.club_id WHERE c.archived_at IS NULL
+     ${ONE ? 'AND c.slug = $1' : ''} ORDER BY c.name, cc.sort_order`,
+    ONE ? [ONE] : []
+  );
+  for (const cc of extra) {
+    const issues = [];
+    const card = Array.isArray(cc.scorecard) && cc.scorecard.length ? cc.scorecard : null;
+    if (!cc.holes && !card) flag(issues, 'course', 'no holes, figures or scorecard yet');
+    if (cc.holes && card && card.length !== cc.holes) flag(issues, 'holes', `holes is ${cc.holes} but the scorecard has ${card.length}`);
+    if (card) {
+      const parTotal = card.reduce((a, h) => a + (Number(h.par) || 0), 0);
+      if (cc.par && parTotal && parTotal !== cc.par && parTotal * 2 !== cc.par) flag(issues, 'scorecard', `card par total ${parTotal} vs course par ${cc.par}`);
+      const si = card.map(h => h.strokeIndex).filter(v => v != null).map(Number);
+      if (si.length === card.length && new Set(si).size !== si.length) flag(issues, 'scorecard', 'stroke indexes repeat');
+    }
+    if (issues.length) report.push(`${cc.name} at ${cc.club_name} /clubs/${cc.club_slug}/${cc.slug}\n${issues.join('\n')}`);
+  }
+
   console.log(`Audited ${clubs.length} active club(s); ${report.length} with something to check.\n`);
   console.log(report.join('\n\n'));
   console.log('\nSummary by type:');

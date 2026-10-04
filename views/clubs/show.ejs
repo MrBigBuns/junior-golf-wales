@@ -53,8 +53,24 @@
       </div>
     <% } %>
 
+    <% if (club.courses.length) { %>
+      <div class="detail-card" id="courses">
+        <h3 class="detail-card-heading"><%= club.courses.length %> courses at <%= club.name %></h3>
+        <ul class="course-list">
+          <% club.courses.forEach(function(co) { %>
+            <li>
+              <a href="<%= co.url %>" class="course-item">
+                <span class="course-item-name"><%= co.name %><% if (co.main) { %> <span class="muted small">(main course)</span><% } %><% if (co.holes === 9) { %> <span class="badge badge-nine">9 holes</span><% } %></span>
+                <span class="muted small"><%= co.summary || 'Details coming soon' %><% if (co.has_card) { %> · scorecard<% } %></span>
+              </a>
+            </li>
+          <% }); %>
+        </ul>
+      </div>
+    <% } %>
+
     <div class="detail-card">
-      <h3 class="detail-card-heading">The course at a glance</h3>
+      <h3 class="detail-card-heading"><%= club.courses.length ? (club.main_course_name || 'Main course') + ' at a glance' : 'The course at a glance' %></h3>
       <% if (club.holes || club.par || club.yardage) { %>
         <table class="details-table">
           <% if (club.holes) { %><tr><td>Holes</td><td><%= club.holes %><% if (club.holes === 9) { %> <span class="badge badge-nine">9-hole course</span><% } %></td></tr><% } %>
@@ -194,7 +210,7 @@
 
 <% if (club.has_card) { %>
   <div id="scorecard">
-    <%- include('../partials/scorecard', { scorecard: club.scorecard, scorecardNote: null }) %>
+    <%- include('../partials/scorecard', { scorecard: club.scorecard, scorecardNote: club.courses.length ? (club.main_course_name || 'Main course') + ' scorecard' : null }) %>
   </div>
 <% } %>
 

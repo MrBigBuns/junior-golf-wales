@@ -51,8 +51,9 @@
   <label>Description <textarea name="description" rows="4"><%= club.description || '' %></textarea></label>
 
   <fieldset>
-    <legend>Course scorecard</legend>
-    <p class="scorecard-note">Used by every event at this club, unless an event sets its own override.</p>
+    <legend>Main course</legend>
+    <p class="scorecard-note">The club's main course. Used by every event at this club unless the event is set to one of the other courses below, or has its own override.</p>
+    <label>Main course name <input type="text" name="main_course_name" value="<%= club.main_course_name || '' %>" placeholder="Only needed if the venue has more than one course, e.g. Twenty Ten"></label>
     <% const hasCard = Array.isArray(club.scorecard) && club.scorecard.length > 0; %>
     <% if (!isNew) { %>
       <p><a href="/admin/clubs/<%= club.id %>/scorecard-import"><%= hasCard ? 'Replace scorecard from a photo' : 'Import scorecard from a photo' %> &rarr;</a></p>
@@ -73,6 +74,26 @@
       <textarea name="scorecard" rows="4" placeholder='[{"hole":1,"par":4,"strokeIndex":13,"yards":{"white":319,"yellow":296,"red":254}}, ...]'><%= hasCard ? JSON.stringify(club.scorecard) : '' %></textarea>
     </label>
   </fieldset>
+
+  <% if (!isNew) { %>
+  <fieldset>
+    <legend>Other courses at this venue</legend>
+    <p class="scorecard-note">For venues with more than one course, such as a second 18, a 9-hole academy or a par-3. Each gets its own page and can be chosen on events.</p>
+    <% if (courses.length) { %>
+      <ul class="course-list">
+        <% courses.forEach(function(co) { %>
+          <li class="course-admin-row">
+            <span><strong><%= co.name %></strong> <span class="muted small"><%= co.summary || 'no details yet' %><% if (co.has_card) { %> · scorecard<% } %></span></span>
+            <span><a href="/admin/courses/<%= co.id %>/edit">Edit</a> · <a href="/clubs/<%= club.slug %>/<%= co.slug %>" target="_blank">View</a></span>
+          </li>
+        <% }); %>
+      </ul>
+    <% } else { %>
+      <p class="muted small">None. Most clubs have just the one course.</p>
+    <% } %>
+    <p><a href="/admin/clubs/<%= club.id %>/courses/new">+ Add another course</a></p>
+  </fieldset>
+  <% } %>
 
   <button type="submit">Save club</button>
 </form>

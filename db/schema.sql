@@ -234,3 +234,29 @@ ALTER TABLE clubs ADD COLUMN IF NOT EXISTS holes INTEGER;
 UPDATE clubs SET holes = jsonb_array_length(scorecard)
  WHERE holes IS NULL
    AND (CASE WHEN jsonb_typeof(scorecard) = 'array' THEN jsonb_array_length(scorecard) ELSE 0 END) IN (9, 18);
+
+-- Multi-course venues. A club's MAIN course stays on the club record (holes,
+-- par, yardage, scorecard; named by main_course_name, e.g. "Twenty Ten"), so
+-- single-course clubs need nothing here. Each ADDITIONAL course at the venue
+-- (a second 18, a 9-hole academy, a par-3) is a row in club_courses.
+ALTER TABLE clubs ADD COLUMN IF NOT EXISTS main_course_name TEXT;
+
+CREATE TABLE IF NOT EXISTS club_courses (
+  id SERIAL PRIMARY KEY,
+  club_id INTEGER NOT NULL REFERENCES clubs(id) ON DELETE CASCADE,
+  name TEXT NOT NULL,
+  slug TEXT NOT NULL,
+  holes INTEGER,
+  par INTEGER,
+  yardage INTEGER,
+  scorecard JSONB,
+  description TEXT,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (club_id, slug)
+);
+CREATE INDEX IF NOT EXISTS idx_club_courses_club ON club_courses(club_id, sort_order);
+
+-- Which course an event is played on: NULL = the club's main course.
+ALTER TABLE events ADD COLUMN IF NOT EXISTS course_id INTEGER REFERENCES club_courses(id) ON DELETE SET NULL;

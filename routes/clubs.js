@@ -4,11 +4,13 @@ const pool = require('../db/pool');
 const asyncHandler = require('../lib/asyncHandler');
 const { getForecastForDate } = require('../lib/weather');
 const { SITE_URL, countyByName } = require('../lib/site');
+const { courseFigures } = require('../lib/courses');
 
 router.get('/', asyncHandler(async (req, res) => {
   const nineOnly = req.query.holes === '9';
   const { rows: clubs } = await pool.query(
     `SELECT c.id, c.name, c.slug, c.region, c.county, c.course_image_url, c.holes,
+            (SELECT COUNT(*) FROM club_courses cc WHERE cc.club_id = c.id)::int + 1 AS course_count,
             COUNT(e.id) FILTER (WHERE e.date_start >= CURRENT_DATE) AS upcoming_count
      FROM clubs c
      LEFT JOIN events e ON e.club_id = c.id
@@ -49,7 +51,7 @@ router.get('/:slug', asyncHandler(async (req, res) => {
   const { rows: clubRows } = await pool.query(
     `SELECT id, name, slug, address, region, county, holes, lat, lng, website, contact_email,
             junior_membership_contact, logo_url, description, course_image_url,
-            facebook_url, instagram_url, x_url, scorecard, par, yardage, archived_at, archived_reason,
+            facebook_url, instagram_url, x_url, scorecard, par, yardage, archived_at, archived_reason, main_course_name,
             (logo_image IS NOT NULL) AS has_logo_image,
             (course_photo_image IS NOT NULL) AS has_course_photo_image
      FROM clubs WHERE slug = $1`,
@@ -63,36 +65,21 @@ router.get('/:slug', asyncHandler(async (req, res) => {
   club.logo_src = club.has_logo_image ? `/clubs/${club.id}/logo-image` : (club.logo_url || null);
   club.banner_src = club.has_course_photo_image ? `/clubs/${club.id}/course-photo-image` : (club.course_image_url || null);
 
-  // Course at a glance, worked out from the scorecard where we have one
-  const card = Array.isArray(club.scorecard) && club.scorecard.length ? club.scorecard : null;
-  club.has_card = !!card;
-  if (club.holes == null && card) club.holes = card.length;
-  if (card && club.par == null) club.par = card.reduce((t, h) => t + (Number(h.par) || 0), 0) || null;
-  club.tees = [];
-  if (card) {
-    const totals = {};
-    card.forEach(h => Object.entries(h.yards || {}).forEach(([tee, y]) => { totals[tee] = (totals[tee] || 0) + (Number(y) || 0); }));
-    club.tees = Object.entries(totals).filter(([, y]) => y > 0).sort((a, b) => b[1] - a[1]).map(([tee, yards]) => ({ tee, yards }));
-    if (club.yardage == null && club.tees.length) club.yardage = club.tees[0].yards;
-  }
+  // Course at a glance: the main course's figures live on the club record
+  Object.assign(club, courseFigures(club));
 
-  // Nine-hole courses: show the 9-hole figures with the 18-hole (twice round)
-  // equivalent. Older records may hold the 18-hole figures, so infer which.
-  club.par_display = club.par ? String(club.par) : null;
-  club.yardage_display = club.yardage ? `${Number(club.yardage).toLocaleString('en-GB')} yards` : null;
-  if (club.holes === 9) {
-    if (club.par) {
-      club.par_display = club.par > 45
-        ? `${club.par} for 18 holes (twice round)`
-        : `${club.par} <span class="muted">(${club.par * 2} for 18 holes)</span>`;
-    }
-    if (club.yardage) {
-      const y = Number(club.yardage);
-      club.yardage_display = y > 3800
-        ? `${y.toLocaleString('en-GB')} yards for 18 holes (twice round)`
-        : `${y.toLocaleString('en-GB')} yards <span class="muted">(${(y * 2).toLocaleString('en-GB')} for 18 holes)</span>`;
-    }
-  }
+  // Additional courses at the venue (a second 18, an academy, a par-3)
+  const { rows: extraCourses } = await pool.query(
+    `SELECT id, name, slug, holes, par, yardage, scorecard, description
+     FROM club_courses WHERE club_id = $1 ORDER BY sort_order, name`,
+    [club.id]
+  );
+  club.courses = extraCourses.length
+    ? [
+        { name: club.main_course_name || 'Main course', main: true, url: '#scorecard', ...courseFigures(club) },
+        ...extraCourses.map(cc => ({ name: cc.name, url: `/clubs/${club.slug}/${cc.slug}`, description: cc.description, ...courseFigures(cc) }))
+      ]
+    : [];
 
   const placeQuery = club.lat != null ? `${club.lat},${club.lng}` : (club.address ? `${club.name}, ${club.address}` : null);
   club.directions_url = placeQuery
@@ -170,6 +157,63 @@ router.get('/:slug', asyncHandler(async (req, res) => {
 
   const county = club.county ? countyByName(club.county) : null;
   res.render('clubs/show', { club, events, pastEvents, nearbyClubs, weather, jsonLd, pageDescription, countySlug: county ? county.slug : null });
+}));
+
+// A course at a multi-course venue: /clubs/celtic-manor-resort/roman-road
+// (registered after the /:id/... image routes so those keep working)
+router.get('/:slug/:courseSlug', asyncHandler(async (req, res) => {
+  const { rows } = await pool.query(
+    `SELECT cc.*, c.id AS club_id, c.name AS club_name, c.slug AS club_slug, c.region, c.county,
+            c.address, c.lat, c.lng, c.website, c.archived_at, c.main_course_name,
+            c.holes AS main_holes, c.par AS main_par, c.yardage AS main_yardage, c.scorecard AS main_scorecard
+     FROM club_courses cc JOIN clubs c ON c.id = cc.club_id
+     WHERE c.slug = $1 AND cc.slug = $2`,
+    [req.params.slug, req.params.courseSlug]
+  );
+  if (!rows.length) return res.status(404).render('404');
+  const r = rows[0];
+  const course = { id: r.id, name: r.name, slug: r.slug, description: r.description, ...courseFigures(r) };
+  const club = {
+    id: r.club_id, name: r.club_name, slug: r.club_slug, region: r.region, county: r.county,
+    address: r.address, website: r.website, archived_at: r.archived_at
+  };
+  club.directions_url = r.address
+    ? `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(r.club_name + ', ' + r.address)}`
+    : null;
+
+  const [{ rows: siblings }, { rows: events }] = await Promise.all([
+    pool.query(`SELECT name, slug, holes, par, yardage, scorecard FROM club_courses
+                WHERE club_id = $1 AND id <> $2 ORDER BY sort_order, name`, [r.club_id, r.id]),
+    pool.query(`SELECT slug, title, date_start, entry_fee, age_category FROM events
+                WHERE course_id = $1 AND date_start >= CURRENT_DATE AND status != 'cancelled'
+                ORDER BY date_start`, [r.id])
+  ]);
+  const otherCourses = [
+    { name: r.main_course_name || 'Main course', url: `/clubs/${r.club_slug}#scorecard`,
+      ...courseFigures({ holes: r.main_holes, par: r.main_par, yardage: r.main_yardage, scorecard: r.main_scorecard }) },
+    ...siblings.map(o => ({ name: o.name, url: `/clubs/${r.club_slug}/${o.slug}`, ...courseFigures(o) }))
+  ];
+
+  const ld = {
+    '@context': 'https://schema.org',
+    '@type': 'GolfCourse',
+    name: `${course.name} at ${club.name}`,
+    url: `${SITE_URL}/clubs/${club.slug}/${course.slug}`,
+    containedInPlace: { '@type': 'GolfCourse', name: club.name, url: `${SITE_URL}/clubs/${club.slug}` }
+  };
+  if (course.description) ld.description = course.description;
+  if (r.address) ld.address = { '@type': 'PostalAddress', streetAddress: r.address, addressRegion: r.county || `${r.region} Wales`, addressCountry: 'GB' };
+  if (r.lat != null) ld.geo = { '@type': 'GeoCoordinates', latitude: Number(r.lat), longitude: Number(r.lng) };
+  const jsonLd = JSON.stringify(ld).replace(/</g, '\\u003c');
+
+  const countyInfo = club.county ? countyByName(club.county) : null;
+  const pageDescription = [
+    `${course.name} at ${club.name}${club.county ? ', ' + club.county : ''}`,
+    course.summary,
+    course.has_card ? 'Full hole-by-hole scorecard' : ''
+  ].filter(Boolean).join('. ') + '.';
+
+  res.render('clubs/course', { club, course, otherCourses, events, jsonLd, pageDescription, countySlug: countyInfo ? countyInfo.slug : null });
 }));
 
 module.exports = router;

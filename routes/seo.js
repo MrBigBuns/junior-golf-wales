@@ -12,11 +12,13 @@ router.get('/robots.txt', (req, res) => {
 });
 
 router.get('/sitemap.xml', asyncHandler(async (req, res) => {
-  const [{ rows: events }, { rows: clubs }, { rows: tours }] = await Promise.all([
+  const [{ rows: events }, { rows: clubs }, { rows: tours }, { rows: courses }] = await Promise.all([
     pool.query(`SELECT slug, updated_at, date_start FROM events
                 WHERE date_start >= CURRENT_DATE - INTERVAL '1 year' ORDER BY date_start`),
     pool.query(`SELECT slug FROM clubs WHERE archived_at IS NULL ORDER BY name`),
-    pool.query(`SELECT slug FROM organisers ORDER BY name`)
+    pool.query(`SELECT slug FROM organisers ORDER BY name`),
+    pool.query(`SELECT c.slug AS club_slug, cc.slug FROM club_courses cc JOIN clubs c ON c.id = cc.club_id
+                WHERE c.archived_at IS NULL ORDER BY c.name, cc.sort_order`)
   ]);
 
   const day = d => (d ? new Date(d) : new Date()).toISOString().slice(0, 10);
@@ -30,6 +32,7 @@ router.get('/sitemap.xml', asyncHandler(async (req, res) => {
     ...COUNTIES.map(c => ({ loc: `/county/${c.slug}`, priority: '0.8', changefreq: 'weekly' })),
     ...tours.map(t => ({ loc: `/tours/${t.slug}`, priority: '0.7', changefreq: 'weekly' })),
     ...clubs.map(c => ({ loc: `/clubs/${c.slug}`, priority: '0.6', changefreq: 'monthly' })),
+    ...courses.map(c => ({ loc: `/clubs/${c.club_slug}/${c.slug}`, priority: '0.5', changefreq: 'monthly' })),
     ...events.map(e => ({ loc: `/events/${e.slug}`, lastmod: day(e.updated_at),
       priority: new Date(e.date_start) >= new Date() ? '0.8' : '0.3', changefreq: 'weekly' }))
   ];

@@ -146,6 +146,9 @@
         <% if (!hasBanner && hasLogo) { %><img src="<%= logoSrc %>" alt="<%= event.club_name %> logo" class="club-logo-inline"> <% } %>
         <%= event.club_name %>
       </p>
+      <% if (event.course_label) { %>
+        <p class="course-played-on">Played on <% if (event.course_url) { %><a href="<%= event.course_url %>"><%= event.course_phrase %></a><% } else { %><%= event.course_phrase %><% } %></p>
+      <% } %>
       <% if (event.address) { %><p class="course-address"><%= event.address %></p><% } %>
       <% if (event.club_description) { %><p class="course-description"><%= event.club_description %></p><% } %>
       <div class="course-links">

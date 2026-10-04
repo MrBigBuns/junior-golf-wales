@@ -19,6 +19,39 @@
         <% }); %>
       </select>
     </label>
+    <label id="course-picker">Course
+      <select name="course_id">
+        <option value="" data-main-label="Main course">Main course</option>
+        <% courseOptions.forEach(function(co) { %>
+          <option value="<%= co.id %>" data-club="<%= co.club_id %>" <%= event.course_id == co.id ? 'selected' : '' %>><%= co.name %></option>
+        <% }); %>
+      </select>
+    </label>
+    <p class="scorecard-note" id="course-picker-note">Only needed at venues with more than one course.</p>
+    <script>
+      (function () {
+        var mainNames = <%- JSON.stringify(mainNames).replace(/</g, '\\u003c') %>;
+        var club = document.querySelector('select[name="club_id"]');
+        var course = document.querySelector('select[name="course_id"]');
+        var picker = document.getElementById('course-picker');
+        var note = document.getElementById('course-picker-note');
+        function sync() {
+          var id = club.value, any = false;
+          Array.prototype.forEach.call(course.options, function (o) {
+            if (!o.dataset.club) return;
+            var mine = o.dataset.club === id;
+            o.hidden = !mine; o.disabled = !mine;
+            if (mine) any = true;
+            if (!mine && o.selected) course.value = '';
+          });
+          course.options[0].textContent = mainNames[id] ? mainNames[id] + ' (main course)' : 'Main course';
+          picker.style.display = any ? '' : 'none';
+          note.style.display = any ? 'none' : '';
+        }
+        club.addEventListener('change', sync);
+        sync();
+      })();
+    </script>
     <label>Organiser / tour (optional)
       <select name="organiser_id">
         <option value="">— none —</option>

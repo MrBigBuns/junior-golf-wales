@@ -1,0 +1,53 @@
+<%- include('../partials/head', { pageTitle: (isNew ? 'Add a course' : 'Edit ' + course.name) + ' — ' + club.name }) %>
+
+<p><a href="/admin/clubs/<%= club.id %>/edit">&larr; Back to <%= club.name %></a></p>
+<h1><%= isNew ? 'Add a course' : course.name %></h1>
+<p class="course-address">At <strong><%= club.name %></strong>. The club's main course is edited on the club page; this is for any other course at the venue.</p>
+
+<% if (error) { %><p class="error-message"><%= error %></p><% } %>
+<% if (typeof saved !== 'undefined' && saved) { %><p class="success-message">Course saved.<% if (course.slug) { %> <a href="/clubs/<%= club.slug %>/<%= course.slug %>" target="_blank">View its page &rarr;</a><% } %></p><% } %>
+
+<% const hasCard = Array.isArray(course.scorecard) && course.scorecard.length > 0; %>
+<form method="post" action="<%= isNew ? '/admin/clubs/' + club.id + '/courses' : '/admin/courses/' + course.id + '/update' %>" class="admin-form">
+  <label>Course name <input type="text" name="name" value="<%= course.name || '' %>" placeholder="e.g. Roman Road, Lake Course, Academy (9 holes)" required></label>
+  <label>Web address <input type="text" name="slug" value="<%= course.slug || '' %>" placeholder="worked out from the name if left blank"></label>
+  <p class="scorecard-note">The course page will be at /clubs/<%= club.slug %>/<strong><%= course.slug || 'course-name' %></strong></p>
+
+  <label>Holes
+    <select name="holes">
+      <option value="">— not set —</option>
+      <% [9, 18, 27, 36].forEach(function(h) { %><option value="<%= h %>" <%= Number(course.holes) === h ? 'selected' : '' %>><%= h %></option><% }); %>
+    </select>
+  </label>
+  <label>Par <input type="number" name="par" value="<%= course.par || '' %>"></label>
+  <label>Yardage <input type="number" name="yardage" value="<%= course.yardage || '' %>"></label>
+  <p class="scorecard-note">Leave par and yardage blank to work them out from the scorecard. For a 9-hole course, enter the figures for one 9-hole round.</p>
+
+  <label>Description <textarea name="description" rows="3" placeholder="A sentence or two about this course: layout, designer, who it suits"><%= course.description || '' %></textarea></label>
+  <label>Display order <input type="number" name="sort_order" value="<%= course.sort_order != null ? course.sort_order : 0 %>"></label>
+  <p class="scorecard-note">Lower numbers are listed first, after the main course.</p>
+
+  <fieldset>
+    <legend>Scorecard</legend>
+    <% if (!isNew) { %>
+      <p><a href="/admin/courses/<%= course.id %>/scorecard-import"><%= hasCard ? 'Replace scorecard from a photo' : 'Import scorecard from a photo' %> &rarr;</a></p>
+    <% } else { %>
+      <p class="scorecard-note">Save the course first to import its scorecard from a photo.</p>
+    <% } %>
+    <label>Scorecard (JSON — array of holes)
+      <textarea name="scorecard" rows="4" placeholder='[{"hole":1,"par":4,"strokeIndex":13,"yards":{"white":319,"yellow":296,"red":254}}, ...]'><%= hasCard ? JSON.stringify(course.scorecard) : (typeof course.scorecard === 'string' ? course.scorecard : '') %></textarea>
+    </label>
+  </fieldset>
+
+  <button type="submit"><%= isNew ? 'Add course' : 'Save course' %></button>
+</form>
+
+<% if (!isNew) { %>
+  <div class="admin-danger-zone">
+    <form method="post" action="/admin/courses/<%= course.id %>/delete" onsubmit="return confirm('Delete this course? Any events set to it will switch to the club\'s main course.');">
+      <button type="submit" class="admin-delete-button">Delete course</button>
+    </form>
+  </div>
+<% } %>
+
+<%- include('../partials/foot') %>

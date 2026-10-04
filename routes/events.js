@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../db/pool');
 const asyncHandler = require('../lib/asyncHandler');
+const { coursePhrase } = require('../lib/courses');
 const { getForecastForDate } = require('../lib/weather');
 
 // GET /events — filterable list
@@ -62,9 +63,13 @@ router.get('/:slug', asyncHandler(async (req, res) => {
             c.logo_url AS club_logo_url, c.county AS club_county,
             o.name AS organiser_name, o.slug AS organiser_slug, o.description AS organiser_description,
             c.scorecard AS club_scorecard, c.par AS club_par, c.yardage AS club_yardage,
+            c.main_course_name AS club_main_course_name,
+            cc.name AS course_name, cc.slug AS course_slug, cc.scorecard AS course_scorecard,
+            cc.par AS course_par, cc.yardage AS course_yardage, cc.holes AS course_holes,
             ef.id AS form_id
      FROM events e
      JOIN clubs c ON c.id = e.club_id
+     LEFT JOIN club_courses cc ON cc.id = e.course_id AND cc.club_id = e.club_id
      LEFT JOIN organisers o ON o.id = e.organiser_id
      LEFT JOIN event_forms ef ON ef.event_id = e.id AND jsonb_array_length(ef.fields) > 0
      WHERE e.slug = $1`,
@@ -75,14 +80,23 @@ router.get('/:slug', asyncHandler(async (req, res) => {
 
   const event = rows[0];
 
-  // Scorecard: the event's own card is an override; otherwise use the club's.
+  // Which course: one of the venue's other courses if set, else the main course
+  // (the club's own figures). The event's own scorecard overrides either.
+  const onCourse = !!event.course_name;
+  const venueCard = onCourse ? event.course_scorecard : event.club_scorecard;
   const hasOwnCard = Array.isArray(event.scorecard) && event.scorecard.length > 0;
   if (!hasOwnCard) {
-    event.scorecard = Array.isArray(event.club_scorecard) && event.club_scorecard.length ? event.club_scorecard : null;
+    event.scorecard = Array.isArray(venueCard) && venueCard.length ? venueCard : null;
   }
-  event.scorecard_note = hasOwnCard ? 'Course layout specific to this event.' : null;
-  if (event.par == null) event.par = event.club_par;
-  if (event.yardage == null) event.yardage = event.club_yardage;
+  event.course_label = onCourse ? event.course_name : (event.club_main_course_name || null);
+  event.course_phrase = coursePhrase(event.course_label);
+  event.course_url = onCourse ? `/clubs/${event.club_slug}/${event.course_slug}` : null;
+  event.scorecard_note = hasOwnCard
+    ? 'Course layout specific to this event.'
+    : (event.course_label ? `${event.course_label} scorecard.` : null);
+  if (event.par == null) event.par = onCourse ? event.course_par : event.club_par;
+  if (event.yardage == null) event.yardage = onCourse ? event.course_yardage : event.club_yardage;
+  if (onCourse && event.holes == null && event.course_holes) event.holes = event.course_holes;
 
   event.directions_url = event.address
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.club_name + ', ' + event.address)}`

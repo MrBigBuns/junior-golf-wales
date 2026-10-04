@@ -9,6 +9,7 @@ const { purgeOldSubmissions } = require('../lib/retention');
 const { extractScorecardFromImage, deriveTotals, isScorecard } = require('../lib/scorecard');
 const { toCsv, parseCsv, decodeUpload } = require('../lib/csv');
 const { COUNTY_NAMES } = require('../lib/site');
+const { courseFigures, slugifyCourse } = require('../lib/courses');
 
 function slugify(str) {
   return str
@@ -66,10 +67,32 @@ router.get('/events', asyncHandler(async (req, res) => {
   res.render('admin/events-list', { events });
 }));
 
+// The event's course: one of the club's other courses, or NULL for the main
+// course. Ignored unless the course belongs to the event's club.
+async function saveEventCourse(eventId, clubId, courseId) {
+  let id = Number(courseId) || null;
+  if (id) {
+    const { rows } = await pool.query(`SELECT 1 FROM club_courses WHERE id = $1 AND club_id = $2`, [id, clubId]);
+    if (!rows.length) id = null;
+  }
+  await pool.query(`UPDATE events SET course_id = $1 WHERE id = $2`, [id, eventId]);
+}
+
+async function allCourseOptions() {
+  const { rows } = await pool.query(
+    `SELECT cc.id, cc.club_id, cc.name FROM club_courses cc JOIN clubs c ON c.id = cc.club_id
+     WHERE c.archived_at IS NULL ORDER BY cc.club_id, cc.sort_order, cc.name`
+  );
+  const { rows: mains } = await pool.query(
+    `SELECT id, main_course_name FROM clubs WHERE main_course_name IS NOT NULL AND archived_at IS NULL`
+  );
+  return { courseOptions: rows, mainNames: Object.fromEntries(mains.map(m => [m.id, m.main_course_name])) };
+}
+
 router.get('/events/new', asyncHandler(async (req, res) => {
   const { rows: clubs } = await pool.query(`SELECT id, name FROM clubs WHERE archived_at IS NULL ORDER BY name`);
   const { rows: organisers } = await pool.query(`SELECT id, name FROM organisers ORDER BY name`);
-  res.render('admin/event-form', { event: {}, clubs, organisers, isNew: true, clubCard: null });
+  res.render('admin/event-form', { event: {}, clubs, organisers, isNew: true, clubCard: null, ...(await allCourseOptions()) });
 }));
 
 router.post('/events', asyncHandler(async (req, res) => {
@@ -98,6 +121,7 @@ router.post('/events', asyncHandler(async (req, res) => {
     ]
   );
 
+  await saveEventCourse(rows[0].id, b.club_id, b.course_id);
   res.redirect(`/admin/events/${rows[0].id}/edit`);
 }));
 
@@ -115,7 +139,7 @@ router.get('/events/:id/edit', asyncHandler(async (req, res) => {
   const { rows: clubCard } = await pool.query(
     `SELECT id, name, scorecard, par, yardage FROM clubs WHERE id = $1`, [rows[0].club_id]
   );
-  res.render('admin/event-form', { event: rows[0], clubs, organisers, isNew: false, updates, clubCard: clubCard[0] || null });
+  res.render('admin/event-form', { event: rows[0], clubs, organisers, isNew: false, updates, clubCard: clubCard[0] || null, ...(await allCourseOptions()) });
 }));
 
 router.post('/events/:id/update', asyncHandler(async (req, res) => {
@@ -144,6 +168,7 @@ router.post('/events/:id/update', asyncHandler(async (req, res) => {
     ]
   );
 
+  await saveEventCourse(req.params.id, b.club_id, b.course_id);
   res.redirect(`/admin/events/${req.params.id}/edit?saved=1`);
 }));
 
@@ -165,7 +190,23 @@ router.post('/events/:id/add-update', asyncHandler(async (req, res) => {
 // ---------- Scorecard import (photo -> structured JSON via Claude vision) ----------
 // Works for clubs (the default card for the course) and events (an optional
 // override for that event only). `kind` is 'clubs' or 'events'.
+const SCORECARD_TABLE = { clubs: 'clubs', events: 'events', courses: 'club_courses' };
+
 async function loadScorecardTarget(kind, id) {
+  if (kind === 'courses') {
+    const { rows } = await pool.query(
+      `SELECT cc.id, cc.name, c.name AS club_name FROM club_courses cc JOIN clubs c ON c.id = cc.club_id WHERE cc.id = $1`, [id]
+    );
+    if (!rows.length) return null;
+    return {
+      title: `${rows[0].name} at ${rows[0].club_name}`,
+      subtitle: 'Course scorecard: shown on this course\'s page and on events played on it.',
+      backUrl: `/admin/courses/${id}/edit`,
+      importUrl: `/admin/courses/${id}/scorecard-import`,
+      saveUrl: `/admin/courses/${id}/scorecard-import/save`,
+      saveLabel: 'Save to course'
+    };
+  }
   if (kind === 'clubs') {
     const { rows } = await pool.query(`SELECT id, name FROM clubs WHERE id = $1`, [id]);
     if (!rows.length) return null;
@@ -190,7 +231,7 @@ async function loadScorecardTarget(kind, id) {
   };
 }
 
-['clubs', 'events'].forEach(kind => {
+['clubs', 'events', 'courses'].forEach(kind => {
   router.get(`/${kind}/:id/scorecard-import`, asyncHandler(async (req, res) => {
     const target = await loadScorecardTarget(kind, req.params.id);
     if (!target) return res.status(404).send('Not found');
@@ -218,13 +259,98 @@ async function loadScorecardTarget(kind, id) {
     if (isScorecard(card)) {
       const { par, yardage } = deriveTotals(card);
       await pool.query(
-        `UPDATE ${kind} SET scorecard = $1, par = COALESCE($2, par), yardage = COALESCE($3, yardage) WHERE id = $4`,
+        `UPDATE ${SCORECARD_TABLE[kind]} SET scorecard = $1, par = COALESCE($2, par), yardage = COALESCE($3, yardage) WHERE id = $4`,
         [JSON.stringify(card), par, yardage, req.params.id]
       );
     }
     res.redirect(`/admin/${kind}/${req.params.id}/edit?saved=1`);
   }));
 });
+
+// ---------- Additional courses at a venue ----------
+async function saveCourseFromForm(b) {
+  const card = parseJsonField(b.scorecard);
+  const valid = card && !card.__parse_error && isScorecard(card) ? card : null;
+  const totals = deriveTotals(valid);
+  const holes = [9, 18, 27, 36].includes(Number(b.holes)) ? Number(b.holes) : (valid && [9, 18].includes(valid.length) ? valid.length : null);
+  return {
+    name: (b.name || '').trim(),
+    slug: slugifyCourse(b.slug || b.name),
+    holes,
+    par: Number.isInteger(Number(b.par)) && b.par !== '' ? Number(b.par) : totals.par,
+    yardage: Number.isInteger(Number(b.yardage)) && b.yardage !== '' ? Number(b.yardage) : totals.yardage,
+    scorecard: valid,
+    keepCard: !!(card && card.__parse_error),          // malformed JSON: leave the saved card alone
+    description: (b.description || '').trim() || null,
+    sort_order: Number.isInteger(Number(b.sort_order)) && b.sort_order !== '' ? Number(b.sort_order) : 0
+  };
+}
+
+router.get('/clubs/:id/courses/new', asyncHandler(async (req, res) => {
+  const { rows } = await pool.query(`SELECT id, name, slug FROM clubs WHERE id = $1`, [req.params.id]);
+  if (!rows.length) return res.status(404).send('Club not found');
+  res.render('admin/course-form', { club: rows[0], course: {}, isNew: true, error: null });
+}));
+
+router.post('/clubs/:id/courses', asyncHandler(async (req, res) => {
+  const { rows } = await pool.query(`SELECT id, name, slug FROM clubs WHERE id = $1`, [req.params.id]);
+  if (!rows.length) return res.status(404).send('Club not found');
+  const c = await saveCourseFromForm(req.body);
+  if (!c.name || !c.slug) return res.render('admin/course-form', { club: rows[0], course: req.body, isNew: true, error: 'Give the course a name.' });
+  try {
+    const { rows: ins } = await pool.query(
+      `INSERT INTO club_courses (club_id, name, slug, holes, par, yardage, scorecard, description, sort_order)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id`,
+      [rows[0].id, c.name, c.slug, c.holes, c.par, c.yardage, JSON.stringify(c.scorecard), c.description, c.sort_order]
+    );
+    res.redirect(`/admin/courses/${ins[0].id}/edit?saved=1`);
+  } catch (err) {
+    if (err.code === '23505') return res.render('admin/course-form', { club: rows[0], course: req.body, isNew: true, error: `This club already has a course with the web address "${c.slug}". Choose a different name or slug.` });
+    throw err;
+  }
+}));
+
+async function loadCourse(id) {
+  const { rows } = await pool.query(
+    `SELECT cc.*, c.name AS club_name, c.slug AS club_slug FROM club_courses cc JOIN clubs c ON c.id = cc.club_id WHERE cc.id = $1`, [id]
+  );
+  return rows[0] || null;
+}
+
+router.get('/courses/:id/edit', asyncHandler(async (req, res) => {
+  const course = await loadCourse(req.params.id);
+  if (!course) return res.status(404).send('Course not found');
+  res.render('admin/course-form', { club: { id: course.club_id, name: course.club_name, slug: course.club_slug }, course, isNew: false, error: null, saved: !!req.query.saved });
+}));
+
+router.post('/courses/:id/update', asyncHandler(async (req, res) => {
+  const existing = await loadCourse(req.params.id);
+  if (!existing) return res.status(404).send('Course not found');
+  const club = { id: existing.club_id, name: existing.club_name, slug: existing.club_slug };
+  const c = await saveCourseFromForm(req.body);
+  if (!c.name || !c.slug) return res.render('admin/course-form', { club, course: { ...existing, ...req.body }, isNew: false, error: 'Give the course a name.' });
+  try {
+    await pool.query(
+      `UPDATE club_courses SET name = $1, slug = $2, holes = $3, par = $4, yardage = $5,
+              scorecard = CASE WHEN $10 THEN scorecard ELSE $6::jsonb END,
+              description = $7, sort_order = $8, updated_at = now()
+       WHERE id = $9`,
+      [c.name, c.slug, c.holes, c.par, c.yardage, JSON.stringify(c.scorecard), c.description, c.sort_order, existing.id, c.keepCard]
+    );
+  } catch (err) {
+    if (err.code === '23505') return res.render('admin/course-form', { club, course: { ...existing, ...req.body }, isNew: false, error: `This club already has a course with the web address "${c.slug}".` });
+    throw err;
+  }
+  res.redirect(`/admin/courses/${existing.id}/edit?saved=1`);
+}));
+
+router.post('/courses/:id/delete', asyncHandler(async (req, res) => {
+  const existing = await loadCourse(req.params.id);
+  if (!existing) return res.status(404).send('Course not found');
+  // Events on this course fall back to the club's main course (ON DELETE SET NULL)
+  await pool.query(`DELETE FROM club_courses WHERE id = $1`, [existing.id]);
+  res.redirect(`/admin/clubs/${existing.club_id}/edit`);
+}));
 
 // ---------- Clubs ----------
 router.get('/clubs', asyncHandler(async (req, res) => {
@@ -236,7 +362,7 @@ router.get('/clubs', asyncHandler(async (req, res) => {
 }));
 
 router.get('/clubs/new', (req, res) => {
-  res.render('admin/club-form', { club: {}, isNew: true, deleteBlocked: null });
+  res.render('admin/club-form', { club: {}, courses: [], isNew: true, deleteBlocked: null });
 });
 
 const clubImageUpload = upload.fields([
@@ -268,8 +394,9 @@ router.post('/clubs', clubImageUpload, asyncHandler(async (req, res) => {
 
   await saveClubImages(rows[0].id, req.files);
   await saveClubScorecard(rows[0].id, b);
-  await pool.query(`UPDATE clubs SET county = $1, holes = $2 WHERE id = $3`,
-    [COUNTY_NAMES.includes(b.county) ? b.county : null, [9, 18, 27, 36].includes(Number(b.holes)) ? Number(b.holes) : null, rows[0].id]);
+  await pool.query(`UPDATE clubs SET county = $1, holes = $2, main_course_name = $3 WHERE id = $4`,
+    [COUNTY_NAMES.includes(b.county) ? b.county : null, [9, 18, 27, 36].includes(Number(b.holes)) ? Number(b.holes) : null,
+     (b.main_course_name || '').trim() || null, rows[0].id]);
   res.redirect(`/admin/clubs/${rows[0].id}/edit`);
 }));
 
@@ -277,14 +404,18 @@ router.get('/clubs/:id/edit', asyncHandler(async (req, res) => {
   const { rows } = await pool.query(
     `SELECT id, name, slug, address, region, lat, lng, website, contact_email,
             junior_membership_contact, logo_url, description, course_image_url,
-            facebook_url, instagram_url, x_url, scorecard, par, yardage, archived_at, archived_reason, county, holes,
+            facebook_url, instagram_url, x_url, scorecard, par, yardage, archived_at, archived_reason, county, holes, main_course_name,
             (logo_image IS NOT NULL) AS has_logo_image,
             (course_photo_image IS NOT NULL) AS has_course_photo_image
      FROM clubs WHERE id = $1`,
     [req.params.id]
   );
   if (!rows.length) return res.status(404).send('Club not found');
-  res.render('admin/club-form', { club: rows[0], isNew: false, deleteBlocked: req.query.delete_blocked || null });
+  const { rows: courseRows } = await pool.query(
+    `SELECT id, name, slug, holes, par, yardage, scorecard FROM club_courses WHERE club_id = $1 ORDER BY sort_order, name`, [req.params.id]
+  );
+  const courses = courseRows.map(c => ({ id: c.id, name: c.name, slug: c.slug, ...courseFigures(c) }));
+  res.render('admin/club-form', { club: rows[0], courses, isNew: false, deleteBlocked: req.query.delete_blocked || null });
 }));
 
 router.post('/clubs/:id/update', clubImageUpload, asyncHandler(async (req, res) => {
@@ -314,8 +445,9 @@ router.post('/clubs/:id/update', clubImageUpload, asyncHandler(async (req, res) 
 
   await saveClubImages(req.params.id, req.files);
   await saveClubScorecard(req.params.id, b);
-  await pool.query(`UPDATE clubs SET county = $1, holes = $2 WHERE id = $3`,
-    [COUNTY_NAMES.includes(b.county) ? b.county : null, [9, 18, 27, 36].includes(Number(b.holes)) ? Number(b.holes) : null, req.params.id]);
+  await pool.query(`UPDATE clubs SET county = $1, holes = $2, main_course_name = $3 WHERE id = $4`,
+    [COUNTY_NAMES.includes(b.county) ? b.county : null, [9, 18, 27, 36].includes(Number(b.holes)) ? Number(b.holes) : null,
+     (b.main_course_name || '').trim() || null, req.params.id]);
 
   if (b.remove_logo_image === 'on') {
     await pool.query(`UPDATE clubs SET logo_image = NULL, logo_image_type = NULL WHERE id = $1`, [req.params.id]);

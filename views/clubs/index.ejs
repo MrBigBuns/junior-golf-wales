@@ -22,7 +22,7 @@
       <% grouped[region].forEach(function(c) { %>
         <a class="event-card" href="/clubs/<%= c.slug %>">
           <p class="event-card-title"><%= c.name %></p>
-          <p class="event-card-meta"><% if (c.holes === 9) { %><span class="badge badge-nine">9 holes</span> <% } %><% if (c.county) { %><%= c.county %> · <% } %><%= c.upcoming_count %> upcoming event<%= c.upcoming_count == 1 ? '' : 's' %></p>
+          <p class="event-card-meta"><% if (c.holes === 9) { %><span class="badge badge-nine">9 holes</span> <% } %><% if (c.course_count > 1) { %><span class="badge badge-courses"><%= c.course_count %> courses</span> <% } %><% if (c.county) { %><%= c.county %> · <% } %><%= c.upcoming_count %> upcoming event<%= c.upcoming_count == 1 ? '' : 's' %></p>
         </a>
       <% }); %>
     </div>
