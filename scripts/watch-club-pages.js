@@ -46,6 +46,16 @@ async function fetchPage(url) {
 // Pages that render in the browser: nothing useful in the raw HTML
 const unreadable = isScriptedPage;
 
+// Decode HTML entities, including numeric ones like &#8211; (en dash)
+const NAMED = { nbsp: ' ', amp: '&', pound: '£', rsquo: "'", lsquo: "'", rdquo: '"', ldquo: '"', ndash: '–', mdash: '—', hellip: '…', quot: '"', apos: "'", lt: '<', gt: '>' };
+function decodeEntities(str) {
+  return str
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCodePoint(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, d) => String.fromCodePoint(Number(d)))
+    .replace(/&([a-z]+);/gi, (m, n) => (n.toLowerCase() in NAMED ? NAMED[n.toLowerCase()] : ' '));
+}
+const normaliseLine = l => decodeEntities(l).replace(/\s+/g, ' ').trim();
+
 const MONTH = '(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|june?|july?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?|dec(ember)?)';
 const DATE = new RegExp(`\\b\\d{1,2}(st|nd|rd|th)?\\s+${MONTH}\\b|\\b${MONTH}\\s+\\d{1,2}(st|nd|rd|th)?\\b|\\b\\d{1,2}[/.]\\d{1,2}[/.]\\d{2,4}\\b|\\b(mon|tues|wednes|thurs|fri|satur|sun)day\\b`, 'i');
 const KEYWORD = /\b(opens?|junior|juniors|youth|boys|girls|championship|competition|trophy|cup|stableford|medal|strokeplay|fourball|4bbb|scramble|am-?am|pro-?am|entry|entries|closing date|handicap limit)\b|£\s?\d/i;
@@ -60,9 +70,10 @@ function relevantLines(html) {
     .replace(/<br\s*\/?>/gi, '\n')
     .replace(/<\/(p|div|li|tr|h\d|td|th|section|article|span|a)>/gi, '\n')
     .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&pound;/g, '£').replace(/&#0?39;|&rsquo;/g, "'").replace(/&[a-z]+;/g, ' ');
+    ;
+  const decoded = decodeEntities(text);
   const seen = new Set();
-  for (const raw of text.split('\n')) {
+  for (const raw of decoded.split('\n')) {
     const line = raw.replace(/\s+/g, ' ').trim();
     if (line.length < 6 || line.length > 220) continue;
     if (NOISE.test(line)) continue;
@@ -123,14 +134,16 @@ async function run() {
     checked++;
     const lines = relevantLines(page.html);
 
-    if (!prev || !Array.isArray(prev.lines)) {
+    if (!prev || !Array.isArray(prev.lines) || prev.lines.length === 0) {
       baselined++;
-      console.log(`${label}: first check, ${lines.length} relevant line(s) recorded${lines.length ? '' : ' (nothing readable: added to Check by hand)'}`);
+      const firstTime = !prev || !Array.isArray(prev.lines);
+      console.log(`${label}: ${firstTime ? 'first check' : 'now readable'}, ${lines.length} relevant line(s) recorded${lines.length ? '' : ' (nothing readable: added to Check by hand)'}`);
     } else {
-      const before = new Set(prev.lines);
-      const now = new Set(lines);
-      const added = lines.filter(l => !before.has(l));
-      const removed = prev.lines.filter(l => !now.has(l));
+      // Normalise both sides so decoding/whitespace differences never count as changes
+      const before = new Set(prev.lines.map(normaliseLine));
+      const now = new Set(lines.map(normaliseLine));
+      const added = lines.filter(l => !before.has(normaliseLine(l)));
+      const removed = prev.lines.filter(l => !now.has(normaliseLine(l)));
       if (added.length || removed.length) {
         changed++;
         console.log(`${label}: CHANGED (+${added.length} / -${removed.length})`);
@@ -172,4 +185,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { relevantLines, unreadable };
+module.exports = { relevantLines, unreadable, normaliseLine };

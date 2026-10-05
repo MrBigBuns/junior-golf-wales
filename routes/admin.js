@@ -793,7 +793,8 @@ async function manualCheckList() {
   const { rows } = await pool.query(
     `SELECT c.id AS club_id, c.name AS club_name, k.kind, k.url, w.manual_checked_at,
             (w.lines IS NOT NULL AND CASE WHEN jsonb_typeof(w.lines) = 'array'
-                                          THEN jsonb_array_length(w.lines) = 0 ELSE FALSE END) AS empty_page
+                                          THEN jsonb_array_length(w.lines) = 0 ELSE FALSE END) AS empty_page,
+            w.last_error
      FROM clubs c
      CROSS JOIN LATERAL (VALUES ('opens', c.opens_url), ('juniors', c.juniors_url)) AS k(kind, url)
      LEFT JOIN page_watch w ON w.club_id = c.id AND w.kind = k.kind AND w.url = k.url
@@ -802,10 +803,12 @@ async function manualCheckList() {
   );
   const cutoff = Date.now() - MANUAL_CHECK_DAYS * 86400000;
   return rows
-    .filter(r => isScriptedPage(r.url) || r.empty_page)
+    .filter(r => isScriptedPage(r.url) || r.empty_page || r.last_error)
     .map(r => ({
       ...r,
-      reason: isScriptedPage(r.url) ? 'Booking system' : 'Nothing readable',
+      reason: isScriptedPage(r.url) ? 'Booking system'
+        : r.last_error ? (/HTTP 40[13]|blocked/i.test(r.last_error) ? 'Site blocks the checker' : `Didn't load (${r.last_error})`)
+        : 'Nothing readable',
       due: !r.manual_checked_at || new Date(r.manual_checked_at).getTime() < cutoff
     }));
 }
