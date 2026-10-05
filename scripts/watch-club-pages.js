@@ -12,6 +12,7 @@
 //   node scripts/watch-club-pages.js --dry-run  report, save nothing
 require('dotenv').config();
 const pool = require('../db/pool');
+const { isScriptedPage } = require('../lib/pagewatch');
 
 const argv = process.argv.slice(2);
 const opt = n => { const i = argv.indexOf(n); return i >= 0 ? argv[i + 1] : null; };
@@ -43,9 +44,7 @@ async function fetchPage(url) {
 }
 
 // Pages that render in the browser: nothing useful in the raw HTML
-function unreadable(url) {
-  return /#\//.test(url) || /visitors\.brsgolf\.com|members\.brsgolf\.com/i.test(url);
-}
+const unreadable = isScriptedPage;
 
 const MONTH = '(jan(uary)?|feb(ruary)?|mar(ch)?|apr(il)?|may|june?|july?|aug(ust)?|sep(t(ember)?)?|oct(ober)?|nov(ember)?|dec(ember)?)';
 const DATE = new RegExp(`\\b\\d{1,2}(st|nd|rd|th)?\\s+${MONTH}\\b|\\b${MONTH}\\s+\\d{1,2}(st|nd|rd|th)?\\b|\\b\\d{1,2}[/.]\\d{1,2}[/.]\\d{2,4}\\b|\\b(mon|tues|wednes|thurs|fri|satur|sun)day\\b`, 'i');
@@ -160,7 +159,7 @@ async function run() {
   }
 
   console.log(`\n${checked} page(s) checked: ${changed} changed, ${baselined} recorded for the first time. ` +
-    `${skipped} skipped (JavaScript pages such as BRS listings), ${failed} failed to load.` +
+    `${skipped} skipped (BRS and other JavaScript pages: listed under Check by hand), ${failed} failed to load.` +
     (changed && !DRY_RUN ? ' See /admin/page-changes.' : ''));
   await pool.end();
 }

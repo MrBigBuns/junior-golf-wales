@@ -10,6 +10,7 @@ const { extractScorecardFromImage, deriveTotals, isScorecard } = require('../lib
 const { toCsv, parseCsv, decodeUpload } = require('../lib/csv');
 const { COUNTY_NAMES } = require('../lib/site');
 const { courseFigures, slugifyCourse } = require('../lib/courses');
+const { isScriptedPage, MANUAL_CHECK_DAYS } = require('../lib/pagewatch');
 const linkOrNull = v => { const t = (v || '').trim(); return /^https?:\/\//i.test(t) ? t : null; };
 
 
@@ -57,7 +58,8 @@ router.get('/', asyncHandler(async (req, res) => {
     pendingCount: pendingCount[0].count,
     pendingClubAccounts: pendingClubAccounts[0].count,
     pendingSuggestions: pendingSuggestions[0].count,
-    newPageChanges: newPageChanges[0].count
+    newPageChanges: newPageChanges[0].count,
+    manualChecksDue: (await manualCheckList()).filter(r => r.due).length
   });
 }));
 
@@ -784,6 +786,22 @@ router.post('/club-suggestions/:id/reject', asyncHandler(async (req, res) => {
   res.redirect('/admin/club-suggestions');
 }));
 
+// Booking-system pages to check by hand, oldest/never-checked first
+async function manualCheckList() {
+  const { rows } = await pool.query(
+    `SELECT c.id AS club_id, c.name AS club_name, k.kind, k.url, w.manual_checked_at
+     FROM clubs c
+     CROSS JOIN LATERAL (VALUES ('opens', c.opens_url), ('juniors', c.juniors_url)) AS k(kind, url)
+     LEFT JOIN page_watch w ON w.club_id = c.id AND w.kind = k.kind AND w.url = k.url
+     WHERE c.archived_at IS NULL AND k.url IS NOT NULL
+     ORDER BY w.manual_checked_at NULLS FIRST, c.name`
+  );
+  const cutoff = Date.now() - MANUAL_CHECK_DAYS * 86400000;
+  return rows
+    .filter(r => isScriptedPage(r.url))
+    .map(r => ({ ...r, due: !r.manual_checked_at || new Date(r.manual_checked_at).getTime() < cutoff }));
+}
+
 // ---------- Page changes (scripts/watch-club-pages.js) ----------
 router.get('/page-changes', asyncHandler(async (req, res) => {
   const showSeen = req.query.show === 'all';
@@ -804,12 +822,41 @@ router.get('/page-changes', asyncHandler(async (req, res) => {
      FROM page_watch w JOIN clubs c ON c.id = w.club_id
      WHERE w.last_error IS NOT NULL ORDER BY c.name`
   );
-  res.render('admin/page-changes', { changes, stats: stats[0], failing, showSeen });
+  const manual = await manualCheckList();
+  res.render('admin/page-changes', { changes, stats: stats[0], failing, showSeen, manual, manualDays: MANUAL_CHECK_DAYS });
 }));
 
 router.post('/page-changes/:id/seen', asyncHandler(async (req, res) => {
   await pool.query(`UPDATE page_changes SET seen_at = now() WHERE id = $1`, [req.params.id]);
   res.redirect('/admin/page-changes');
+}));
+
+router.post('/page-changes/manual-check', asyncHandler(async (req, res) => {
+  const kinds = req.body.kind === 'juniors' ? ['juniors'] : req.body.kind === 'opens' ? ['opens'] : [];
+  const { rows } = await pool.query(`SELECT id, opens_url, juniors_url FROM clubs WHERE id = $1`, [req.body.club_id]);
+  if (rows.length && kinds.length) {
+    const url = kinds[0] === 'opens' ? rows[0].opens_url : rows[0].juniors_url;
+    if (url) {
+      await pool.query(
+        `INSERT INTO page_watch (club_id, kind, url, manual_checked_at) VALUES ($1, $2, $3, now())
+         ON CONFLICT (club_id, kind) DO UPDATE SET url = EXCLUDED.url, manual_checked_at = now()`,
+        [rows[0].id, kinds[0], url]
+      );
+    }
+  }
+  res.redirect('/admin/page-changes#check-by-hand');
+}));
+
+router.post('/page-changes/manual-check-all', asyncHandler(async (req, res) => {
+  const due = (await manualCheckList()).filter(r => r.due);
+  for (const r of due) {
+    await pool.query(
+      `INSERT INTO page_watch (club_id, kind, url, manual_checked_at) VALUES ($1, $2, $3, now())
+       ON CONFLICT (club_id, kind) DO UPDATE SET url = EXCLUDED.url, manual_checked_at = now()`,
+      [r.club_id, r.kind, r.url]
+    );
+  }
+  res.redirect('/admin/page-changes#check-by-hand');
 }));
 
 router.post('/page-changes/seen-all', asyncHandler(async (req, res) => {

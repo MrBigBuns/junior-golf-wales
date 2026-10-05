@@ -6,7 +6,7 @@
   <a href="/admin/events">Events (<%= eventCount %>)</a>
   <a href="/admin/clubs">Clubs (<%= clubCount %>)</a>
   <a href="/admin/submissions">Submissions <% if (pendingCount > 0) { %><span class="pending-badge"><%= pendingCount %></span><% } %></a>
-  <a href="/admin/page-changes">Page changes <% if (newPageChanges > 0) { %><span class="pending-badge"><%= newPageChanges %></span><% } %></a>
+  <a href="/admin/page-changes">Page changes <% if (newPageChanges > 0) { %><span class="pending-badge"><%= newPageChanges %></span><% } %><% if (manualChecksDue > 0) { %> <span class="muted small">· <%= manualChecksDue %> to check</span><% } %></a>
   <a href="/admin/club-suggestions">Club suggestions <% if (pendingSuggestions > 0) { %><span class="pending-badge"><%= pendingSuggestions %></span><% } %></a>
   <a href="/admin/club-accounts">Club accounts <% if (pendingClubAccounts > 0) { %><span class="pending-badge"><%= pendingClubAccounts %></span><% } %></a>
 </div>

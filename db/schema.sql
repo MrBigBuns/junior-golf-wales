@@ -293,3 +293,7 @@ CREATE TABLE IF NOT EXISTS page_changes (
   seen_at TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS idx_page_changes_unseen ON page_changes(detected_at) WHERE seen_at IS NULL;
+
+-- Booking-system pages (BRS etc.) can't be read by the weekly watcher, so
+-- they're checked by hand; this records when each was last checked.
+ALTER TABLE page_watch ADD COLUMN IF NOT EXISTS manual_checked_at TIMESTAMPTZ;

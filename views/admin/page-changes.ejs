@@ -58,6 +58,40 @@
   <% }); %>
 <% } %>
 
+<% const dueCount = manual.filter(function(m) { return m.due; }).length; %>
+<div class="detail-card" id="check-by-hand">
+  <h2 class="detail-card-heading">Check by hand<% if (dueCount) { %> <span class="pending-badge"><%= dueCount %> due</span><% } %></h2>
+  <p class="course-address">Booking-system pages (mostly BRS) that the weekly check can't read. Open each, look for new dates, then mark it checked. Due again after <%= manualDays %> days.</p>
+  <% if (!manual.length) { %>
+    <p class="muted">None: no club links point to booking-system pages.</p>
+  <% } else { %>
+    <% if (dueCount > 1) { %>
+      <form method="post" action="/admin/page-changes/manual-check-all" onsubmit="return confirm('Mark all <%= dueCount %> due pages as checked today?');">
+        <button type="submit" class="link-button">Mark all due as checked</button>
+      </form>
+    <% } %>
+    <table class="admin-table manual-checks">
+      <thead><tr><th>Club</th><th>Page</th><th>Last checked</th><th></th></tr></thead>
+      <tbody>
+        <% manual.forEach(function(m) { %>
+          <tr class="<%= m.due ? 'is-due' : '' %>">
+            <td><%= m.club_name %></td>
+            <td><a href="<%= m.url %>" target="_blank" rel="noopener"><%= m.kind === 'opens' ? 'Open competitions' : 'Junior page' %></a></td>
+            <td><% if (m.manual_checked_at) { %><%= new Date(m.manual_checked_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) %><% } else { %><span class="muted">never</span><% } %><% if (m.due) { %> <span class="due-tag">Due</span><% } %></td>
+            <td>
+              <form method="post" action="/admin/page-changes/manual-check" style="display:inline;">
+                <input type="hidden" name="club_id" value="<%= m.club_id %>">
+                <input type="hidden" name="kind" value="<%= m.kind %>">
+                <button type="submit" class="link-button">Mark checked</button>
+              </form>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
 <% if (failing.length) { %>
   <details class="detail-card">
     <summary><strong><%= failing.length %> page<%= failing.length === 1 ? '' : 's' %> couldn't be checked last time</strong></summary>
@@ -79,6 +113,8 @@
   .change-lines.added { background: #eef7e8; }
   .change-lines.removed { background: #fbeeee; }
   .change-lines li { padding: 2px 0; }
+  .manual-checks tr.is-due td { background: #fff8e6; }
+  .due-tag { background: #e0a100; color: #fff; font-size: 0.72rem; padding: 1px 6px; border-radius: 999px; }
   .link-button { background: none; border: 0; padding: 0; color: var(--wales-green); cursor: pointer; font: inherit; text-decoration: underline; }
 </style>
 
