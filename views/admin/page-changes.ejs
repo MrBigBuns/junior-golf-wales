@@ -1,0 +1,85 @@
+<%- include('../partials/head', { pageTitle: 'Admin — Page changes', noIndex: true }) %>
+
+<h1>Page changes</h1>
+<p><a href="/admin">&larr; Dashboard</a></p>
+
+<p class="course-address">
+  New lines on clubs' open competitions and junior pages, found by the weekly check.
+  <% if (stats.watched) { %>
+    Watching <%= stats.watched %> page<%= stats.watched === 1 ? '' : 's' %><% if (stats.last_run) { %>, last checked <%= new Date(stats.last_run).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) %><% } %>.
+  <% } else { %>
+    No pages checked yet. The first run records each page; changes show from the second run onwards.
+  <% } %>
+</p>
+
+<p>
+  <% if (showSeen) { %><a href="/admin/page-changes">Show new only</a><% } else { %><a href="/admin/page-changes?show=all">Show all, including seen</a><% } %>
+</p>
+
+<% if (!changes.length) { %>
+  <p><%= showSeen ? 'No changes recorded yet.' : 'Nothing new since you last looked.' %></p>
+<% } else { %>
+  <% if (!showSeen) { %>
+    <form method="post" action="/admin/page-changes/seen-all" onsubmit="return confirm('Mark all as seen?');">
+      <button type="submit">Mark all as seen</button>
+    </form>
+  <% } %>
+
+  <% changes.forEach(function(ch) { %>
+    <div class="detail-card page-change <%= ch.seen_at ? 'is-seen' : '' %>">
+      <div class="page-change-head">
+        <div>
+          <strong><%= ch.club_name %></strong>
+          <span class="muted small">· <%= ch.kind === 'opens' ? 'Open competitions page' : 'Junior page' %> · <%= new Date(ch.detected_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) %></span>
+        </div>
+        <div class="page-change-actions">
+          <a href="<%= ch.url %>" target="_blank" rel="noopener">Open page</a>
+          <a href="/clubs/<%= ch.club_slug %>" target="_blank">Club</a>
+          <% if (!ch.seen_at) { %>
+            <form method="post" action="/admin/page-changes/<%= ch.id %>/seen" style="display:inline;"><button type="submit" class="link-button">Mark seen</button></form>
+          <% } %>
+        </div>
+      </div>
+      <% if (ch.added.length) { %>
+        <ul class="change-lines added">
+          <% ch.added.slice(0, 8).forEach(function(l) { %><li>+ <%= l %></li><% }); %>
+          <% if (ch.added.length > 8) { %><li class="muted">…and <%= ch.added.length - 8 %> more</li><% } %>
+        </ul>
+      <% } %>
+      <% if (ch.removed.length) { %>
+        <details>
+          <summary class="muted small"><%= ch.removed.length %> line<%= ch.removed.length === 1 ? '' : 's' %> removed</summary>
+          <ul class="change-lines removed">
+            <% ch.removed.slice(0, 20).forEach(function(l) { %><li>− <%= l %></li><% }); %>
+          </ul>
+        </details>
+      <% } %>
+    </div>
+  <% }); %>
+<% } %>
+
+<% if (failing.length) { %>
+  <details class="detail-card">
+    <summary><strong><%= failing.length %> page<%= failing.length === 1 ? '' : 's' %> couldn't be checked last time</strong></summary>
+    <ul class="related-list compact">
+      <% failing.forEach(function(f) { %>
+        <li><a href="/admin/clubs/<%= f.club_id %>/edit"><%= f.club_name %></a> <span class="muted small">(<%= f.kind %>): <%= f.last_error %> · <a href="<%= f.url %>" target="_blank" rel="noopener">link</a></span></li>
+      <% }); %>
+    </ul>
+    <p class="scorecard-note">A page that keeps failing has probably moved; update the link on the club's edit page.</p>
+  </details>
+<% } %>
+
+<style>
+  .page-change { margin-bottom: 1rem; }
+  .page-change.is-seen { opacity: 0.6; }
+  .page-change-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.5rem; }
+  .page-change-actions { display: flex; gap: 0.75rem; align-items: center; font-size: 0.9rem; }
+  .change-lines { list-style: none; padding: 0.5rem 0.75rem; margin: 0.6rem 0 0; border-radius: 6px; font-size: 0.9rem; }
+  .change-lines.added { background: #eef7e8; }
+  .change-lines.removed { background: #fbeeee; }
+  .change-lines li { padding: 2px 0; }
+  .link-button { background: none; border: 0; padding: 0; color: var(--wales-green); cursor: pointer; font: inherit; text-decoration: underline; }
+</style>
+
+<%- include('../partials/foot') %>

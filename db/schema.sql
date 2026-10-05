@@ -266,3 +266,30 @@ ALTER TABLE events ADD COLUMN IF NOT EXISTS course_id INTEGER REFERENCES club_co
 -- scripts/find-club-links.js and reviewed at /admin/club-suggestions.
 ALTER TABLE clubs ADD COLUMN IF NOT EXISTS opens_url TEXT;
 ALTER TABLE clubs ADD COLUMN IF NOT EXISTS juniors_url TEXT;
+
+-- Weekly watch of clubs' open competitions and junior pages
+-- (scripts/watch-club-pages.js). page_watch holds the last-seen relevant
+-- lines of each page; page_changes records what was added/removed.
+CREATE TABLE IF NOT EXISTS page_watch (
+  id SERIAL PRIMARY KEY,
+  club_id INTEGER NOT NULL REFERENCES clubs(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL CHECK (kind IN ('opens', 'juniors')),
+  url TEXT NOT NULL,
+  lines JSONB,
+  checked_at TIMESTAMPTZ,
+  changed_at TIMESTAMPTZ,
+  last_error TEXT,
+  UNIQUE (club_id, kind)
+);
+
+CREATE TABLE IF NOT EXISTS page_changes (
+  id SERIAL PRIMARY KEY,
+  club_id INTEGER NOT NULL REFERENCES clubs(id) ON DELETE CASCADE,
+  kind TEXT NOT NULL,
+  url TEXT NOT NULL,
+  added JSONB NOT NULL DEFAULT '[]',
+  removed JSONB NOT NULL DEFAULT '[]',
+  detected_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  seen_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_page_changes_unseen ON page_changes(detected_at) WHERE seen_at IS NULL;

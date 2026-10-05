@@ -6,6 +6,7 @@
   <a href="/admin/events">Events (<%= eventCount %>)</a>
   <a href="/admin/clubs">Clubs (<%= clubCount %>)</a>
   <a href="/admin/submissions">Submissions <% if (pendingCount > 0) { %><span class="pending-badge"><%= pendingCount %></span><% } %></a>
+  <a href="/admin/page-changes">Page changes <% if (newPageChanges > 0) { %><span class="pending-badge"><%= newPageChanges %></span><% } %></a>
   <a href="/admin/club-suggestions">Club suggestions <% if (pendingSuggestions > 0) { %><span class="pending-badge"><%= pendingSuggestions %></span><% } %></a>
   <a href="/admin/club-accounts">Club accounts <% if (pendingClubAccounts > 0) { %><span class="pending-badge"><%= pendingClubAccounts %></span><% } %></a>
 </div>
@@ -43,6 +44,11 @@ node scripts/enrich-clubs.js --club radyr-golf-club   # one club (add --redo to 
   <p class="course-address">Crawls each club's website for its open competitions page (including its BRS opens listing) and its junior golf page, and queues them in <a href="/admin/club-suggestions">Club suggestions</a>. No AI cost. Worth re-running each spring when clubs publish new opens.</p>
   <pre><code>node scripts/find-club-links.js --dry-run --limit 5
 node scripts/find-club-links.js</code></pre>
+
+  <h3>Weekly check of clubs' opens and junior pages</h3>
+  <p class="course-address">Every Monday a scheduled job checks each club's open competitions and junior page and lists anything new in <a href="/admin/page-changes">Page changes</a>, then runs the BRS opens scan. To run it by hand:</p>
+  <pre><code>node scripts/watch-club-pages.js --dry-run
+node scripts/watch-club-pages.js</code></pre>
 
   <h3>Post an update on an event</h3>
   <pre><code>node scripts/add-update.js &lt;event-slug&gt; "Message"</code></pre>

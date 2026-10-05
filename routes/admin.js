@@ -43,19 +43,21 @@ function eventScorecardFromForm(b) {
 router.get('/', asyncHandler(async (req, res) => {
   purgeOldSubmissions(pool).catch(err => console.error('Retention sweep failed:', err.message));
 
-  const [{ rows: eventCount }, { rows: clubCount }, { rows: pendingCount }, { rows: pendingClubAccounts }, { rows: pendingSuggestions }] = await Promise.all([
+  const [{ rows: eventCount }, { rows: clubCount }, { rows: pendingCount }, { rows: pendingClubAccounts }, { rows: pendingSuggestions }, { rows: newPageChanges }] = await Promise.all([
     pool.query(`SELECT COUNT(*) FROM events`),
     pool.query(`SELECT COUNT(*) FROM clubs WHERE archived_at IS NULL`),
     pool.query(`SELECT COUNT(*) FROM submissions WHERE status = 'pending'`),
     pool.query(`SELECT COUNT(*) FROM club_users WHERE status = 'pending'`),
-    pool.query(`SELECT COUNT(*) FROM club_suggestions WHERE status = 'pending'`)
+    pool.query(`SELECT COUNT(*) FROM club_suggestions WHERE status = 'pending'`),
+    pool.query(`SELECT COUNT(*) FROM page_changes WHERE seen_at IS NULL`)
   ]);
   res.render('admin/dashboard', {
     eventCount: eventCount[0].count,
     clubCount: clubCount[0].count,
     pendingCount: pendingCount[0].count,
     pendingClubAccounts: pendingClubAccounts[0].count,
-    pendingSuggestions: pendingSuggestions[0].count
+    pendingSuggestions: pendingSuggestions[0].count,
+    newPageChanges: newPageChanges[0].count
   });
 }));
 
@@ -780,6 +782,39 @@ router.post('/club-suggestions/apply-all', asyncHandler(async (req, res) => {
 router.post('/club-suggestions/:id/reject', asyncHandler(async (req, res) => {
   await pool.query(`UPDATE club_suggestions SET status = 'rejected', reviewed_at = now() WHERE id = $1`, [req.params.id]);
   res.redirect('/admin/club-suggestions');
+}));
+
+// ---------- Page changes (scripts/watch-club-pages.js) ----------
+router.get('/page-changes', asyncHandler(async (req, res) => {
+  const showSeen = req.query.show === 'all';
+  const { rows: changes } = await pool.query(
+    `SELECT pc.*, c.name AS club_name, c.slug AS club_slug
+     FROM page_changes pc JOIN clubs c ON c.id = pc.club_id
+     WHERE ${showSeen ? 'TRUE' : 'pc.seen_at IS NULL'}
+     ORDER BY pc.detected_at DESC LIMIT 200`
+  );
+  const { rows: stats } = await pool.query(
+    `SELECT COUNT(*)::int AS watched,
+            COUNT(*) FILTER (WHERE last_error IS NOT NULL)::int AS failing,
+            MAX(checked_at) AS last_run
+     FROM page_watch`
+  );
+  const { rows: failing } = await pool.query(
+    `SELECT w.kind, w.url, w.last_error, c.name AS club_name, c.id AS club_id
+     FROM page_watch w JOIN clubs c ON c.id = w.club_id
+     WHERE w.last_error IS NOT NULL ORDER BY c.name`
+  );
+  res.render('admin/page-changes', { changes, stats: stats[0], failing, showSeen });
+}));
+
+router.post('/page-changes/:id/seen', asyncHandler(async (req, res) => {
+  await pool.query(`UPDATE page_changes SET seen_at = now() WHERE id = $1`, [req.params.id]);
+  res.redirect('/admin/page-changes');
+}));
+
+router.post('/page-changes/seen-all', asyncHandler(async (req, res) => {
+  await pool.query(`UPDATE page_changes SET seen_at = now() WHERE seen_at IS NULL`);
+  res.redirect('/admin/page-changes');
 }));
 
 // ---------- Submissions ----------
