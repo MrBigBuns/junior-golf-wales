@@ -260,3 +260,9 @@ CREATE INDEX IF NOT EXISTS idx_club_courses_club ON club_courses(club_id, sort_o
 
 -- Which course an event is played on: NULL = the club's main course.
 ALTER TABLE events ADD COLUMN IF NOT EXISTS course_id INTEGER REFERENCES club_courses(id) ON DELETE SET NULL;
+
+-- Links to a club's own open competitions page (or its booking system's
+-- opens listing, e.g. BRS) and its junior golf page. Found by
+-- scripts/find-club-links.js and reviewed at /admin/club-suggestions.
+ALTER TABLE clubs ADD COLUMN IF NOT EXISTS opens_url TEXT;
+ALTER TABLE clubs ADD COLUMN IF NOT EXISTS juniors_url TEXT;

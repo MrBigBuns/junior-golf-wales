@@ -10,6 +10,8 @@ const { extractScorecardFromImage, deriveTotals, isScorecard } = require('../lib
 const { toCsv, parseCsv, decodeUpload } = require('../lib/csv');
 const { COUNTY_NAMES } = require('../lib/site');
 const { courseFigures, slugifyCourse } = require('../lib/courses');
+const linkOrNull = v => { const t = (v || '').trim(); return /^https?:\/\//i.test(t) ? t : null; };
+
 
 function slugify(str) {
   return str
@@ -394,9 +396,9 @@ router.post('/clubs', clubImageUpload, asyncHandler(async (req, res) => {
 
   await saveClubImages(rows[0].id, req.files);
   await saveClubScorecard(rows[0].id, b);
-  await pool.query(`UPDATE clubs SET county = $1, holes = $2, main_course_name = $3 WHERE id = $4`,
+  await pool.query(`UPDATE clubs SET county = $1, holes = $2, main_course_name = $3, opens_url = $5, juniors_url = $6 WHERE id = $4`,
     [COUNTY_NAMES.includes(b.county) ? b.county : null, [9, 18, 27, 36].includes(Number(b.holes)) ? Number(b.holes) : null,
-     (b.main_course_name || '').trim() || null, rows[0].id]);
+     (b.main_course_name || '').trim() || null, rows[0].id, linkOrNull(b.opens_url), linkOrNull(b.juniors_url)]);
   res.redirect(`/admin/clubs/${rows[0].id}/edit`);
 }));
 
@@ -404,7 +406,7 @@ router.get('/clubs/:id/edit', asyncHandler(async (req, res) => {
   const { rows } = await pool.query(
     `SELECT id, name, slug, address, region, lat, lng, website, contact_email,
             junior_membership_contact, logo_url, description, course_image_url,
-            facebook_url, instagram_url, x_url, scorecard, par, yardage, archived_at, archived_reason, county, holes, main_course_name,
+            facebook_url, instagram_url, x_url, scorecard, par, yardage, archived_at, archived_reason, county, holes, main_course_name, opens_url, juniors_url,
             (logo_image IS NOT NULL) AS has_logo_image,
             (course_photo_image IS NOT NULL) AS has_course_photo_image
      FROM clubs WHERE id = $1`,
@@ -445,9 +447,9 @@ router.post('/clubs/:id/update', clubImageUpload, asyncHandler(async (req, res) 
 
   await saveClubImages(req.params.id, req.files);
   await saveClubScorecard(req.params.id, b);
-  await pool.query(`UPDATE clubs SET county = $1, holes = $2, main_course_name = $3 WHERE id = $4`,
+  await pool.query(`UPDATE clubs SET county = $1, holes = $2, main_course_name = $3, opens_url = $5, juniors_url = $6 WHERE id = $4`,
     [COUNTY_NAMES.includes(b.county) ? b.county : null, [9, 18, 27, 36].includes(Number(b.holes)) ? Number(b.holes) : null,
-     (b.main_course_name || '').trim() || null, req.params.id]);
+     (b.main_course_name || '').trim() || null, req.params.id, linkOrNull(b.opens_url), linkOrNull(b.juniors_url)]);
 
   if (b.remove_logo_image === 'on') {
     await pool.query(`UPDATE clubs SET logo_image = NULL, logo_image_type = NULL WHERE id = $1`, [req.params.id]);
@@ -519,14 +521,14 @@ router.post('/clubs/:id/delete', asyncHandler(async (req, res) => {
 }));
 
 // ---------- Club suggestions (from scripts/enrich-clubs.js) ----------
-const SUGGESTION_FIELDS = ['county', 'holes', 'address', 'website', 'contact_email', 'facebook_url', 'instagram_url', 'x_url',
+const SUGGESTION_FIELDS = ['county', 'holes', 'address', 'website', 'opens_url', 'juniors_url', 'contact_email', 'facebook_url', 'instagram_url', 'x_url',
   'description', 'par', 'yardage', 'scorecard', 'logo_url'];
 
 router.get('/club-suggestions', asyncHandler(async (req, res) => {
   const { rows: suggestions } = await pool.query(
     `SELECT s.*, c.name AS club_name, c.slug AS club_slug,
             c.address, c.website, c.contact_email, c.facebook_url, c.instagram_url, c.x_url,
-            c.description, c.par, c.yardage, c.scorecard, c.logo_url, c.county, c.holes
+            c.description, c.par, c.yardage, c.scorecard, c.logo_url, c.county, c.holes, c.opens_url, c.juniors_url
      FROM club_suggestions s JOIN clubs c ON c.id = s.club_id
      WHERE s.status = 'pending' AND c.archived_at IS NULL
      ORDER BY c.name`
@@ -552,7 +554,7 @@ router.get('/club-suggestions', asyncHandler(async (req, res) => {
 // Export shows the proposed value where one is pending, otherwise the live
 // value. Import turns any cell that differs from the live club into (or onto)
 // a pending suggestion, so edits still go through the normal review/apply.
-const CSV_FIELDS = ['county', 'holes', 'address', 'website', 'contact_email', 'facebook_url', 'instagram_url', 'x_url',
+const CSV_FIELDS = ['county', 'holes', 'address', 'website', 'opens_url', 'juniors_url', 'contact_email', 'facebook_url', 'instagram_url', 'x_url',
   'description', 'par', 'yardage', 'logo_url', 'scorecard'];
 const WELSH_POSTCODE_AREAS = ['CF', 'NP', 'SA', 'LD', 'SY', 'LL', 'CH'];
 

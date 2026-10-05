@@ -144,6 +144,8 @@
         <% if (club.website) { %><a href="<%= club.website %>" target="_blank" rel="noopener"><%= host(club.website) %></a><% } %>
         <% if (club.contact_email) { %><a href="mailto:<%= club.contact_email %>"><%= club.contact_email %></a><% } %>
         <% if (club.directions_url) { %><a href="<%= club.directions_url %>" target="_blank" rel="noopener">Directions</a><% } %>
+        <% if (club.opens_url) { %><a href="<%= club.opens_url %>" target="_blank" rel="noopener">Open competitions</a><% } %>
+        <% if (club.juniors_url) { %><a href="<%= club.juniors_url %>" target="_blank" rel="noopener">Junior golf at the club</a><% } %>
       </div>
       <% if (hasSocial) { %>
         <div class="social-links">

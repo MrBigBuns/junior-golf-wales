@@ -39,6 +39,11 @@ node scripts/enrich-clubs.js --dry-run --limit 2 # try it, queue nothing
 node scripts/enrich-clubs.js --limit 10          # research the next 10 clubs with gaps
 node scripts/enrich-clubs.js --club radyr-golf-club   # one club (add --redo to repeat)</code></pre>
 
+  <h3>Find clubs' open competitions and junior pages</h3>
+  <p class="course-address">Crawls each club's website for its open competitions page (including its BRS opens listing) and its junior golf page, and queues them in <a href="/admin/club-suggestions">Club suggestions</a>. No AI cost. Worth re-running each spring when clubs publish new opens.</p>
+  <pre><code>node scripts/find-club-links.js --dry-run --limit 5
+node scripts/find-club-links.js</code></pre>
+
   <h3>Post an update on an event</h3>
   <pre><code>node scripts/add-update.js &lt;event-slug&gt; "Message"</code></pre>
 
