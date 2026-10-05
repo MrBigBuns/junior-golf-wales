@@ -197,15 +197,22 @@ async function run() {
   );
   console.log(`${DRY_RUN ? 'Dry run' : 'Queueing'}: ${rows.length} club website(s)\n`);
 
-  let queued = 0, none = 0, failed = 0;
+  let queued = 0, none = 0, failed = 0, unchanged = 0;
   for (const c of rows) {
     const r = await research(c);
     if (r.error) { failed++; console.log(`${c.name}: ${r.error}`); await sleep(DELAY_MS); continue; }
     // Never propose what the club already has
-    if (c.opens_url && r.data.opens_url === c.opens_url) delete r.data.opens_url;
-    if (c.juniors_url && r.data.juniors_url === c.juniors_url) delete r.data.juniors_url;
+    const same = [];
+    if (c.opens_url && r.data.opens_url === c.opens_url) { delete r.data.opens_url; same.push('opens'); }
+    if (c.juniors_url && r.data.juniors_url === c.juniors_url) { delete r.data.juniors_url; same.push('juniors'); }
     const found = Object.keys(r.data);
-    if (!found.length) { none++; console.log(`${c.name}: nothing found`); await sleep(DELAY_MS); continue; }
+    if (!found.length) {
+      if (same.length) { unchanged++; console.log(`${c.name}: already saved (${same.join(' + ')})`); }
+      else { none++; console.log(`${c.name}: nothing found`); }
+      await sleep(DELAY_MS);
+      continue;
+    }
+    if (same.length) console.log(`   (${same.join(' + ')} already saved)`);
     console.log(`${c.name}`);
     if (r.data.opens_url) console.log(`   opens:   ${r.data.opens_url}`);
     if (r.data.juniors_url) console.log(`   juniors: ${r.data.juniors_url}`);
@@ -219,7 +226,7 @@ async function run() {
     }
     await sleep(DELAY_MS);
   }
-  console.log(`\n${queued} queued, ${none} with nothing found, ${failed} website(s) failed to load.${queued ? ' Review at /admin/club-suggestions.' : ''}`);
+  console.log(`\n${queued} queued, ${unchanged} already saved and unchanged, ${none} with nothing found, ${failed} website(s) failed to load.${queued ? ' Review at /admin/club-suggestions.' : ''}`);
   await pool.end();
 }
 
