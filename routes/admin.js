@@ -244,9 +244,9 @@ async function loadScorecardTarget(kind, id) {
     if (!req.file) return res.render('admin/scorecard-import', { target, error: 'Choose an image first.' });
 
     try {
-      const { rawText, parsed, parseError } = await extractScorecardFromImage(req.file.buffer, req.file.mimetype);
+      const { rawText, parsed, parseError, warning } = await extractScorecardFromImage(req.file.buffer, req.file.mimetype);
       res.render('admin/scorecard-review', {
-        target, rawText, parsed, parseError,
+        target, rawText, parsed, parseError, warning: warning || null,
         holeCount: Array.isArray(parsed) ? parsed.length : 0
       });
     } catch (err) {

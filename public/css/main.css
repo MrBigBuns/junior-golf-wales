@@ -565,7 +565,7 @@ body {
 .club-action:hover { border-color: var(--wales-green); color: var(--wales-green); }
 .club-action.primary { background: var(--wales-green); border-color: var(--wales-green); color: #fff; }
 .club-action.primary:hover { opacity: 0.9; color: #fff; }
-.club-description { line-height: 1.6; margin: 0.5rem 0 0; }
+.club-description { line-height: 1.6; margin: 0.5rem 0 0; white-space: pre-line; } /* show line breaks typed in admin: Enter twice for a new paragraph */
 .muted { color: var(--text-secondary); }
 .small { font-size: 0.85rem; }
 .tee-list { list-style: none; padding: 0; margin: 0; }

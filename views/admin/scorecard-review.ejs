@@ -4,6 +4,9 @@
 <h1>Review extracted scorecard</h1>
 <p class="course-address">For: <strong><%= target.title %></strong></p>
 
+<% if (typeof warning !== 'undefined' && warning) { %>
+  <p class="error-message"><%= warning %></p>
+<% } %>
 <% if (parseError) { %>
   <p class="error-message">Couldn't parse the response as JSON (<%= parseError %>). You can still edit the raw text below and try saving, or go back and retake the photo.</p>
 <% } else { %>
