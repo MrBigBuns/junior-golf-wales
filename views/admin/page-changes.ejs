@@ -61,7 +61,7 @@
 <% const dueCount = manual.filter(function(m) { return m.due; }).length; %>
 <div class="detail-card" id="check-by-hand">
   <h2 class="detail-card-heading">Check by hand<% if (dueCount) { %> <span class="pending-badge"><%= dueCount %> due</span><% } %></h2>
-  <p class="course-address">Booking-system pages (mostly BRS) that the weekly check can't read. Open each, look for new dates, then mark it checked. Due again after <%= manualDays %> days.</p>
+  <p class="course-address">Pages the weekly check can't follow: booking-system listings (mostly BRS), and pages where it found nothing readable (dates loaded by JavaScript or posted as a PDF or image). Open each, look for new dates, then mark it checked. Due again after <%= manualDays %> days.</p>
   <% if (!manual.length) { %>
     <p class="muted">None: no club links point to booking-system pages.</p>
   <% } else { %>
@@ -71,12 +71,13 @@
       </form>
     <% } %>
     <table class="admin-table manual-checks">
-      <thead><tr><th>Club</th><th>Page</th><th>Last checked</th><th></th></tr></thead>
+      <thead><tr><th>Club</th><th>Page</th><th>Why</th><th>Last checked</th><th></th></tr></thead>
       <tbody>
         <% manual.forEach(function(m) { %>
           <tr class="<%= m.due ? 'is-due' : '' %>">
             <td><%= m.club_name %></td>
             <td><a href="<%= m.url %>" target="_blank" rel="noopener"><%= m.kind === 'opens' ? 'Open competitions' : 'Junior page' %></a></td>
+            <td class="muted small"><%= m.reason %></td>
             <td><% if (m.manual_checked_at) { %><%= new Date(m.manual_checked_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) %><% } else { %><span class="muted">never</span><% } %><% if (m.due) { %> <span class="due-tag">Due</span><% } %></td>
             <td>
               <form method="post" action="/admin/page-changes/manual-check" style="display:inline;">

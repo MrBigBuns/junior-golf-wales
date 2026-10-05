@@ -125,7 +125,7 @@ async function run() {
 
     if (!prev || !Array.isArray(prev.lines)) {
       baselined++;
-      console.log(`${label}: first check, ${lines.length} relevant line(s) recorded`);
+      console.log(`${label}: first check, ${lines.length} relevant line(s) recorded${lines.length ? '' : ' (nothing readable: added to Check by hand)'}`);
     } else {
       const before = new Set(prev.lines);
       const now = new Set(lines);

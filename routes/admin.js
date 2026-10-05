@@ -786,10 +786,14 @@ router.post('/club-suggestions/:id/reject', asyncHandler(async (req, res) => {
   res.redirect('/admin/club-suggestions');
 }));
 
-// Booking-system pages to check by hand, oldest/never-checked first
+// Pages to check by hand, oldest/never-checked first: booking-system pages
+// (BRS etc.) the watcher can't read, plus pages it can load but finds nothing
+// useful on (content drawn in by JavaScript, or listed in a PDF/image).
 async function manualCheckList() {
   const { rows } = await pool.query(
-    `SELECT c.id AS club_id, c.name AS club_name, k.kind, k.url, w.manual_checked_at
+    `SELECT c.id AS club_id, c.name AS club_name, k.kind, k.url, w.manual_checked_at,
+            (w.lines IS NOT NULL AND CASE WHEN jsonb_typeof(w.lines) = 'array'
+                                          THEN jsonb_array_length(w.lines) = 0 ELSE FALSE END) AS empty_page
      FROM clubs c
      CROSS JOIN LATERAL (VALUES ('opens', c.opens_url), ('juniors', c.juniors_url)) AS k(kind, url)
      LEFT JOIN page_watch w ON w.club_id = c.id AND w.kind = k.kind AND w.url = k.url
@@ -798,8 +802,12 @@ async function manualCheckList() {
   );
   const cutoff = Date.now() - MANUAL_CHECK_DAYS * 86400000;
   return rows
-    .filter(r => isScriptedPage(r.url))
-    .map(r => ({ ...r, due: !r.manual_checked_at || new Date(r.manual_checked_at).getTime() < cutoff }));
+    .filter(r => isScriptedPage(r.url) || r.empty_page)
+    .map(r => ({
+      ...r,
+      reason: isScriptedPage(r.url) ? 'Booking system' : 'Nothing readable',
+      due: !r.manual_checked_at || new Date(r.manual_checked_at).getTime() < cutoff
+    }));
 }
 
 // ---------- Page changes (scripts/watch-club-pages.js) ----------
