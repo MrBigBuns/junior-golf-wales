@@ -17,7 +17,7 @@
         <td><%= e.club_name %></td>
         <td><%= new Date(e.date_start).toLocaleDateString('en-GB') %></td>
         <td><span class="status-pill status-<%= e.status %>"><%= e.status %></span></td>
-        <td><a href="/admin/events/<%= e.id %>/edit">Edit</a> · <a href="/events/<%= e.slug %>" target="_blank">View</a></td>
+        <td><a href="/admin/events/<%= e.id %>/edit">Edit</a> · <a href="/events/<%= e.slug %>" target="_blank">View</a> · <a href="/admin/social?event=<%= e.id %>#event">Card</a></td>
       </tr>
     <% }); %>
   </tbody>

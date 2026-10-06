@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<title>Event card: <%= event.title %></title>
+<link rel="stylesheet" href="/css/cards.css">
+</head>
+<body class="card-page size-<%= size %><%= embed ? ' embed' : '' %>">
+<%
+  // Badge label on up to three lines
+  const words = String(badge || '').toUpperCase().split(/\s+/).filter(Boolean);
+  const badgeLines = [];
+  words.forEach(function (w) {
+    const last = badgeLines[badgeLines.length - 1];
+    if (last && (last + ' ' + w).length <= 8) badgeLines[badgeLines.length - 1] = last + ' ' + w;
+    else badgeLines.push(w);
+  });
+  const badgeFont = badgeLines.length > 2 ? 24 : 31;
+  const badgeStep = badgeLines.length > 2 ? 29 : 37;
+  const badgeTop = 141 - (badgeLines.length - 1) * badgeStep / 2;
+%>
+
+<div class="card event-card" style="--title-size: <%= titleSize %>px;<% if (photoUrl) { %> --photo: url('<%= photoUrl %>');<% } %>">
+
+  <div class="photo"></div>
+
+  <% if (badgeLines.length) { %>
+  <svg class="badge" viewBox="0 0 250 285" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e2bd86"/><stop offset=".5" stop-color="#9a6a36"/><stop offset="1" stop-color="#5b3a1c"/></linearGradient>
+      <linearGradient id="face" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6b4622"/><stop offset=".55" stop-color="#4a2f17"/><stop offset="1" stop-color="#3a2411"/></linearGradient>
+    </defs>
+    <path fill="url(#rim)" d="M15 0 Q125 20 235 0 Q250 6 250 28 V148 Q245 228 125 285 Q5 228 0 148 V28 Q0 6 15 0Z"/>
+    <path fill="url(#face)" d="M24 12 Q125 30 226 12 Q238 17 238 36 V146 Q233 218 125 271 Q17 218 12 146 V36 Q12 17 24 12Z"/>
+    <path fill="none" stroke="#f0d2a0" stroke-opacity=".55" stroke-width="2" d="M31 21 Q125 38 219 21 Q230 26 230 42 V145 Q225 210 125 261 Q25 210 20 145 V42 Q20 26 31 21Z"/>
+    <g stroke="#f1dcb4" stroke-width="3.5" stroke-linecap="round"><line x1="73" y1="38" x2="100" y2="76"/><line x1="177" y1="38" x2="150" y2="76"/></g>
+    <path fill="#f1dcb4" d="M125 39 L129.4 51.9 L143 52.2 L132.2 60.4 L136.1 73.5 L125 65.7 L113.9 73.5 L117.8 60.4 L107 52.2 L120.6 51.9Z"/>
+    <% badgeLines.forEach(function (line, i) { %>
+      <text x="125" y="<%= Math.round(badgeTop + i * badgeStep) %>" font-size="<%= badgeFont %>" font-family="Inter, Segoe UI, Arial, sans-serif" font-weight="800" fill="#f1dcb4" text-anchor="middle"><%= line %></text>
+    <% }); %>
+    <g fill="#f1dcb4">
+      <ellipse cx="78" cy="196" rx="10" ry="4" transform="rotate(50 78 196)"/><ellipse cx="85" cy="208" rx="10" ry="4" transform="rotate(42 85 208)"/>
+      <ellipse cx="94" cy="218" rx="10" ry="4" transform="rotate(32 94 218)"/><ellipse cx="105" cy="226" rx="10" ry="4" transform="rotate(20 105 226)"/>
+      <ellipse cx="172" cy="196" rx="10" ry="4" transform="rotate(-50 172 196)"/><ellipse cx="165" cy="208" rx="10" ry="4" transform="rotate(-42 165 208)"/>
+      <ellipse cx="156" cy="218" rx="10" ry="4" transform="rotate(-32 156 218)"/><ellipse cx="145" cy="226" rx="10" ry="4" transform="rotate(-20 145 226)"/>
+    </g>
+  </svg>
+  <% } %>
+
+  <div class="panel">
+    <div class="panel-main">
+      <p class="date"><%= data.dateLine %></p>
+      <h1 class="title"><%= data.title %></h1>
+      <p class="club"><%= data.clubLine %></p>
+
+      <% if (data.details.length) { %>
+      <div class="details<%= columns.length === 1 ? ' one-column' : '' %>">
+        <% columns.forEach(function (col) { %>
+          <div class="col">
+            <% col.forEach(function (d) { %>
+              <div class="row">
+                <span class="label"><%- include('_icon', { icon: d.icon }) %><%= d.label %></span>
+                <span class="value"><%= d.value %></span>
+              </div>
+            <% }); %>
+          </div>
+        <% }); %>
+      </div>
+      <% } %>
+    </div>
+
+    <div class="footer">
+      <span class="lead">Details &amp; entry at</span>
+      <span class="button"><%= host %></span>
+    </div>
+  </div>
+
+</div>
+
+<%- include('_bar') %>
+</body>
+</html>

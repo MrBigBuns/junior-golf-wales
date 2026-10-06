@@ -807,7 +807,9 @@ async function manualCheckList() {
     .map(r => ({
       ...r,
       reason: isScriptedPage(r.url) ? 'Booking system'
-        : r.last_error ? (/HTTP 40[13]|blocked/i.test(r.last_error) ? 'Site blocks the checker' : `Didn't load (${r.last_error})`)
+        : r.last_error ? (/HTTP 40[13]|blocked/i.test(r.last_error) ? 'Site blocks the checker'
+          : /nothing readable this time/i.test(r.last_error) ? 'Nothing readable this week'
+          : `Didn't load (${r.last_error})`)
         : 'Nothing readable',
       due: !r.manual_checked_at || new Date(r.manual_checked_at).getTime() < cutoff
     }));
@@ -873,6 +875,85 @@ router.post('/page-changes/manual-check-all', asyncHandler(async (req, res) => {
 router.post('/page-changes/seen-all', asyncHandler(async (req, res) => {
   await pool.query(`UPDATE page_changes SET seen_at = now() WHERE seen_at IS NULL`);
   res.redirect('/admin/page-changes');
+}));
+
+// ---------- Social cards (lib/social.js) ----------
+// Cards for Facebook, Instagram and X: a round-up of a week's or month's
+// events, and a card for one event. Each card is an HTML page styled by
+// public/css/cards.css; its "Download PNG" button saves the image.
+const social = require('../lib/social');
+const cardSize = s => (social.SIZES[s] ? s : 'square');
+const cardTag = t => (social.TAGS[t] !== undefined ? t : 'new');
+
+router.get('/social', asyncHandler(async (req, res) => {
+  const period = social.resolvePeriod(req.query);
+  const events = await social.roundupEvents(pool, period);
+  const { rows: upcoming } = await pool.query(
+    `SELECT e.id, e.title, e.date_start, e.created_at, c.name AS club_name
+     FROM events e JOIN clubs c ON c.id = e.club_id
+     WHERE e.date_start >= CURRENT_DATE AND e.status != 'cancelled'
+     ORDER BY e.date_start ASC, e.title ASC LIMIT 400`
+  );
+  const recent = [...upcoming].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 8);
+  const tag = cardTag(req.query.tag);
+  const event = req.query.event ? await social.cardEventById(pool, req.query.event) : null;
+
+  res.render('admin/social', {
+    period, events, upcoming, recent, tag, event,
+    today: social.londonToday(),
+    sizes: social.SIZES, tags: social.TAGS, regions: social.REGIONS,
+    pages: Object.fromEntries(Object.keys(social.SIZES).map(k => [k, social.roundupPages(events, k)])),
+    roundupCaptions: events.length ? social.roundupCaptions(period, events) : null,
+    eventCaptions: event ? social.eventCaptions(event, tag) : null,
+    eventData: event ? social.eventCardData(event) : null
+  });
+}));
+
+// The round-up card itself
+router.get('/social/roundup', asyncHandler(async (req, res) => {
+  const period = social.resolvePeriod(req.query);
+  const events = await social.roundupEvents(pool, period);
+  if (!events.length) return res.status(404).send('No events in this period');
+  const size = cardSize(req.query.size);
+  const card = social.roundupPage(events, size, req.query.page);
+  const base = `period=${period.period}&start=${period.start}${period.region ? '&region=' + period.region : ''}`;
+  res.render('admin/cards/roundup', {
+    layout: false, period, card, size, sizes: social.SIZES, host: social.PUBLIC_HOST, embed: !!req.query.embed,
+    selfUrl: (sz, pg) => `/admin/social/roundup?${base}&size=${sz}&page=${pg || 1}`,
+    backUrl: `/admin/social?${base}`,
+    fileName: `wales-junior-golf-${period.period}-${period.start}${period.region ? '-' + period.region.toLowerCase() : ''}-${size}-${card.page}.png`
+  });
+}));
+
+// The single-event card itself
+router.get('/social/event/:id', asyncHandler(async (req, res) => {
+  const event = await social.cardEventById(pool, req.params.id);
+  if (!event) return res.status(404).send('Event not found');
+  const size = cardSize(req.query.size);
+  const tag = cardTag(req.query.tag);
+  const data = social.eventCardData(event);
+  // Two halves side by side unless a value is too long for half the width
+  const twoCols = data.details.length > 1 && data.details.every(d => d.value.length <= 16);
+  const half = Math.ceil(data.details.length / 2);
+  res.render('admin/cards/event', {
+    event, data, size, tag, sizes: social.SIZES, host: social.PUBLIC_HOST, embed: !!req.query.embed,
+    badge: social.TAGS[tag],
+    columns: twoCols ? [data.details.slice(0, half), data.details.slice(half)] : [data.details],
+    titleSize: social.titleSize(event.title),
+    photoUrl: event.has_photo ? `/admin/social/photo/${event.club_id}` : null,
+    selfUrl: sz => `/admin/social/event/${event.id}?size=${sz}&tag=${tag}`,
+    backUrl: `/admin/social?event=${event.id}&tag=${tag}#event`,
+    fileName: `${event.slug}-${tag}-${size}.png`
+  });
+}));
+
+// A club's course photo, served from our own address for the event card
+router.get('/social/photo/:clubId', asyncHandler(async (req, res) => {
+  const photo = await social.clubPhoto(pool, req.params.clubId);
+  if (!photo) return res.status(404).send('No photo');
+  res.set('Content-Type', photo.type);
+  res.set('Cache-Control', 'private, max-age=600');
+  res.send(photo.data);
 }));
 
 // ---------- Submissions ----------

@@ -1,0 +1,203 @@
+/* Social media cards (Admin > Social cards).
+   Two designs share this file: the single-event card and the round-up card.
+   Start with the SETTINGS blocks; the layout rules below follow from them.
+   Sizes: square 1080x1080, portrait 1080x1350, landscape 1200x630. */
+
+@font-face { font-family: "Inter"; font-weight: 400; src: url("/fonts/Inter-Regular.ttf"); }
+@font-face { font-family: "Inter"; font-weight: 600; src: url("/fonts/Inter-SemiBold.ttf"); }
+@font-face { font-family: "Inter"; font-weight: 800; src: url("/fonts/Inter-ExtraBold.ttf"); }
+
+* { box-sizing: border-box; }
+body.card-page { margin: 0; padding: 24px 24px 96px; background: #6f6f6f; font-family: "Inter", "Segoe UI", Arial, sans-serif; }
+body.card-page.embed { padding: 0; background: none; }
+
+.card { position: relative; overflow: hidden; display: flex; flex-direction: column; font-family: var(--font); }
+.size-square .card    { width: 1080px; height: 1080px; }
+.size-portrait .card  { width: 1080px; height: 1350px; }
+.size-landscape .card { width: 1200px; height: 630px; }
+
+
+/* =====================================================================
+   EVENT CARD
+   ===================================================================== */
+
+/* ============ SETTINGS ============ */
+.event-card {
+  --pad: 64px;               /* space left and right */
+  --navy: #14274a;           /* date, footer text, button */
+  --ink: #1f2420;            /* title and values */
+  --label: #3c403a;          /* table labels */
+  --muted: #5f665c;          /* club line */
+  --paper: #f7f6f2;          /* card background */
+  --line: #dedcd2;           /* light table lines */
+  --rule: #8d8f88;           /* top and bottom table lines, line under the photo */
+  --font: "Inter", "Segoe UI", Arial, sans-serif;
+
+  --s: 1;                    /* scales all the text; landscape sets 0.7 below */
+  --date-size: 34px;
+  --title-size: 76px;        /* the site lowers this for long event names */
+  --club-size: 32px;
+  --table-size: 27px;
+  --row-height: 52px;
+  --label-width: 206px;      /* width of the icon + label column */
+  --footer-size: 25px;
+  --button-size: 27px;
+
+  --default-photo: url("/img/card-header.jpg");   /* used when the club has no photo */
+  --photo-focus: 50% 15%;    /* which part of the picture stays in view */
+
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* ============ PHOTO AND BADGE ============ */
+/* The photo fills whatever height the text leaves free. */
+.event-card .photo {
+  flex: 1 1 0; min-height: 0;
+  background-color: #22381a;
+  background-image: var(--photo, none), var(--default-photo);
+  background-size: cover; background-position: var(--photo-focus); background-repeat: no-repeat;
+  border-bottom: 4px solid var(--rule);
+}
+.event-card .badge { position: absolute; left: 72px; top: 34px; width: 250px; filter: drop-shadow(0 8px 14px rgba(0,0,0,.45)); }
+.size-portrait .event-card .badge { width: 290px; }
+
+/* ============ TEXT ============ */
+.event-card .panel { flex: none; padding: calc(34px * var(--s)) var(--pad) 0; }
+.event-card .date  { margin: 0 0 calc(14px * var(--s)); font-size: calc(var(--date-size) * var(--s)); font-weight: 600; color: var(--navy); }
+.event-card .title { margin: 0 0 calc(18px * var(--s)); font-size: calc(var(--title-size) * var(--s)); font-weight: 800; line-height: 1.12; letter-spacing: -0.01em; }
+.event-card .club  { margin: 0 0 calc(24px * var(--s)); font-size: calc(var(--club-size) * var(--s)); color: var(--muted); }
+
+/* ============ DETAILS TABLE ============ */
+.event-card .details { display: grid; grid-template-columns: 1fr 1fr; column-gap: calc(34px * var(--s)); }
+.event-card .details.one-column { grid-template-columns: 1fr; }
+.event-card .col { align-self: start; border-top: 2px solid var(--rule); border-bottom: 2px solid var(--rule); }
+.event-card .row {
+  display: grid; grid-template-columns: calc(var(--label-width) * var(--s)) 1fr; align-items: center;
+  min-height: calc(var(--row-height) * var(--s)); font-size: calc(var(--table-size) * var(--s));
+}
+.event-card .row + .row { border-top: 2px solid var(--line); }
+.event-card .label {
+  display: flex; align-items: center; gap: calc(16px * var(--s)); align-self: stretch;
+  padding-left: calc(6px * var(--s)); color: var(--label); border-right: 2px solid var(--line);
+}
+.event-card .value { padding-left: calc(14px * var(--s)); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.event-card .label svg { flex: none; width: calc(30px * var(--s)); height: calc(30px * var(--s)); fill: var(--ink); stroke: var(--ink); }
+
+/* ============ FOOTER ============ */
+.event-card .footer { display: flex; align-items: center; justify-content: space-between; height: calc(104px * var(--s)); }
+.event-card .lead   { font-size: calc(var(--footer-size) * var(--s)); font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--navy); }
+.event-card .button { font-size: calc(var(--button-size) * var(--s)); font-weight: 600; color: #fff; background: var(--navy); padding: calc(13px * var(--s)) calc(28px * var(--s)); border-radius: 999px; }
+
+/* ============ LANDSCAPE: photo on the left, text on the right ============ */
+.size-landscape .event-card { flex-direction: row; --s: 0.7; --pad: 40px; --photo-focus: 79% 50%; }
+.size-landscape .event-card .photo { flex: 0 0 440px; border-bottom: 0; border-right: 4px solid var(--rule); }
+.size-landscape .event-card .badge { left: 28px; top: 26px; width: 176px; }
+.size-landscape .event-card .panel { flex: 1; min-width: 0; display: flex; flex-direction: column; padding-top: 14px; }
+.size-landscape .event-card .panel-main { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+
+
+/* =====================================================================
+   ROUND-UP CARD
+   ===================================================================== */
+
+/* ============ SETTINGS ============ */
+.roundup-card {
+  --pad: 64px;               /* space left and right */
+  --panel: #3f6130;          /* green heading panel */
+  --panel-text: #ffffff;
+  --kicker: #f3f5c9;         /* "WALES JUNIOR GOLF" */
+  --accent: #ff9a55;         /* orange: stripe, short bar, weekday */
+  --lime: #a6f940;           /* stripe and footer line */
+  --paper: #ffffff;          /* card background */
+  --ink: #3b423c;            /* event names and day numbers */
+  --muted: #a3ab9f;          /* club line and footer text */
+  --link: #3f6130;           /* web address in the footer */
+  --font: "Inter", "Segoe UI", Arial, sans-serif;
+
+  --stripe-height: 16px;
+  --kicker-size: 27px;
+  --heading-size: 104px;     /* "This week" */
+  --subtitle-size: 35px;
+  --footer-size: 29px;
+
+  /* Event rows. --k is set by the site: 1 for a short list, smaller when more
+     events have to fit. Every row size below is multiplied by it. */
+  --k: 1;
+  --weekday-size: 31px;      /* SAT */
+  --day-size: 62px;          /* 10 */
+  --name-size: 54px;         /* event name */
+  --name-size-long: 30px;    /* names too long for the full size */
+  --meta-size: 39px;         /* club line */
+  --row-gap: 62px;           /* space between events */
+  --date-width: 130px;       /* width of the date column */
+
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.roundup-card .stripe { display: flex; height: var(--stripe-height); flex: none; }
+.roundup-card .stripe i { flex: 1; }
+.roundup-card .stripe i:nth-child(1) { background: var(--accent); }
+.roundup-card .stripe i:nth-child(2) { background: #ffffff; }
+.roundup-card .stripe i:nth-child(3) { background: var(--lime); }
+
+/* ============ HEADING PANEL ============ */
+.roundup-card .head { flex: none; background: var(--panel); color: var(--panel-text); padding: 74px var(--pad) 64px; }
+.size-square .roundup-card .head { padding: 56px var(--pad) 50px; }
+.roundup-card .kicker { margin: 0; font-size: var(--kicker-size); font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--kicker); }
+.roundup-card .kicker::after { content: ""; display: block; width: 96px; height: 8px; margin-top: 20px; background: var(--accent); }
+.roundup-card h1 { margin: 26px 0 18px; font-size: var(--heading-size); font-weight: 800; line-height: 1.05; letter-spacing: -0.01em; }
+.roundup-card .subtitle { margin: 0; font-size: var(--subtitle-size); font-weight: 600; }
+
+/* ============ EVENT LIST ============ */
+.roundup-card .list {
+  flex: 1; min-height: 0; margin: 0; padding: 0 var(--pad); list-style: none;
+  display: flex; flex-direction: column; justify-content: center; gap: calc(var(--row-gap) * var(--k));
+}
+.roundup-card .list li { display: flex; align-items: center; gap: calc(44px * var(--k)); }
+.roundup-card .when { flex: none; width: calc(var(--date-width) * var(--k)); text-align: center; line-height: 1; }
+.roundup-card .when b    { display: block; font-size: calc(var(--weekday-size) * var(--k)); font-weight: 400; color: var(--accent); text-transform: uppercase; margin-bottom: calc(8px * var(--k)); }
+.roundup-card .when span { display: block; font-size: calc(var(--day-size) * var(--k)); font-weight: 800; }
+.roundup-card .text { flex: 1; min-width: 0; }
+.roundup-card .name { font-size: calc(var(--name-size) * var(--k)); font-weight: 600; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.roundup-card .long .name { font-size: calc(var(--name-size-long) * var(--k)); }
+.roundup-card .meta { margin-top: calc(12px * var(--k)); font-size: calc(var(--meta-size) * var(--k)); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.roundup-card .long .meta { margin-top: calc(22px * var(--k)); }
+
+/* ============ FOOTER ============ */
+.roundup-card .foot { flex: none; margin: 0 var(--pad); height: 112px; border-top: 4px solid var(--lime); display: flex; align-items: center; font-size: var(--footer-size); color: var(--muted); }
+.roundup-card .foot b { margin-left: 0.3em; font-weight: 600; color: var(--link); font-size: 31px; }
+.roundup-card .foot .page { margin-left: auto; font-weight: 600; }
+
+/* ============ SQUARE: a little tighter ============ */
+.size-square .roundup-card { --heading-size: 92px; }
+.size-square .roundup-card .foot { height: 100px; }
+
+/* ============ LANDSCAPE: green panel on the left, list on the right ============ */
+.size-landscape .roundup-card {
+  display: grid; grid-template-columns: 400px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr);
+  --pad: 44px; --stripe-height: 12px; --kicker-size: 19px; --heading-size: 62px; --subtitle-size: 25px;
+}
+.size-landscape .roundup-card .stripe { grid-column: 1 / 3; }
+.size-landscape .roundup-card .head { grid-column: 1; grid-row: 2; padding: 44px; }
+.size-landscape .roundup-card .kicker::after { width: 72px; height: 6px; margin-top: 14px; }
+.size-landscape .roundup-card h1 { margin: 20px 0 16px; }
+.size-landscape .roundup-card .subtitle { line-height: 1.35; }
+.size-landscape .roundup-card .list { grid-column: 2; grid-row: 2; padding: 0 44px 0 30px; }
+/* Footer sits at the foot of the green panel: just the web address */
+.size-landscape .roundup-card .foot { position: absolute; left: 44px; bottom: 34px; width: 312px; margin: 0; height: auto; border: 0; }
+.size-landscape .roundup-card .foot span:first-child { display: none; }
+.size-landscape .roundup-card .foot b { margin: 0; font-size: 24px; color: var(--kicker); }
+.size-landscape .roundup-card .foot .page { font-size: 20px; color: var(--kicker); }
+
+
+/* =====================================================================
+   TOOLBAR on the card page (never part of the saved image)
+   ===================================================================== */
+.card-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding: 12px 24px; background: #222; color: #ccc; font: 14px/1.4 "Segoe UI", Arial, sans-serif; }
+.card-bar a, .card-bar button { color: #fff; background: none; text-decoration: none; padding: 7px 13px; border: 1px solid #666; border-radius: 6px; font: inherit; cursor: pointer; }
+.card-bar a.on { background: #fff; color: #222; }
+.card-bar button { background: #639922; border-color: #639922; font-weight: 600; }
+.card-bar .gap { margin-left: auto; }
+.embed .card-bar { display: none; }

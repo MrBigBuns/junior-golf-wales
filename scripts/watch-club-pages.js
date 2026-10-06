@@ -106,7 +106,7 @@ async function run() {
     );
   }
 
-  let checked = 0, baselined = 0, changed = 0, skipped = 0, failed = 0;
+  let checked = 0, baselined = 0, changed = 0, skipped = 0, failed = 0, emptyNow = 0;
   for (const p of pages) {
     const label = `${p.name} (${p.kind})`;
     if (unreadable(p.url)) { skipped++; continue; }
@@ -133,18 +133,37 @@ async function run() {
     }
     checked++;
     const lines = relevantLines(page.html);
+    const hadGood = prev && Array.isArray(prev.lines) && prev.lines.length > 0;
 
-    if (!prev || !Array.isArray(prev.lines) || prev.lines.length === 0) {
+    // Empty result after a good one: the site probably served a blank or
+    // "checking your browser" page. Keep the last good snapshot, note it, and
+    // list the page under Check by hand this week. No alert.
+    if (lines.length === 0 && hadGood) {
+      emptyNow++;
+      console.log(`${label}: nothing readable this time (kept last good copy; listed under Check by hand)`);
+      if (!DRY_RUN) {
+        await pool.query(
+          `UPDATE page_watch SET checked_at = now(), last_error = 'nothing readable this time' WHERE club_id = $1 AND kind = $2`,
+          [p.club_id, p.kind]
+        );
+      }
+      await sleep(DELAY_MS);
+      continue;
+    }
+
+    if (!hadGood) {
       baselined++;
       const firstTime = !prev || !Array.isArray(prev.lines);
-      console.log(`${label}: ${firstTime ? 'first check' : 'now readable'}, ${lines.length} relevant line(s) recorded${lines.length ? '' : ' (nothing readable: added to Check by hand)'}`);
+      console.log(`${label}: ${firstTime ? 'first check' : lines.length ? 'readable again' : 'still nothing readable'}, ` +
+        `${lines.length} relevant line(s) recorded${lines.length ? '' : ' (listed under Check by hand)'}`);
     } else {
       // Normalise both sides so decoding/whitespace differences never count as changes
       const before = new Set(prev.lines.map(normaliseLine));
       const now = new Set(lines.map(normaliseLine));
       const added = lines.filter(l => !before.has(normaliseLine(l)));
       const removed = prev.lines.filter(l => !now.has(normaliseLine(l)));
-      if (added.length || removed.length) {
+      // Only new lines raise an alert; lines disappearing is usually a past event dropping off
+      if (added.length) {
         changed++;
         console.log(`${label}: CHANGED (+${added.length} / -${removed.length})`);
         added.slice(0, 5).forEach(l => console.log(`   + ${l}`));
@@ -154,6 +173,8 @@ async function run() {
             [p.club_id, p.kind, p.url, JSON.stringify(added.slice(0, 50)), JSON.stringify(removed.slice(0, 50))]
           );
         }
+      } else if (removed.length) {
+        console.log(`${label}: ${removed.length} line(s) gone, nothing new (no alert)`);
       }
     }
 
@@ -171,7 +192,7 @@ async function run() {
     await sleep(DELAY_MS);
   }
 
-  console.log(`\n${checked} page(s) checked: ${changed} changed, ${baselined} recorded for the first time. ` +
+  console.log(`\n${checked} page(s) checked: ${changed} with new lines, ${baselined} recorded fresh, ${emptyNow} unreadable this time. ` +
     `${skipped} skipped (BRS and other JavaScript pages: listed under Check by hand), ${failed} failed to load.` +
     (changed && !DRY_RUN ? ' See /admin/page-changes.' : ''));
   await pool.end();

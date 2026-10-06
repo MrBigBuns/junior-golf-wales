@@ -1,0 +1,188 @@
+<%- include('../partials/head', { pageTitle: 'Admin — Social cards', noIndex: true }) %>
+<%
+  const fmtDate = (d, opts) => new Date(d).toLocaleDateString('en-GB', opts || { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  const periodQs = 'period=' + period.period + '&start=' + period.start + (period.region ? '&region=' + period.region : '');
+  const link = (p, start) => '/admin/social?period=' + p + '&start=' + start + (period.region ? '&region=' + period.region : '');
+  const nextMonth = (function () { const d = new Date(today.slice(0, 7) + '-01T00:00:00Z'); d.setUTCMonth(d.getUTCMonth() + 1); return d.toISOString().slice(0, 10); })();
+  const nextWeek = (function () { const d = new Date(today + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + 7); return d.toISOString().slice(0, 10); })();
+  const sizeKeys = Object.keys(sizes);
+%>
+
+<div class="admin-header-row">
+  <h1>Social cards</h1>
+</div>
+<p><a href="/admin">&larr; Dashboard</a></p>
+<p class="course-address">Images and captions for Facebook, Instagram and X. Open a card, press Download PNG, copy the caption, and post. The designs are in <code>public/css/cards.css</code>. Square and portrait suit Facebook and Instagram; landscape suits X.</p>
+
+<div class="detail-card">
+  <h3 class="detail-card-heading">Upcoming events round-up</h3>
+
+  <form method="get" action="/admin/social" class="social-form">
+    <label>Show
+      <select name="period">
+        <option value="week" <%= period.period === 'week' ? 'selected' : '' %>>A week</option>
+        <option value="month" <%= period.period === 'month' ? 'selected' : '' %>>A month</option>
+      </select>
+    </label>
+    <label>containing
+      <input type="date" name="start" value="<%= period.start %>">
+    </label>
+    <label>for
+      <select name="region">
+        <option value="">All of Wales</option>
+        <% regions.forEach(function(r) { %><option value="<%= r %>" <%= period.region === r ? 'selected' : '' %>><%= r %> Wales</option><% }); %>
+      </select>
+    </label>
+    <button type="submit" class="admin-button">Show</button>
+  </form>
+  <p class="social-quick">
+    <a href="<%= link('week', today) %>">This week</a> ·
+    <a href="<%= link('week', nextWeek) %>">Next week</a> ·
+    <a href="<%= link('month', today) %>">This month</a> ·
+    <a href="<%= link('month', nextMonth) %>">Next month</a>
+    <span class="muted">|</span>
+    <a href="<%= link(period.period, period.prev) %>">&larr; Earlier</a> ·
+    <a href="<%= link(period.period, period.next) %>">Later &rarr;</a>
+  </p>
+
+  <h3 class="social-sub"><%= period.title %> <span class="muted">· <%= fmtDate(period.start + 'T00:00:00', { day: 'numeric', month: 'short' }) %> to <%= fmtDate(period.end + 'T00:00:00', { day: 'numeric', month: 'short', year: 'numeric' }) %> · <%= events.length %> event<%= events.length === 1 ? '' : 's' %></span></h3>
+
+  <% if (!events.length) { %>
+    <p class="scorecard-note">No events listed <%= period.phrase %><%= period.region ? ' in ' + period.region + ' Wales' : '' %>, so there is no card to make. Try a later <%= period.period %> or the month view.</p>
+  <% } else { %>
+    <div class="social-grid">
+      <% sizeKeys.forEach(function(key) { %>
+        <div class="social-size social-<%= key %>">
+          <p class="social-size-label"><strong><%= sizes[key].label %></strong> <span class="muted small"><%= sizes[key].px %> · <%= sizes[key].use %></span></p>
+          <% for (let pg = 1; pg <= pages[key]; pg++) { %>
+            <% const src = '/admin/social/roundup?' + periodQs + '&size=' + key + '&page=' + pg; %>
+            <% const scale = key === 'landscape' ? 0.3333 : 0.26; %>
+            <a class="card-preview" href="<%= src %>" target="_blank" style="width: <%= Math.round(sizes[key].w * scale) %>px; height: <%= Math.round(sizes[key].h * scale) %>px;" title="Open full size">
+              <iframe loading="lazy" tabindex="-1" src="<%= src %>&embed=1" width="<%= sizes[key].w %>" height="<%= sizes[key].h %>" style="transform: scale(<%= scale %>);"></iframe>
+            </a>
+            <p class="small"><a href="<%= src %>" target="_blank">Open<%= pages[key] > 1 ? ' card ' + pg + ' of ' + pages[key] : '' %> to download</a></p>
+          <% } %>
+        </div>
+      <% }); %>
+    </div>
+    <% if (sizeKeys.some(function(k) { return pages[k] > 1; })) { %>
+      <p class="scorecard-note">More events than fit on one card run over several. Post them together as a carousel on Instagram or a multi-image post on Facebook and X.</p>
+    <% } %>
+
+    <div class="social-captions">
+      <div>
+        <label for="cap-r-long"><strong>Caption for Facebook and Instagram</strong></label>
+        <textarea id="cap-r-long" rows="<%= Math.min(18, events.length + 9) %>" readonly><%= roundupCaptions.long %></textarea>
+        <button type="button" class="copy-button" data-copy="cap-r-long">Copy</button>
+        <span class="muted small">Instagram does not make links clickable; put the address in your profile.</span>
+      </div>
+      <div>
+        <label for="cap-r-short"><strong>Caption for X</strong> <span class="muted small">fits 280 characters</span></label>
+        <textarea id="cap-r-short" rows="10" readonly><%= roundupCaptions.short %></textarea>
+        <button type="button" class="copy-button" data-copy="cap-r-short">Copy</button>
+      </div>
+    </div>
+  <% } %>
+</div>
+
+<div class="detail-card" id="event">
+  <h3 class="detail-card-heading">Single event card</h3>
+  <p class="course-address">For announcing a newly added event, entries opening, or a reminder before an event.</p>
+
+  <form method="get" action="/admin/social#event" class="social-form">
+    <input type="hidden" name="period" value="<%= period.period %>">
+    <input type="hidden" name="start" value="<%= period.start %>">
+    <% if (period.region) { %><input type="hidden" name="region" value="<%= period.region %>"><% } %>
+    <label>Event
+      <select name="event" required>
+        <option value="">Choose an event</option>
+        <% upcoming.forEach(function(e) { %>
+          <option value="<%= e.id %>" <%= event && event.id === e.id ? 'selected' : '' %>><%= fmtDate(e.date_start, { day: 'numeric', month: 'short', year: 'numeric' }) %>: <%= e.title %> (<%= e.club_name %>)</option>
+        <% }); %>
+      </select>
+    </label>
+    <label>Label
+      <select name="tag">
+        <% Object.keys(tags).forEach(function(k) { %><option value="<%= k %>" <%= tag === k ? 'selected' : '' %>><%= tags[k] || 'No label' %></option><% }); %>
+      </select>
+    </label>
+    <button type="submit" class="admin-button">Show</button>
+  </form>
+
+  <% if (recent.length) { %>
+    <p class="social-quick"><strong>Most recently added:</strong></p>
+    <ul class="social-recent">
+      <% recent.forEach(function(e) { %>
+        <li><a href="/admin/social?<%= periodQs %>&event=<%= e.id %>&tag=new#event"><%= e.title %></a> <span class="muted small">· <%= e.club_name %> · <%= fmtDate(e.date_start, { day: 'numeric', month: 'short', year: 'numeric' }) %> · added <%= fmtDate(e.created_at, { day: 'numeric', month: 'short' }) %></span></li>
+      <% }); %>
+    </ul>
+  <% } %>
+
+  <% if (event) { %>
+    <h3 class="social-sub"><%= event.title %> <span class="muted">· <%= event.club_name %> · <%= eventData.dateLine %></span></h3>
+    <div class="social-grid">
+      <% sizeKeys.forEach(function(key) { %>
+        <% const src = '/admin/social/event/' + event.id + '?size=' + key + '&tag=' + tag; %>
+        <div class="social-size social-<%= key %>">
+          <p class="social-size-label"><strong><%= sizes[key].label %></strong> <span class="muted small"><%= sizes[key].px %> · <%= sizes[key].use %></span></p>
+            <% const scale = key === 'landscape' ? 0.3333 : 0.26; %>
+            <a class="card-preview" href="<%= src %>" target="_blank" style="width: <%= Math.round(sizes[key].w * scale) %>px; height: <%= Math.round(sizes[key].h * scale) %>px;" title="Open full size">
+              <iframe loading="lazy" tabindex="-1" src="<%= src %>&embed=1" width="<%= sizes[key].w %>" height="<%= sizes[key].h %>" style="transform: scale(<%= scale %>);"></iframe>
+            </a>
+          <p class="small"><a href="<%= src %>" target="_blank">Open to download</a></p>
+        </div>
+      <% }); %>
+    </div>
+    <p class="scorecard-note">The picture is the club's course photo where it has one, otherwise the default green and flag. Add or change a club's photo on its <a href="/admin/clubs">edit page</a>.</p>
+
+    <div class="social-captions">
+      <div>
+        <label for="cap-e-long"><strong>Caption for Facebook and Instagram</strong></label>
+        <textarea id="cap-e-long" rows="10" readonly><%= eventCaptions.long %></textarea>
+        <button type="button" class="copy-button" data-copy="cap-e-long">Copy</button>
+      </div>
+      <div>
+        <label for="cap-e-short"><strong>Caption for X</strong> <span class="muted small">fits 280 characters</span></label>
+        <textarea id="cap-e-short" rows="6" readonly><%= eventCaptions.short %></textarea>
+        <button type="button" class="copy-button" data-copy="cap-e-short">Copy</button>
+      </div>
+    </div>
+  <% } else if (!upcoming.length) { %>
+    <p class="scorecard-note">No upcoming events to make a card for.</p>
+  <% } %>
+</div>
+
+<style>
+  .social-form { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: end; margin: 0.5rem 0; }
+  .social-form label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: var(--text-secondary); }
+  .social-form select, .social-form input[type=date] { padding: 7px 8px; border: 1px solid var(--border); border-radius: 6px; font: inherit; max-width: 100%; }
+  .social-form label { min-width: 0; max-width: 100%; }
+  .social-form select[name=event] { width: 28rem; max-width: 100%; }
+  .social-form button { border: none; cursor: pointer; font: inherit; font-size: 0.9rem; }
+  .social-quick { margin: 0.5rem 0; font-size: 0.9rem; }
+  .social-sub { font-size: 1.05rem; margin: 1.25rem 0 0.5rem; }
+  .social-sub .muted { font-weight: 400; font-size: 0.9rem; }
+  .social-grid { display: flex; flex-wrap: wrap; gap: 1.25rem; align-items: flex-start; }
+  .social-size { flex: none; max-width: 100%; }
+  .card-preview { display: block; position: relative; overflow: hidden; max-width: 100%; border: 1px solid var(--border); border-radius: 8px; margin-top: 0.5rem; }
+  .card-preview iframe { position: absolute; left: 0; top: 0; border: 0; transform-origin: 0 0; pointer-events: none; }
+  .social-size-label { margin: 0; line-height: 1.3; }
+  .social-size-label span { display: block; }
+  .social-size p.small { margin: 0.3rem 0 0.25rem; }
+  .social-recent { margin: 0.25rem 0 0; padding-left: 1.2rem; font-size: 0.9rem; }
+  .social-captions { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem; margin-top: 1.25rem; }
+  .social-captions textarea { display: block; width: 100%; margin: 0.4rem 0; padding: 0.6rem; border: 1px solid var(--border); border-radius: 6px; font: inherit; font-size: 0.85rem; line-height: 1.45; background: var(--surface); }
+  .copy-button { background: white; border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; cursor: pointer; font: inherit; font-size: 0.85rem; margin-right: 0.5rem; }
+</style>
+<script>
+  document.querySelectorAll('.copy-button').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var box = document.getElementById(btn.getAttribute('data-copy'));
+      var done = function () { btn.textContent = 'Copied'; setTimeout(function () { btn.textContent = 'Copy'; }, 1500); };
+      if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(box.value).then(done, function () { box.select(); document.execCommand('copy'); done(); });
+      else { box.select(); document.execCommand('copy'); done(); }
+    });
+  });
+</script>
+
+<%- include('../partials/foot') %>

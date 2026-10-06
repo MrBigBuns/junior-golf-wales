@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<title>Round-up card: <%= period.title %></title>
+<link rel="stylesheet" href="/css/cards.css">
+</head>
+<body class="card-page size-<%= size %><%= embed ? ' embed' : '' %>">
+
+<div class="card roundup-card">
+  <div class="stripe"><i></i><i></i><i></i></div>
+
+  <div class="head">
+    <p class="kicker">Wales Junior Golf</p>
+    <h1><%= period.title %></h1>
+    <p class="subtitle"><%= period.subtitle %></p>
+  </div>
+
+  <ul class="list" style="--k: <%= card.k %>">
+    <% card.rows.forEach(function(r) { %>
+      <li class="<%= r.long ? 'long' : '' %>">
+        <div class="when"><b><%= r.weekday %></b><span><%= r.day %></span></div>
+        <div class="text">
+          <div class="name"><%= r.name %></div>
+          <div class="meta"><% r.meta.forEach(function(m, i) { %><% if (i) { %> &nbsp;&middot;&nbsp; <% } %><%= m %><% }); %></div>
+        </div>
+      </li>
+    <% }); %>
+  </ul>
+
+  <div class="foot">
+    <span>Details and entry at</span> <b><%= host %></b>
+    <% if (card.pages > 1) { %><span class="page"><%= card.page %> / <%= card.pages %></span><% } %>
+  </div>
+</div>
+
+<%- include('_bar', { pager: card }) %>
+</body>
+</html>

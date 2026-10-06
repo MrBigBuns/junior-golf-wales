@@ -1,0 +1,39 @@
+<%# Toolbar under a card: size switcher, Download PNG, back link. Hidden when
+    the card is shown inside the Social cards page (?embed=1). %>
+<div class="card-bar">
+  <a href="<%= backUrl %>">&larr; Social cards</a>
+  <% Object.keys(sizes).forEach(function(k) { %>
+    <a href="<%= selfUrl(k) %>" class="<%= k === size ? 'on' : '' %>"><%= sizes[k].label %></a>
+  <% }); %>
+  <% if (typeof pager !== 'undefined' && pager.pages > 1) { %>
+    <% for (let pg = 1; pg <= pager.pages; pg++) { %>
+      <a href="<%= selfUrl(size, pg) %>" class="<%= pg === pager.page ? 'on' : '' %>">Card <%= pg %></a>
+    <% } %>
+  <% } %>
+  <span><%= sizes[size].px %> px, shown full size. Zoom out (Ctrl and minus) to see it all.</span>
+  <button type="button" id="save-png" class="gap">Download PNG</button>
+</div>
+<script src="/js/vendor/html-to-image.js"></script>
+<script>
+  // Saves the card exactly as drawn, at its real pixel size.
+  window.saveCard = function () {
+    var card = document.querySelector('.card');
+    var opts = { width: <%= sizes[size].w %>, height: <%= sizes[size].h %>, pixelRatio: 1, cacheBust: true };
+    return document.fonts.ready
+      .then(function () { return htmlToImage.toPng(card, opts); })   // first pass warms up fonts and pictures
+      .then(function () { return htmlToImage.toPng(card, opts); });
+  };
+  document.getElementById('save-png').addEventListener('click', function () {
+    var btn = this;
+    btn.textContent = 'Working...';
+    window.saveCard().then(function (dataUrl) {
+      var a = document.createElement('a');
+      a.href = dataUrl; a.download = <%- JSON.stringify(fileName) %>;
+      document.body.appendChild(a); a.click(); a.remove();
+      btn.textContent = 'Download PNG';
+    }).catch(function (err) {
+      btn.textContent = 'Download PNG';
+      alert('Could not make the image: ' + (err && err.message ? err.message : err));
+    });
+  });
+</script>
