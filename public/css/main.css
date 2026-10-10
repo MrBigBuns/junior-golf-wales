@@ -670,3 +670,20 @@ body {
 .sponsor-price span { font-size: 0.9rem; font-weight: 600; color: var(--text-secondary); }
 .sponsor-price-text { font-size: 1.35rem; }
 .sponsor-note { margin: 0.1rem 0 0; font-size: 0.8rem; color: var(--text-secondary); }
+/* Sponsorship page: reach figures and the "where you appear" sketch */
+.sponsor-reach { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 1.25rem 0 0.5rem; }
+.sponsor-stat { background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.1rem; }
+.sponsor-stat-value { margin: 0; font-size: 1.8rem; font-weight: 800; color: #054a21; line-height: 1.2; }
+.sponsor-stat-label { margin: 0.15rem 0 0; font-size: 0.9rem; color: var(--text-secondary); }
+.sponsor-where { display: flex; flex-wrap: wrap; gap: 1.5rem; align-items: center; margin: 1.5rem 0; }
+.sponsor-where > div:last-child { flex: 1 1 300px; }
+.sponsor-where h2 { margin-top: 0; }
+.sponsor-sketch { flex: none; width: 320px; max-width: 100%; background: #fff; border: 1px solid var(--border); border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+.sponsor-sketch .sk-bar { height: 10px; background: #e8e8e8; border-radius: 3px; }
+.sponsor-sketch .sk-hero { height: 46px; background: #eef3e8; border-radius: 6px; }
+.sponsor-sketch .sk-headline { border: 2px solid #d7010d; border-radius: 6px; text-align: center; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; color: #d7010d; padding: 3px 0; }
+.sponsor-sketch .sk-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.sponsor-sketch .sk-row span { height: 30px; background: #eee; border-radius: 4px; }
+.sponsor-sketch .sk-supporters span { background: none; border: 2px solid #054a21; }
+.sponsor-sketch .sk-supporters span.sk-open { border: 2px dashed #9ab88a; }
+.sponsor-sketch .sk-label { text-align: center; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; color: #054a21; }
