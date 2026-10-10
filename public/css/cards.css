@@ -204,122 +204,199 @@ body.card-page.embed { padding: 0; background: none; }
 
 
 /* =====================================================================
-   GOOD LUCK CARD (event day)
-   One event: photo and name. Several: a list like the round-up.
+   GOOD LUCK CARD (event day): the playful one
+   Sky, clouds and a green hill. One event gets a photo in a snapshot
+   frame; several get rounded cards with the start time in a ball.
    ===================================================================== */
+
+@font-face { font-family: "Fredoka"; font-weight: 500; src: url("/fonts/Fredoka-500.woff2") format("woff2"); }
+@font-face { font-family: "Fredoka"; font-weight: 600; src: url("/fonts/Fredoka-600.woff2") format("woff2"); }
+@font-face { font-family: "Fredoka"; font-weight: 700; src: url("/fonts/Fredoka-700.woff2") format("woff2"); }
 
 /* ============ SETTINGS ============ */
 .goodluck-card {
-  --pad: 64px;
-  --panel: #3f6130;          /* green heading panel */
-  --panel-text: #ffffff;
-  --kicker: #f3f5c9;         /* "WALES JUNIOR GOLF" and "Pob lwc" */
-  --accent: #ff9a55;         /* orange: stripe, short bar, start times */
-  --lime: #a6f940;           /* stripe and footer line */
-  --paper: #ffffff;
-  --ink: #3b423c;            /* event names */
-  --muted: #8f978b;          /* club lines and footer text */
-  --link: #3f6130;           /* web address, "Good luck to every player" */
-  --font: "Inter", "Segoe UI", Arial, sans-serif;
+  --sky: #5bc0eb;            /* background */
+  --grass: #7bc950;          /* the hill */
+  --grass-dark: #5aa83a;     /* hill edge */
+  --navy: #1d3557;           /* outlines and main text */
+  --sun: #ffd23f;            /* "Pob lwc!" sticker, first time ball */
+  --red: #e63946;            /* flag and web address button */
+  --soft: #4a6a85;           /* club lines */
+  --ball-2: #ffb4bc;         /* time balls, in turn */
+  --ball-3: #a8e6ff;
+  --ball-4: #c9f2a7;
+  --ball-5: #ffd8a8;
+  --font: "Fredoka", "Segoe UI", Arial, sans-serif;
 
-  --stripe-height: 16px;
-  --kicker-size: 27px;
-  --heading-size: 112px;     /* "Good luck today!" */
-  --welsh-size: 44px;        /* "Pob lwc" */
-  --date-size: 35px;
-  --footer-size: 29px;
+  --pad: 64px;
+  --kicker-size: 26px;
+  --heading-size: 128px;     /* "Good luck today!" */
+  --date-size: 40px;
+  --sticker: 210px;          /* "Pob lwc!" circle */
+  --sticker-text: 48px;
 
   /* One event */
-  --single-name-size: 64px;  /* the site lowers this for long names */
+  --snap-w: 860px;  --snap-h: 400px;
+  --single-name-size: 66px;  /* the site lowers this for long names */
   --single-meta-size: 36px;
   --default-photo: url("/img/card-header.jpg");
-  --photo-focus: 50% 40%;
 
-  /* Several events. --k is set by the site, as on the round-up card. */
+  /* Several events. --k is set by the site: 1 for a short list, smaller
+     when more events have to fit. */
   --k: 1;
+  --rows-top: 110px;         /* space between the top of the hill and the list */
+  --ball: 118px;
   --time-size: 34px;
-  --name-size: 50px;
-  --name-size-long: 34px;
-  --meta-size: 34px;
-  --row-gap: 46px;
-  --time-width: 150px;
+  --row-name-size: 46px;
+  --row-name-long: 36px;
+  --row-meta-size: 30px;
+  --row-gap: 20px;
 
-  background: var(--paper);
-  color: var(--ink);
+  --foot-size: 34px;
+
+  position: relative;
+  background: var(--sky);
+  color: var(--navy);
+  font-family: var(--font);
 }
 
-.goodluck-card .stripe { display: flex; height: var(--stripe-height); flex: none; }
-.goodluck-card .stripe i { flex: 1; }
-.goodluck-card .stripe i:nth-child(1) { background: var(--accent); }
-.goodluck-card .stripe i:nth-child(2) { background: #ffffff; }
-.goodluck-card .stripe i:nth-child(3) { background: var(--lime); }
+/* ============ DECORATION ============ */
+.goodluck-card .cloud { position: absolute; background: #fff; border-radius: 999px; opacity: .9; }
+.goodluck-card .cloud::before, .goodluck-card .cloud::after { content: ""; position: absolute; background: #fff; border-radius: 50%; }
+.goodluck-card .cloud.a { left: 640px; top: 70px; width: 210px; height: 62px; }
+.goodluck-card .cloud.a::before { width: 92px; height: 92px; left: 34px; top: -46px; }
+.goodluck-card .cloud.a::after  { width: 70px; height: 70px; left: 112px; top: -30px; }
+.goodluck-card .cloud.b { left: 880px; top: 470px; width: 170px; height: 50px; opacity: .7; }
+.goodluck-card .cloud.b::before { width: 72px; height: 72px; left: 60px; top: -36px; }
+.goodluck-card .confetti i { position: absolute; width: 18px; height: 34px; border-radius: 6px; }
+.goodluck-card .confetti i:nth-child(1) { left: 92px;  top: 52px;  background: var(--sun); transform: rotate(25deg); }
+.goodluck-card .confetti i:nth-child(2) { left: 520px; top: 40px;  background: var(--red); transform: rotate(-30deg); }
+.goodluck-card .confetti i:nth-child(3) { left: 960px; top: 200px; background: #fff;       transform: rotate(60deg); }
+.goodluck-card .confetti i:nth-child(4) { left: 470px; top: 330px; background: var(--sun); transform: rotate(-15deg); width: 22px; height: 22px; border-radius: 50%; }
+.goodluck-card .confetti i:nth-child(5) { left: 880px; top: 360px; background: var(--red); transform: rotate(40deg);  width: 20px; height: 20px; border-radius: 50%; }
 
-/* ============ HEADING PANEL ============ */
-.goodluck-card .head { flex: none; background: var(--panel); color: var(--panel-text); padding: 64px var(--pad) 56px; }
-.goodluck-card .kicker { margin: 0; font-size: var(--kicker-size); font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: var(--kicker); }
-.goodluck-card .kicker::after { content: ""; display: block; width: 96px; height: 8px; margin-top: 20px; background: var(--accent); }
-.goodluck-card h1 { margin: 24px 0 6px; font-size: var(--heading-size); font-weight: 800; line-height: 1.02; letter-spacing: -0.015em; }
-.goodluck-card .welsh { margin: 0 0 22px; font-size: var(--welsh-size); font-weight: 600; font-style: italic; color: var(--kicker); }
-.goodluck-card .date { margin: 0; font-size: var(--date-size); font-weight: 600; }
+/* ============ HEADING ============ */
+.goodluck-card .head { position: relative; flex: none; padding: 70px var(--pad) 0; }
+.goodluck-card .kicker {
+  display: inline-block; margin: 0;
+  font-size: var(--kicker-size); font-weight: 600; letter-spacing: .12em; text-transform: uppercase;
+  background: #fff; padding: 8px 20px; border-radius: 999px;
+}
+.goodluck-card h1 {
+  margin: 26px 0 0; font-size: var(--heading-size); font-weight: 700; line-height: .98; letter-spacing: -0.01em;
+  color: #fff; text-shadow: 0 7px 0 var(--navy);
+  -webkit-text-stroke: 3px var(--navy); paint-order: stroke fill;
+}
+.goodluck-card .date { margin: 22px 0 0; font-size: var(--date-size); font-weight: 600; }
+.goodluck-card .date .count { color: #fff; background: var(--navy); padding: 2px 16px; border-radius: 999px; margin-left: 10px; font-size: .85em; white-space: nowrap; }
+.goodluck-card .sticker {
+  position: absolute; right: 70px; top: 180px;
+  width: var(--sticker); height: var(--sticker); border-radius: 50%;
+  background: var(--sun); border: 6px solid var(--navy); box-shadow: 0 8px 0 var(--navy);
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  font-size: var(--sticker-text); font-weight: 700; line-height: 1;
+  transform: rotate(12deg);
+}
+
+/* ============ HILL ============ */
+.goodluck-card .hill { position: relative; flex: 1; min-height: 0; margin-top: 40px; display: flex; flex-direction: column; }
+.goodluck-card .hill::before {
+  content: ""; position: absolute; left: -10%; right: -10%; top: 70px; bottom: -200px;
+  background: var(--grass); border-top: 10px solid var(--grass-dark);
+  border-radius: 50% 50% 0 0 / 120px 120px 0 0;
+}
+.goodluck-card .hill > * { position: relative; }
+.goodluck-card .flag { position: absolute; right: 86px; top: -66px; width: 120px; height: 180px; z-index: 2; }
 
 /* ============ ONE EVENT ============ */
-.goodluck-card .body { flex: 1; min-height: 0; display: flex; flex-direction: column; }
-.goodluck-card .photo {
-  flex: 1 1 0; min-height: 0;
-  background-color: #22381a;
+.goodluck-card .snap {
+  flex: none; margin: 0 auto; width: var(--snap-w); height: var(--snap-h);
+  border: 16px solid #fff; border-radius: 28px;
+  background-color: #bfe3a8;
   background-image: var(--photo, none), var(--default-photo);
-  background-size: cover; background-position: var(--photo-focus); background-repeat: no-repeat;
+  background-size: cover; background-position: center; background-repeat: no-repeat;
+  box-shadow: 0 10px 0 rgba(29,53,87,.35);
+  transform: rotate(-2deg);
 }
-.goodluck-card .single { flex: none; padding: 40px var(--pad) 36px; }
-.goodluck-card .single .name { font-size: var(--single-name-size); font-weight: 800; line-height: 1.1; letter-spacing: -0.01em; }
-.goodluck-card .single .meta { margin-top: 14px; font-size: var(--single-meta-size); color: var(--muted); }
-.goodluck-card .single .players { margin-top: 18px; font-size: var(--single-meta-size); font-weight: 600; color: var(--link); }
+.goodluck-card .panel {
+  flex: none; margin: 34px var(--pad) 0; padding: 30px 40px 34px;
+  background: #fff; border-radius: 36px; border: 5px solid var(--navy); box-shadow: 0 8px 0 var(--navy);
+}
+.goodluck-card .panel .name { font-size: var(--single-name-size); font-weight: 700; line-height: 1.05; }
+.goodluck-card .panel .name.l  { font-size: calc(var(--single-name-size) * .82); }   /* long names */
+.goodluck-card .panel .name.xl { font-size: calc(var(--single-name-size) * .7); }
+.goodluck-card .panel .meta { margin-top: 10px; font-size: var(--single-meta-size); font-weight: 500; color: var(--soft); }
 
 /* ============ SEVERAL EVENTS ============ */
-.goodluck-card .list {
-  margin: 0; padding: 0 var(--pad); list-style: none;
-  justify-content: center; gap: calc(var(--row-gap) * var(--k));
+.goodluck-card .rows { margin: var(--rows-top) var(--pad) 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: calc(var(--row-gap) * var(--k)); }
+.goodluck-card .row {
+  display: flex; align-items: center; gap: calc(26px * var(--k));
+  background: #fff; border: 5px solid var(--navy); border-radius: calc(30px * var(--k));
+  padding: calc(18px * var(--k)) calc(28px * var(--k)); box-shadow: 0 6px 0 var(--navy);
 }
-.goodluck-card .list li { display: flex; align-items: center; gap: calc(36px * var(--k)); }
-.goodluck-card .time { flex: none; width: calc(var(--time-width) * var(--k)); font-size: calc(var(--time-size) * var(--k)); font-weight: 800; color: var(--accent); }
-.goodluck-card .no-times .time { display: none; }
-.goodluck-card .text { flex: 1; min-width: 0; }
-.goodluck-card .list .name { font-size: calc(var(--name-size) * var(--k)); font-weight: 600; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.goodluck-card .list .long .name { font-size: calc(var(--name-size-long) * var(--k)); }
-.goodluck-card .list .meta { margin-top: calc(8px * var(--k)); font-size: calc(var(--meta-size) * var(--k)); color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.goodluck-card .list .more { display: block; font-size: calc(var(--meta-size) * var(--k)); font-weight: 600; color: var(--link); padding-left: calc((var(--time-width) + 36px) * var(--k)); }
-.goodluck-card .no-times .more { padding-left: 0; }
+.goodluck-card .ball {
+  flex: none; width: calc(var(--ball) * var(--k)); height: calc(var(--ball) * var(--k)); border-radius: 50%;
+  background: var(--sun); border: 4px solid var(--navy);
+  display: flex; align-items: center; justify-content: center;
+  font-size: calc(var(--time-size) * var(--k)); font-weight: 700;
+}
+.goodluck-card .row:nth-child(5n+2) .ball { background: var(--ball-2); }
+.goodluck-card .row:nth-child(5n+3) .ball { background: var(--ball-3); }
+.goodluck-card .row:nth-child(5n+4) .ball { background: var(--ball-4); }
+.goodluck-card .row:nth-child(5n+5) .ball { background: var(--ball-5); }
+/* No start time: a plain white golf ball with dimples */
+.goodluck-card .row .ball.plain { background: #fff radial-gradient(circle, #c9d3dc 18%, transparent 20%) 0 0 / 22% 22%; }
+.goodluck-card .row .text { min-width: 0; }
+.goodluck-card .row .name { font-size: calc(var(--row-name-size) * var(--k)); font-weight: 700; line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.goodluck-card .row.long .name { font-size: calc(var(--row-name-long) * var(--k)); }
+.goodluck-card .row .meta { margin-top: 4px; font-size: calc(var(--row-meta-size) * var(--k)); font-weight: 500; color: var(--soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.goodluck-card .more { margin: 2px 0 0 8px; font-size: calc(32px * var(--k)); font-weight: 600; }
 
 /* ============ FOOTER ============ */
-.goodluck-card .foot { flex: none; margin: 0 var(--pad); height: 112px; border-top: 4px solid var(--lime); display: flex; align-items: center; font-size: var(--footer-size); color: var(--muted); }
-.goodluck-card .foot b { margin-left: 0.3em; font-weight: 600; color: var(--link); font-size: 31px; }
-.goodluck-card.many .foot span::after { content: " \00b7"; }
-
-/* ============ SQUARE: a little tighter ============ */
-.size-square .goodluck-card { --heading-size: 92px; --welsh-size: 38px; --date-size: 31px; --single-name-size: 56px; }
-.size-square .goodluck-card .head { padding: 48px var(--pad) 42px; }
-.size-square .goodluck-card h1 { margin-top: 18px; }
-.size-square .goodluck-card .welsh { margin-bottom: 14px; }
-.size-square .goodluck-card .single { padding: 30px var(--pad) 26px; }
-.size-square .goodluck-card .foot { height: 100px; }
-.size-square .goodluck-card .count { display: none; }
-
-/* ============ LANDSCAPE: green panel on the left ============ */
-.size-landscape .goodluck-card {
-  display: grid; grid-template-columns: 400px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr);
-  --pad: 44px; --stripe-height: 12px; --kicker-size: 19px; --heading-size: 62px; --welsh-size: 30px; --date-size: 24px;
-  --single-meta-size: 24px;
+.goodluck-card .foot { position: relative; margin-top: auto; padding: 24px var(--pad) 48px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.goodluck-card .foot span { font-size: var(--foot-size); font-weight: 600; }
+.goodluck-card .foot b {
+  font-size: var(--foot-size); font-weight: 600; color: #fff; background: var(--red);
+  padding: 14px 32px; border-radius: 999px; border: 4px solid var(--navy); box-shadow: 0 6px 0 var(--navy);
 }
-.size-landscape .goodluck-card .stripe { grid-column: 1 / 3; }
-.size-landscape .goodluck-card .head { grid-column: 1; grid-row: 2; padding: 40px 44px; }
-.size-landscape .goodluck-card .kicker::after { width: 72px; height: 6px; margin-top: 14px; }
-.size-landscape .goodluck-card h1 { margin: 18px 0 8px; }
-.size-landscape .goodluck-card .count { display: block; margin-top: 6px; }
-.size-landscape .goodluck-card .count .sep { display: none; }
-.size-landscape .goodluck-card .body { grid-column: 2; grid-row: 2; }
-.size-landscape .goodluck-card .single { padding: 22px 36px 24px 30px; }
-.size-landscape .goodluck-card.one .single .name { font-size: calc(var(--single-name-size) * 0.62); }
-.size-landscape .goodluck-card .list { padding: 0 44px 0 30px; display: flex; flex-direction: column; }
-.size-landscape .goodluck-card .foot { position: absolute; left: 44px; bottom: 30px; width: 312px; margin: 0; height: auto; border: 0; }
-.size-landscape .goodluck-card .foot span { display: none; }
-.size-landscape .goodluck-card .foot b { margin: 0; font-size: 22px; color: var(--kicker); }
+
+/* ============ SQUARE: smaller heading and photo ============ */
+.size-square .goodluck-card {
+  --heading-size: 100px; --date-size: 34px; --sticker: 170px; --sticker-text: 40px;
+  --snap-w: 820px; --snap-h: 270px; --single-name-size: 56px; --single-meta-size: 32px;
+  --rows-top: 96px; --foot-size: 30px;
+}
+.size-square .goodluck-card .head { padding-top: 52px; }
+.size-square .goodluck-card h1 { margin-top: 20px; }
+.size-square .goodluck-card .date { margin-top: 16px; }
+.size-square .goodluck-card .sticker { top: 150px; }
+.size-square .goodluck-card .hill { margin-top: 24px; }
+.size-square .goodluck-card .hill::before { top: 60px; }
+.size-square .goodluck-card .panel { margin-top: 26px; padding: 22px 34px 26px; }
+.size-square .goodluck-card .foot { padding: 18px var(--pad) 36px; }
+.size-square .goodluck-card .flag { top: -74px; width: 100px; height: 150px; }
+.size-square .goodluck-card .cloud.b, .size-square .goodluck-card .confetti i:nth-child(4) { display: none; }
+
+/* ============ LANDSCAPE: heading on the left, hill on the right ============ */
+.size-landscape .goodluck-card {
+  display: grid; grid-template-columns: 430px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr);
+  --pad: 40px; --kicker-size: 17px; --heading-size: 70px; --date-size: 24px; --sticker: 120px; --sticker-text: 28px;
+  --snap-w: 640px; --snap-h: 290px; --single-name-size: 44px; --single-meta-size: 24px;
+  --rows-top: 70px; --foot-size: 22px;
+}
+.size-landscape .goodluck-card .head { grid-column: 1; grid-row: 1; padding: 40px 40px 0; display: flex; flex-direction: column; }
+.size-landscape .goodluck-card h1 { margin-top: 20px; text-shadow: 0 5px 0 var(--navy); -webkit-text-stroke: 2px var(--navy); }
+.size-landscape .goodluck-card .date { margin-top: 16px; }
+.size-landscape .goodluck-card .date .count { display: inline-block; margin: 8px 0 0; }
+.size-landscape .goodluck-card .sticker { right: 40px; top: 330px; border-width: 4px; box-shadow: 0 5px 0 var(--navy); }
+.size-landscape .goodluck-card .hill { grid-column: 2; grid-row: 1; margin: 0; }
+.size-landscape .goodluck-card .hill::before { top: 40px; left: -4%; }
+.size-landscape .goodluck-card .snap { margin-top: auto; border-width: 12px; }
+.size-landscape .goodluck-card .panel { margin: 22px 40px auto 30px; padding: 16px 26px 20px; border-radius: 26px; }
+.size-landscape .goodluck-card .rows { margin: auto 40px auto 20px; padding-top: 40px; }
+.size-landscape .goodluck-card .flag { display: none; }
+/* Footer moves to the bottom of the left column */
+.size-landscape .goodluck-card .foot { position: absolute; left: 0; bottom: 0; width: 430px; padding: 0 40px 34px; flex-direction: column; align-items: flex-start; gap: 14px; }
+.size-landscape .goodluck-card .foot b { padding: 10px 22px; border-width: 3px; box-shadow: 0 4px 0 var(--navy); }
+.size-landscape .goodluck-card .cloud.a { display: none; }
+.size-landscape .goodluck-card .cloud.b, .size-landscape .goodluck-card .confetti { display: none; }

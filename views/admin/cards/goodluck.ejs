@@ -9,41 +9,47 @@
 <body class="card-page size-<%= size %><%= embed ? ' embed' : '' %>">
 
 <div class="card goodluck-card <%= card.one ? 'one' : 'many' %>">
-  <div class="stripe"><i></i><i></i><i></i></div>
+  <div class="cloud a"></div><div class="cloud b"></div>
+  <div class="confetti"><i></i><i></i><i></i><i></i><i></i></div>
 
   <div class="head">
     <p class="kicker">Wales Junior Golf</p>
-    <h1>Good luck today!</h1>
-    <p class="welsh">Pob lwc</p>
-    <p class="date"><%= day.dateLine %><% if (!card.one) { %><span class="count"><span class="sep"> &nbsp;&middot;&nbsp; </span><%= events.length %> junior events</span><% } %></p>
+    <h1>Good luck<br>today!</h1>
+    <p class="date"><%= day.dateLine %><% if (!card.one) { %> <span class="count"><%= events.length %> events</span><% } %></p>
+    <div class="sticker">Pob<br>lwc!</div>
   </div>
 
-  <% if (card.one) { %>
-    <div class="body">
-      <div class="photo"<% if (card.photoUrl) { %> style="--photo: url('<%= card.photoUrl %>')"<% } %>></div>
-      <div class="single">
-        <div class="name" style="--single-name-size: <%= card.nameSize %>px"><%= card.name %></div>
-        <div class="meta"><% card.meta.forEach(function(m, i) { %><% if (i) { %> &nbsp;&middot;&nbsp; <% } %><%= m %><% }); %></div>
-        <div class="players">Good luck to every player teeing it up</div>
+  <div class="hill">
+    <% if (card.one) { %>
+      <div class="snap"<% if (card.photoUrl) { %> style="--photo: url('<%= card.photoUrl %>')"<% } %>></div>
+      <div class="panel">
+        <div class="name <%= card.nameClass %>"><%= card.name %></div>
+        <div class="meta"><%= card.meta.join(' · ') %></div>
       </div>
-    </div>
-  <% } else { %>
-    <ul class="list body<%= card.anyTime ? '' : ' no-times' %>" style="--k: <%= card.k %>">
-      <% card.rows.forEach(function(r) { %>
-        <li class="<%= r.long ? 'long' : '' %>">
-          <div class="time"><%= r.time || '' %></div>
-          <div class="text">
-            <div class="name"><%= r.name %></div>
-            <div class="meta"><% r.meta.forEach(function(m, i) { %><% if (i) { %> &nbsp;&middot;&nbsp; <% } %><%= m %><% }); %></div>
-          </div>
-        </li>
-      <% }); %>
-      <% if (card.more) { %><li class="more">+<%= card.more %> more at <%= host %></li><% } %>
-    </ul>
-  <% } %>
+    <% } else { %>
+      <svg class="flag" viewBox="0 0 120 180" aria-hidden="true">
+        <ellipse cx="38" cy="168" rx="30" ry="9" fill="#1d3557" opacity=".35"/>
+        <rect x="34" y="10" width="8" height="160" rx="4" fill="#fff" stroke="#1d3557" stroke-width="4"/>
+        <path d="M42 12 L112 34 L42 60 Z" fill="#e63946" stroke="#1d3557" stroke-width="5" stroke-linejoin="round"/>
+      </svg>
+      <ul class="rows" style="--k: <%= card.k %>">
+        <% card.rows.forEach(function(r) { %>
+          <li class="row<%= r.long ? ' long' : '' %>">
+            <div class="ball<%= r.time ? '' : ' plain' %>"><%= r.time || '' %></div>
+            <div class="text">
+              <div class="name"><%= r.name %></div>
+              <div class="meta"><%= r.meta.join(' · ') %></div>
+            </div>
+          </li>
+        <% }); %>
+        <% if (card.more) { %><li class="more">+<%= card.more %> more at <%= host %></li><% } %>
+      </ul>
+    <% } %>
+  </div>
 
   <div class="foot">
-    <span><%= card.one ? 'Follow the action at' : 'Good luck to every player' %></span> <b><%= host %></b>
+    <span>Play well, have fun!</span>
+    <b><%= host %></b>
   </div>
 </div>
 
