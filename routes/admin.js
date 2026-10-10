@@ -897,9 +897,12 @@ router.get('/social', asyncHandler(async (req, res) => {
   const recent = [...upcoming].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 8);
   const tag = cardTag(req.query.tag);
   const event = req.query.event ? await social.cardEventById(pool, req.query.event) : null;
+  const day = social.resolveDay(req.query);
+  const dayEvents = await social.dayEvents(pool, day.date);
 
   res.render('admin/social', {
-    period, events, upcoming, recent, tag, event,
+    period, events, upcoming, recent, tag, event, day, dayEvents,
+    goodLuckCaptions: dayEvents.length ? social.goodLuckCaptions(day, dayEvents) : null,
     today: social.londonToday(),
     sizes: social.SIZES, tags: social.TAGS, regions: social.REGIONS,
     pages: Object.fromEntries(Object.keys(social.SIZES).map(k => [k, social.roundupPages(events, k)])),
@@ -944,6 +947,21 @@ router.get('/social/event/:id', asyncHandler(async (req, res) => {
     selfUrl: sz => `/admin/social/event/${event.id}?size=${sz}&tag=${tag}`,
     backUrl: `/admin/social?event=${event.id}&tag=${tag}#event`,
     fileName: `${event.slug}-${tag}-${size}.png`
+  });
+}));
+
+// The event-day "Good luck" card itself
+router.get('/social/goodluck', asyncHandler(async (req, res) => {
+  const day = social.resolveDay(req.query);
+  const events = await social.dayEvents(pool, day.date);
+  if (!events.length) return res.status(404).send('No events on this day');
+  const size = cardSize(req.query.size);
+  res.render('admin/cards/goodluck', {
+    day, events, size, sizes: social.SIZES, host: social.PUBLIC_HOST, embed: !!req.query.embed,
+    card: social.goodLuckCard(events, size, day.date),
+    selfUrl: sz => `/admin/social/goodluck?day=${day.date}&size=${sz}`,
+    backUrl: `/admin/social?day=${day.date}#goodluck`,
+    fileName: `wales-junior-golf-good-luck-${day.date}-${size}.png`
   });
 }));
 

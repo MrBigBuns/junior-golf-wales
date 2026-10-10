@@ -152,6 +152,69 @@
   <% } %>
 </div>
 
+<div class="detail-card" id="goodluck">
+  <h3 class="detail-card-heading">Event-day good luck card</h3>
+  <p class="course-address">For the morning of a competition. One event gets a photo card; several get a list. Make it the evening before and schedule it in Buffer for about 7am.</p>
+
+  <form method="get" action="/admin/social#goodluck" class="social-form">
+    <input type="hidden" name="period" value="<%= period.period %>">
+    <input type="hidden" name="start" value="<%= period.start %>">
+    <% if (period.region) { %><input type="hidden" name="region" value="<%= period.region %>"><% } %>
+    <label>Day
+      <input type="date" name="day" value="<%= day.date %>">
+    </label>
+    <button type="submit" class="admin-button">Show</button>
+  </form>
+  <% const dayLink = function (d) { return '/admin/social?' + periodQs + '&day=' + d + '#goodluck'; }; %>
+  <p class="social-quick">
+    <a href="<%= dayLink(day.today) %>">Today</a> ·
+    <a href="<%= dayLink(day.tomorrow) %>">Tomorrow</a>
+    <span class="muted">|</span>
+    <a href="<%= dayLink(day.prev) %>">&larr; Day before</a> ·
+    <a href="<%= dayLink(day.next) %>">Day after &rarr;</a>
+  </p>
+
+  <h3 class="social-sub"><%= day.dateLine %> <span class="muted">· <%= dayEvents.length %> event<%= dayEvents.length === 1 ? '' : 's' %></span></h3>
+
+  <% if (!dayEvents.length) { %>
+    <p class="scorecard-note">No events on this day, so there is no card to make.</p>
+  <% } else { %>
+    <ul class="social-recent">
+      <% dayEvents.forEach(function(e) { %>
+        <li><%= e.title %> <span class="muted small">· <%= e.club_name %><%= e.start_time ? ' · ' + String(e.start_time).slice(0, 5) : '' %></span></li>
+      <% }); %>
+    </ul>
+    <div class="social-grid">
+      <% sizeKeys.forEach(function(key) { %>
+        <% const src = '/admin/social/goodluck?day=' + day.date + '&size=' + key; %>
+        <div class="social-size social-<%= key %>">
+          <p class="social-size-label"><strong><%= sizes[key].label %></strong> <span class="muted small"><%= sizes[key].px %> · <%= sizes[key].use %></span></p>
+          <% const scale = key === 'landscape' ? 0.3333 : 0.26; %>
+          <a class="card-preview" href="<%= src %>" target="_blank" style="width: <%= Math.round(sizes[key].w * scale) %>px; height: <%= Math.round(sizes[key].h * scale) %>px;" title="Open full size">
+            <iframe loading="lazy" tabindex="-1" src="<%= src %>&embed=1" width="<%= sizes[key].w %>" height="<%= sizes[key].h %>" style="transform: scale(<%= scale %>);"></iframe>
+          </a>
+          <p class="small"><a href="<%= src %>" target="_blank">Open to download</a></p>
+        </div>
+      <% }); %>
+    </div>
+    <p class="scorecard-note">The card always says "Good luck today!", so post it on the day itself. Events that don't fit show as "+ N more".</p>
+
+    <div class="social-captions">
+      <div>
+        <label for="cap-g-long"><strong>Caption for Facebook and Instagram</strong></label>
+        <textarea id="cap-g-long" rows="<%= Math.min(16, dayEvents.length + 8) %>" readonly><%= goodLuckCaptions.long %></textarea>
+        <button type="button" class="copy-button" data-copy="cap-g-long">Copy</button>
+        <span class="muted small">@ names are the clubs' Instagram accounts. On Facebook, type @ and the club's name to tag its page.</span>
+      </div>
+      <div>
+        <label for="cap-g-short"><strong>Caption for X</strong> <span class="muted small">fits 280 characters</span></label>
+        <textarea id="cap-g-short" rows="9" readonly><%= goodLuckCaptions.short %></textarea>
+        <button type="button" class="copy-button" data-copy="cap-g-short">Copy</button>
+      </div>
+    </div>
+  <% } %>
+</div>
+
 <style>
   .social-form { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: end; margin: 0.5rem 0; }
   .social-form label { display: flex; flex-direction: column; gap: 4px; font-size: 0.85rem; color: var(--text-secondary); }

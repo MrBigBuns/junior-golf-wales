@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<title>Good luck card: <%= day.dateLine %></title>
+<link rel="stylesheet" href="/css/cards.css">
+</head>
+<body class="card-page size-<%= size %><%= embed ? ' embed' : '' %>">
+
+<div class="card goodluck-card <%= card.one ? 'one' : 'many' %>">
+  <div class="stripe"><i></i><i></i><i></i></div>
+
+  <div class="head">
+    <p class="kicker">Wales Junior Golf</p>
+    <h1>Good luck today!</h1>
+    <p class="welsh">Pob lwc</p>
+    <p class="date"><%= day.dateLine %><% if (!card.one) { %><span class="count"><span class="sep"> &nbsp;&middot;&nbsp; </span><%= events.length %> junior events</span><% } %></p>
+  </div>
+
+  <% if (card.one) { %>
+    <div class="body">
+      <div class="photo"<% if (card.photoUrl) { %> style="--photo: url('<%= card.photoUrl %>')"<% } %>></div>
+      <div class="single">
+        <div class="name" style="--single-name-size: <%= card.nameSize %>px"><%= card.name %></div>
+        <div class="meta"><% card.meta.forEach(function(m, i) { %><% if (i) { %> &nbsp;&middot;&nbsp; <% } %><%= m %><% }); %></div>
+        <div class="players">Good luck to every player teeing it up</div>
+      </div>
+    </div>
+  <% } else { %>
+    <ul class="list body<%= card.anyTime ? '' : ' no-times' %>" style="--k: <%= card.k %>">
+      <% card.rows.forEach(function(r) { %>
+        <li class="<%= r.long ? 'long' : '' %>">
+          <div class="time"><%= r.time || '' %></div>
+          <div class="text">
+            <div class="name"><%= r.name %></div>
+            <div class="meta"><% r.meta.forEach(function(m, i) { %><% if (i) { %> &nbsp;&middot;&nbsp; <% } %><%= m %><% }); %></div>
+          </div>
+        </li>
+      <% }); %>
+      <% if (card.more) { %><li class="more">+<%= card.more %> more at <%= host %></li><% } %>
+    </ul>
+  <% } %>
+
+  <div class="foot">
+    <span><%= card.one ? 'Follow the action at' : 'Good luck to every player' %></span> <b><%= host %></b>
+  </div>
+</div>
+
+<%- include('_bar') %>
+</body>
+</html>
