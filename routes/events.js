@@ -4,6 +4,7 @@ const pool = require('../db/pool');
 const asyncHandler = require('../lib/asyncHandler');
 const { coursePhrase } = require('../lib/courses');
 const { getForecastForDate } = require('../lib/weather');
+const { eventSchema } = require('../lib/eventSchema');
 
 // GET /events — filterable list
 router.get('/', asyncHandler(async (req, res) => {
@@ -61,7 +62,7 @@ router.get('/:slug', asyncHandler(async (req, res) => {
             (c.course_photo_image IS NOT NULL) AS club_has_course_photo,
             (c.logo_image IS NOT NULL) AS club_has_logo_image,
             c.logo_url AS club_logo_url, c.county AS club_county,
-            o.name AS organiser_name, o.slug AS organiser_slug, o.description AS organiser_description,
+            o.name AS organiser_name, o.slug AS organiser_slug, o.description AS organiser_description, o.website AS organiser_website,
             c.scorecard AS club_scorecard, c.par AS club_par, c.yardage AS club_yardage,
             c.main_course_name AS club_main_course_name,
             cc.name AS course_name, cc.slug AS course_slug, cc.scorecard AS course_scorecard,
@@ -127,7 +128,7 @@ router.get('/:slug', asyncHandler(async (req, res) => {
     [event.id]
   );
 
-  res.render('events/show', { event, otherAtClub, updates });
+  res.render('events/show', { event, otherAtClub, updates, schemaJson: eventSchema(event) });
 }));
 
 // GET /events/:slug/calendar.ics — downloadable calendar invite

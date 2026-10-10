@@ -215,17 +215,7 @@
 <%- include('../partials/scorecard', { scorecard: event.scorecard, scorecardNote: event.scorecard_note }) %>
 
 <script type="application/ld+json">
-{
-  "@context": "https://schema.org",
-  "@type": "SportsEvent",
-  "name": "<%= event.title %>",
-  "startDate": "<%= event.date_start %>",
-  "location": {
-    "@type": "Place",
-    "name": "<%= event.club_name %>",
-    "address": "<%= event.address || '' %>"
-  }
-}
+<%- schemaJson %>
 </script>
 
 <%- include('../partials/foot') %>
