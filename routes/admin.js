@@ -974,6 +974,15 @@ router.get('/social/photo/:clubId', asyncHandler(async (req, res) => {
   res.send(photo.data);
 }));
 
+// A club's logo, served from our own address for the Good luck card
+router.get('/social/logo/:clubId', asyncHandler(async (req, res) => {
+  const logo = await social.clubLogo(pool, req.params.clubId);
+  if (!logo) return res.status(404).send('No logo');
+  res.set('Content-Type', logo.type);
+  res.set('Cache-Control', 'private, max-age=600');
+  res.send(logo.data);
+}));
+
 // ---------- Submissions ----------
 router.get('/submissions', asyncHandler(async (req, res) => {
   const { rows: submissions } = await pool.query(

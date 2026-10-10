@@ -21,7 +21,11 @@
 
   <div class="hill">
     <% if (card.one) { %>
-      <div class="snap"<% if (card.photoUrl) { %> style="--photo: url('<%= card.photoUrl %>')"<% } %>></div>
+      <% if (card.logoUrl) { %>
+        <div class="crest"><img src="<%= card.logoUrl %>" alt=""></div>
+      <% } else { %>
+        <div class="snap"<% if (card.photoUrl) { %> style="--photo: url('<%= card.photoUrl %>')"<% } %>></div>
+      <% } %>
       <div class="panel">
         <div class="name <%= card.nameClass %>"><%= card.name %></div>
         <div class="meta"><%= card.meta.join(' · ') %></div>
