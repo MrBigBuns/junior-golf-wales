@@ -687,3 +687,25 @@ body {
 .sponsor-sketch .sk-supporters span { background: none; border: 2px solid #054a21; }
 .sponsor-sketch .sk-supporters span.sk-open { border: 2px dashed #9ab88a; }
 .sponsor-sketch .sk-label { text-align: center; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; color: #054a21; }
+
+/* ---------- Header layout (matches England Junior Golf) ----------
+   White bar; logo, menu and button sit in the same 900px column as the
+   page, with the menu next to the logo and the button on the right. */
+.site-header {
+  background: #fff;
+  padding: 14px max(1.5rem, calc((100% - 900px) / 2 + 1.5rem));
+  gap: 12px 28px;
+}
+.site-header .logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 19px; color: var(--text-primary); white-space: nowrap; }
+.site-header .logo img { width: 34px; height: 34px; flex: none; }
+.site-header nav { flex: 1; text-align: left; }
+.site-header nav a { margin: 0 24px 0 0; font-size: 1rem; font-weight: 500; color: var(--text-primary); }
+.site-header nav a:hover { color: var(--wales-red); }
+.nav-cta { font-weight: 600; padding: 11px 18px; border-radius: 8px; font-size: 1rem; white-space: nowrap; }
+@media (max-width: 640px) {
+  .site-header { padding: 0.75rem 1rem; }
+  .site-header .logo { font-size: 16px; gap: 8px; }
+  .site-header .logo img { width: 28px; height: 28px; }
+  .site-header nav a { margin: 0; font-size: 0.95rem; }
+  .nav-cta { padding: 7px 10px; font-size: 0.85rem; }
+}
