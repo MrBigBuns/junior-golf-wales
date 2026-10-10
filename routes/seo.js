@@ -29,6 +29,7 @@ router.get('/sitemap.xml', asyncHandler(async (req, res) => {
     { loc: '/county', priority: '0.8', changefreq: 'weekly' },
     { loc: '/map', priority: '0.6', changefreq: 'weekly' },
     { loc: '/about', priority: '0.3', changefreq: 'monthly' },
+    { loc: '/sponsorship', priority: '0.3', changefreq: 'monthly' },
     ...COUNTIES.map(c => ({ loc: `/county/${c.slug}`, priority: '0.8', changefreq: 'weekly' })),
     ...tours.map(t => ({ loc: `/tours/${t.slug}`, priority: '0.7', changefreq: 'weekly' })),
     ...clubs.map(c => ({ loc: `/clubs/${c.slug}`, priority: '0.6', changefreq: 'monthly' })),
