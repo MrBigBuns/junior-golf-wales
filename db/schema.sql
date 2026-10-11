@@ -297,3 +297,9 @@ CREATE INDEX IF NOT EXISTS idx_page_changes_unseen ON page_changes(detected_at) 
 -- Booking-system pages (BRS etc.) can't be read by the weekly watcher, so
 -- they're checked by hand; this records when each was last checked.
 ALTER TABLE page_watch ADD COLUMN IF NOT EXISTS manual_checked_at TIMESTAMPTZ;
+
+-- Follow list (admin): when our own social accounts followed each club's
+-- page, so the list shows what's left to do.
+ALTER TABLE clubs ADD COLUMN IF NOT EXISTS facebook_followed_at TIMESTAMPTZ;
+ALTER TABLE clubs ADD COLUMN IF NOT EXISTS instagram_followed_at TIMESTAMPTZ;
+ALTER TABLE clubs ADD COLUMN IF NOT EXISTS x_followed_at TIMESTAMPTZ;

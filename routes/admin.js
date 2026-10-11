@@ -983,6 +983,48 @@ router.get('/social/logo/:clubId', asyncHandler(async (req, res) => {
   res.send(logo.data);
 }));
 
+// ---------- Follow list ----------
+// Every club's Facebook, Instagram and X links, to follow from our own
+// accounts by hand (the platforms don't allow automated following), with a
+// tick per link so the work can be spread over several days.
+const FOLLOW_PLATFORMS = { facebook: 'Facebook', instagram: 'Instagram', x: 'X' };
+
+router.get('/follow-list', asyncHandler(async (req, res) => {
+  const platform = FOLLOW_PLATFORMS[req.query.platform] ? req.query.platform : 'all';
+  const show = req.query.show === 'all' ? 'all' : 'todo';
+  const { rows: clubs } = await pool.query(
+    `SELECT id, name, slug, region, county,
+            facebook_url, instagram_url, x_url,
+            facebook_followed_at, instagram_followed_at, x_followed_at
+     FROM clubs
+     WHERE archived_at IS NULL
+       AND (facebook_url IS NOT NULL OR instagram_url IS NOT NULL OR x_url IS NOT NULL)
+     ORDER BY region NULLS LAST, name`
+  );
+  const keys = platform === 'all' ? Object.keys(FOLLOW_PLATFORMS) : [platform];
+  const totals = Object.fromEntries(Object.keys(FOLLOW_PLATFORMS).map(k => [k, {
+    links: clubs.filter(c => c[k + '_url']).length,
+    done: clubs.filter(c => c[k + '_url'] && c[k + '_followed_at']).length
+  }]));
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const doneToday = clubs.reduce((n, c) => n + Object.keys(FOLLOW_PLATFORMS)
+    .filter(k => c[k + '_followed_at'] && new Date(c[k + '_followed_at']) >= today).length, 0);
+  // A club shows when it has a link still to follow (or always, with show=all)
+  const list = clubs.filter(c => keys.some(k => c[k + '_url'] && (show === 'all' || !c[k + '_followed_at'])));
+  res.render('admin/follow-list', { list, keys, platform, show, totals, doneToday, platforms: FOLLOW_PLATFORMS });
+}));
+
+// Tick or untick one link. Answers JSON for the page's script, or redirects
+// back when posted without it.
+router.post('/follow-list/:id/:platform', asyncHandler(async (req, res) => {
+  const p = req.params.platform;
+  if (!FOLLOW_PLATFORMS[p]) return res.status(400).send('Unknown platform');
+  const done = req.body.done === '1';
+  await pool.query(`UPDATE clubs SET ${p}_followed_at = ${done ? 'now()' : 'NULL'} WHERE id = $1`, [Number(req.params.id) || 0]);
+  if (req.get('Accept') && req.get('Accept').includes('application/json')) return res.json({ ok: true, done });
+  res.redirect(req.get('Referer') || '/admin/follow-list');
+}));
+
 // ---------- Submissions ----------
 router.get('/submissions', asyncHandler(async (req, res) => {
   const { rows: submissions } = await pool.query(

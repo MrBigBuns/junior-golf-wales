@@ -1,0 +1,100 @@
+<%- include('../partials/head', { pageTitle: 'Admin — Follow list', noIndex: true }) %>
+<%
+  const qs = function (o) {
+    const p = Object.assign({ platform: platform, show: show }, o);
+    return '/admin/follow-list?platform=' + p.platform + '&show=' + p.show;
+  };
+%>
+
+<div class="admin-header-row">
+  <h1>Follow list</h1>
+</div>
+<p><a href="/admin">&larr; Dashboard</a></p>
+<p class="course-address">Follow each club from our own accounts. Open a link, click Follow on the club's page (on Facebook, make sure you're acting as the Wales Junior Golf page), then tick it here. The platforms don't allow automated following, and new accounts that follow too many pages at once can be blocked, so a few dozen a day is plenty.</p>
+
+<div class="follow-summary">
+  <% Object.keys(platforms).forEach(function (k) { %>
+    <div class="follow-stat">
+      <p class="stat-label"><%= platforms[k] %></p>
+      <p class="stat-value"><%= totals[k].done %> <span>of <%= totals[k].links %></span></p>
+    </div>
+  <% }); %>
+  <div class="follow-stat">
+    <p class="stat-label">Followed today</p>
+    <p class="stat-value" id="done-today"><%= doneToday %></p>
+  </div>
+</div>
+
+<p class="social-quick">
+  Show:
+  <a href="<%= qs({ platform: 'all' }) %>" class="<%= platform === 'all' ? 'on' : '' %>">All platforms</a> ·
+  <% Object.keys(platforms).forEach(function (k, i) { %><a href="<%= qs({ platform: k }) %>" class="<%= platform === k ? 'on' : '' %>"><%= platforms[k] %></a><%= i < 2 ? ' · ' : '' %><% }); %>
+  <span class="muted">|</span>
+  <a href="<%= qs({ show: 'todo' }) %>" class="<%= show === 'todo' ? 'on' : '' %>">Still to follow</a> ·
+  <a href="<%= qs({ show: 'all' }) %>" class="<%= show === 'all' ? 'on' : '' %>">Everything</a>
+</p>
+
+<% if (!list.length) { %>
+  <p class="scorecard-note"><%= show === 'todo' ? 'Nothing left to follow here.' : 'No clubs have social links yet.' %> Add links on each club's edit page.</p>
+<% } else { %>
+<table class="admin-table follow-table">
+  <thead><tr><th>Club</th><% keys.forEach(function (k) { %><th><%= platforms[k] %></th><% }); %></tr></thead>
+  <tbody>
+    <% list.forEach(function (c) { %>
+      <tr>
+        <td><a href="/admin/clubs/<%= c.id %>/edit"><%= c.name %></a><br><span class="muted small"><%= c.county || (c.region ? c.region + ' Wales' : '') %></span></td>
+        <% keys.forEach(function (k) { const url = c[k + '_url'], done = !!c[k + '_followed_at']; %>
+          <td class="follow-cell<%= done ? ' is-done' : '' %>">
+            <% if (url) { %>
+              <a class="follow-open" href="<%= url %>" target="_blank" rel="noopener">Open</a>
+              <form method="post" action="/admin/follow-list/<%= c.id %>/<%= k %>" class="follow-form">
+                <input type="hidden" name="done" value="<%= done ? '0' : '1' %>">
+                <label><input type="checkbox" <%= done ? 'checked' : '' %> data-club="<%= c.id %>" data-platform="<%= k %>"> Followed</label>
+                <noscript><button type="submit">Save</button></noscript>
+              </form>
+            <% } else { %>
+              <span class="muted small">no link</span>
+            <% } %>
+          </td>
+        <% }); %>
+      </tr>
+    <% }); %>
+  </tbody>
+</table>
+<% } %>
+
+<style>
+  .follow-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 1rem 0; }
+  .follow-stat { background: #fff; border: 1px solid var(--border); border-radius: 8px; padding: 0.75rem 1rem; }
+  .follow-stat .stat-value span { font-size: 0.9rem; font-weight: 400; color: var(--text-secondary); }
+  .social-quick a.on { font-weight: 700; text-decoration: none; color: var(--text-primary); }
+  .follow-table td { vertical-align: middle; }
+  .follow-cell { white-space: nowrap; }
+  .follow-cell.is-done { background: #f1f7ea; }
+  .follow-open { display: inline-block; padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px; background: #fff; text-decoration: none; margin-right: 8px; }
+  .follow-open:visited { color: #888; }
+  .follow-form { display: inline; }
+  .follow-form label { cursor: pointer; font-size: 0.9rem; }
+</style>
+<script>
+  // Ticking saves straight away; the Open link turns grey once visited.
+  document.querySelectorAll('.follow-form input[type=checkbox]').forEach(function (box) {
+    box.addEventListener('change', function () {
+      var cell = box.closest('.follow-cell');
+      var counter = document.getElementById('done-today');
+      var body = new URLSearchParams({ done: box.checked ? '1' : '0' });
+      fetch('/admin/follow-list/' + box.dataset.club + '/' + box.dataset.platform, {
+        method: 'POST', body: body, headers: { 'Accept': 'application/json' }
+      }).then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        cell.classList.toggle('is-done', box.checked);
+        counter.textContent = Math.max(0, Number(counter.textContent) + (box.checked ? 1 : -1));
+      }).catch(function (err) {
+        box.checked = !box.checked;
+        alert('Could not save: ' + err.message);
+      });
+    });
+  });
+</script>
+
+<%- include('../partials/foot') %>
