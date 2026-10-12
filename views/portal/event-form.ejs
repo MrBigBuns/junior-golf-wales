@@ -29,6 +29,7 @@
     <label>Handicap allowance / info <textarea name="hcp_allowance_info" rows="2"><%= event.hcp_allowance_info || '' %></textarea></label>
     <label>Catering <input type="text" name="catering" value="<%= event.catering || '' %>"></label>
     <label>Prizes <input type="text" name="prizes" value="<%= event.prizes || '' %>"></label>
+    <label>Conditions and rules <span class="muted small">one per line, e.g. dress code, no caddies, start sheet</span> <textarea name="conditions" rows="5"><%= event.conditions || '' %></textarea></label>
   </fieldset>
 
   <button type="submit">Save event</button>

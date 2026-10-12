@@ -1,5 +1,11 @@
 const express = require('express');
 const router = express.Router();
+
+// Conditions box: one rule per line; pasted bullets are dropped.
+function cleanConditions(text) {
+  const lines = String(text || '').split(/\r?\n/).map(l => l.replace(/^\s*[*•\-–]\s*/, '').trim()).filter(Boolean);
+  return lines.length ? lines.join('\n') : null;
+}
 const bcrypt = require('bcryptjs');
 const pool = require('../db/pool');
 const asyncHandler = require('../lib/asyncHandler');
@@ -107,6 +113,7 @@ router.post('/events', requireClubLogin, requireApprovedClub, asyncHandler(async
     ]
   );
 
+  await pool.query(`UPDATE events SET conditions = $1 WHERE id = $2`, [cleanConditions(b.conditions), rows[0].id]);
   res.redirect(`/club-portal/events/${rows[0].id}/edit`);
 }));
 
@@ -142,6 +149,7 @@ router.post('/events/:id/update', requireClubLogin, requireApprovedClub, asyncHa
       req.params.id
     ]
   );
+  await pool.query(`UPDATE events SET conditions = $1 WHERE id = $2`, [cleanConditions(b.conditions), req.params.id]);
 
   res.redirect(`/club-portal/events/${req.params.id}/edit?saved=1`);
 }));

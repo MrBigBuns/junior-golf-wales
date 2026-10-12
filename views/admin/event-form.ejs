@@ -84,6 +84,7 @@
     <label>Age cutoff date <input type="date" name="age_cutoff_date" value="<%= event.age_cutoff_date ? new Date(event.age_cutoff_date).toISOString().slice(0,10) : '' %>"></label>
     <label>Hcp index limit <input type="text" name="hcp_index_limit" value="<%= event.hcp_index_limit || '' %>" placeholder="e.g. 54.0 (boys) 54.0 (girls)"></label>
     <label>Handicap allowance / info <textarea name="hcp_allowance_info" rows="2"><%= event.hcp_allowance_info || '' %></textarea></label>
+    <label>Conditions and rules <span class="muted small">one per line, e.g. dress code, no caddies, start sheet</span> <textarea name="conditions" rows="5"><%= event.conditions || '' %></textarea></label>
     <label><input type="checkbox" name="accompanying_adult_required" <%= event.accompanying_adult_required ? 'checked' : '' %>> Accompanying adult required</label>
   </fieldset>
 

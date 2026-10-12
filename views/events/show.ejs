@@ -79,10 +79,11 @@
         <% if (event.age_category) { %><tr><td>Category</td><td><%= event.age_category %></td></tr><% } %>
         <% if (event.hcp_index_limit) { %><tr><td>Hcp index limit</td><td><%= event.hcp_index_limit %></td></tr><% } %>
         <% if (event.holes) { %><tr><td>Holes</td><td><%= event.holes %><% if (event.par) { %> · Par <%= event.par %><% } %></td></tr><% } %>
-        <% if (event.yardage) { %><tr><td>Yardage</td><td><%= event.yardage %> yds<% if (event.junior_tees_note) { %> — <%= event.junior_tees_note %><% } %></td></tr><% } %>
+        <% if (event.yardage) { %><tr><td>Yardage</td><td><%= event.yardage %> yds<% if (event.junior_tees_note) { %> — <%= event.junior_tees_note %><% } %></td></tr><% } else if (event.junior_tees_note) { %><tr><td>Tees</td><td><%= event.junior_tees_note %></td></tr><% } %>
         <% if (event.hcp_allowance_info) { %><tr><td>Handicap allowance</td><td><%= event.hcp_allowance_info %></td></tr><% } %>
         <% if (event.catering) { %><tr><td>Catering</td><td><%= event.catering %></td></tr><% } %>
         <% if (event.prizes) { %><tr><td>Prizes</td><td><%= event.prizes %></td></tr><% } %>
+        <% if (event.conditions) { %><tr class="conditions-row"><td>Conditions</td><td><ul class="event-conditions"><% event.conditions.split('\n').forEach(function (c) { %><li><%= c %></li><% }); %></ul></td></tr><% } %>
       </table>
     </div>
 

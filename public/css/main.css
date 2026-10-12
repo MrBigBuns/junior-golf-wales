@@ -709,3 +709,8 @@ body {
   .site-header nav a { margin: 0; font-size: 0.95rem; }
   .nav-cta { padding: 7px 10px; font-size: 0.85rem; }
 }
+
+/* Event page: entry conditions list */
+.conditions-row td { vertical-align: top; }
+.event-conditions { margin: 0; padding-left: 1.1rem; }
+.event-conditions li { margin-bottom: 0.25rem; }

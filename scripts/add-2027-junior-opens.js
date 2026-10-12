@@ -179,7 +179,21 @@ const events = [
     juniorTeesNote: 'Boys play the white tees, girls the red tees.',
     catering: 'Lunch included in the entry fee; meals served in the dining room after the round.',
     prizes: 'Prize-giving straight after the final player returns their card.',
-    hcpAllowanceInfo: '95% handicap allowance. Maximum 75 entries, and no more than ten players from any one club. No caddies. Handicap certificate or CDH Lifetime ID needed when registering. Entries open at 11am on 10 November 2026.'
+    hcpAllowanceInfo: '95% handicap allowance. Maximum 75 entries. Entries open at 11am on 10 November 2026.',
+    // The club's conditions, as published (one per line)
+    conditions: [
+      'All competitors must be under 18 years of age on 1 January 2026',
+      'Players will play in their respective handicap divisions',
+      'Maximum ten players from each Club',
+      'No caddies permitted',
+      'Entry Fee £30 to include lunch. Meals will be available after the round in the dining room.',
+      'Handicap certificates/ CDH Lifetime ID required on registration',
+      'Prize-giving will take place immediately after the final player returns their card.',
+      'Please observe the clubhouse dress code at all times and note that mobile phones are not permitted in the clubhouse or on the golf course.',
+      'The start sheet will be sent out two weeks in advance of the day.',
+      'Competitors will compete under the rules of golf.',
+      'In the event that the open is over subscribed, places will be awarded on a first come first served basis.'
+    ].join('\n')
   }
 ];
 
@@ -216,9 +230,9 @@ async function run() {
       `INSERT INTO events (title, slug, club_id, date_start, start_time, format, holes,
                            gender, hcp_index_limit, age_category, entry_fee, entry_fee_tiers,
                            entry_url, source_url, yardage, par, junior_tees_note,
-                           catering, prizes, hcp_allowance_info, registration_opens, status, updated_at)
+                           catering, prizes, hcp_allowance_info, registration_opens, conditions, status, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, 18, 'Any Gender', $7, $8, $9, $10,
-               $11, $12, $13, $14, $15, $16, $17, $18, $19, 'confirmed', now())
+               $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, 'confirmed', now())
        ON CONFLICT (slug) DO UPDATE SET
          title = EXCLUDED.title, club_id = EXCLUDED.club_id, start_time = EXCLUDED.start_time,
          format = EXCLUDED.format, holes = EXCLUDED.holes, gender = EXCLUDED.gender,
@@ -230,6 +244,7 @@ async function run() {
          junior_tees_note = EXCLUDED.junior_tees_note, catering = EXCLUDED.catering,
          prizes = EXCLUDED.prizes, hcp_allowance_info = EXCLUDED.hcp_allowance_info,
          registration_opens = COALESCE(EXCLUDED.registration_opens, events.registration_opens),
+         conditions = COALESCE(EXCLUDED.conditions, events.conditions),
          status = 'confirmed', updated_at = now()
        RETURNING slug, (xmax = 0) AS inserted`,
       [
@@ -237,7 +252,7 @@ async function run() {
         e.hcpIndexLimit, e.ageCategory, e.entryFee,
         e.feeTiers ? JSON.stringify(e.feeTiers) : null,
         e.entryUrl, e.sourceUrl, e.yardage, e.par, e.juniorTeesNote,
-        e.catering, e.prizes, e.hcpAllowanceInfo, e.registrationOpens || null
+        e.catering, e.prizes, e.hcpAllowanceInfo, e.registrationOpens || null, e.conditions || null
       ]
     );
     console.log(`${rows[0].inserted ? 'Added' : 'Updated'}: ${rows[0].slug} (${club.name})`);

@@ -303,3 +303,7 @@ ALTER TABLE page_watch ADD COLUMN IF NOT EXISTS manual_checked_at TIMESTAMPTZ;
 ALTER TABLE clubs ADD COLUMN IF NOT EXISTS facebook_followed_at TIMESTAMPTZ;
 ALTER TABLE clubs ADD COLUMN IF NOT EXISTS instagram_followed_at TIMESTAMPTZ;
 ALTER TABLE clubs ADD COLUMN IF NOT EXISTS x_followed_at TIMESTAMPTZ;
+
+-- Entry conditions and rules for an event (dress code, phones, caddies,
+-- start sheet, oversubscription...), one per line; shown as a list.
+ALTER TABLE events ADD COLUMN IF NOT EXISTS conditions TEXT;

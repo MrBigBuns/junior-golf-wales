@@ -1,5 +1,12 @@
 const express = require('express');
 const router = express.Router();
+
+// Conditions box: one rule per line; leading bullets, dashes or asterisks
+// pasted from a club's page are dropped (the event page adds its own).
+function cleanConditions(text) {
+  const lines = String(text || '').split(/\r?\n/).map(l => l.replace(/^\s*[*•\-–]\s*/, '').trim()).filter(Boolean);
+  return lines.length ? lines.join('\n') : null;
+}
 const pool = require('../db/pool');
 const asyncHandler = require('../lib/asyncHandler');
 const multer = require('multer');
@@ -127,6 +134,7 @@ router.post('/events', asyncHandler(async (req, res) => {
     ]
   );
 
+  await pool.query(`UPDATE events SET conditions = $1 WHERE id = $2`, [cleanConditions(b.conditions), rows[0].id]);
   await saveEventCourse(rows[0].id, b.club_id, b.course_id);
   res.redirect(`/admin/events/${rows[0].id}/edit`);
 }));
@@ -173,6 +181,7 @@ router.post('/events/:id/update', asyncHandler(async (req, res) => {
       req.params.id
     ]
   );
+  await pool.query(`UPDATE events SET conditions = $1 WHERE id = $2`, [cleanConditions(b.conditions), req.params.id]);
 
   await saveEventCourse(req.params.id, b.club_id, b.course_id);
   res.redirect(`/admin/events/${req.params.id}/edit?saved=1`);
