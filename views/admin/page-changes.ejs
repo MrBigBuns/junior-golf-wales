@@ -70,10 +70,14 @@
         <button type="submit" class="link-button">Mark all due as checked</button>
       </form>
     <% } %>
+<% const dueRows = manual.filter(function(m) { return m.due; }); %>
+    <% const okRows = manual.filter(function(m) { return !m.due; }); %>
+    <% const nextDue = okRows.length ? new Date(Math.min.apply(null, okRows.map(function(m) { return new Date(m.manual_checked_at).getTime(); })) + manualDays * 86400000) : null; %>
+    <% const rowsTable = function (rows) { %>
     <table class="admin-table manual-checks">
       <thead><tr><th>Club</th><th>Page</th><th>Why</th><th>Last checked</th><th></th></tr></thead>
       <tbody>
-        <% manual.forEach(function(m) { %>
+        <% rows.forEach(function(m) { %>
           <tr class="<%= m.due ? 'is-due' : '' %>">
             <td><%= m.club_name %></td>
             <td><a href="<%= m.url %>" target="_blank" rel="noopener"><%= m.kind === 'opens' ? 'Open competitions' : 'Junior page' %></a></td>
@@ -90,6 +94,16 @@
         <% }); %>
       </tbody>
     </table>
+    <% }; %>
+    <% if (dueRows.length) { rowsTable(dueRows); } else { %>
+      <p class="scorecard-note">Nothing due. <% if (nextDue) { %>The next page comes due on <%= nextDue.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) %>.<% } %></p>
+    <% } %>
+    <% if (okRows.length) { %>
+      <details class="manual-ok">
+        <summary><%= okRows.length %> page<%= okRows.length === 1 ? '' : 's' %> checked in the last <%= manualDays %> days</summary>
+        <% rowsTable(okRows); %>
+      </details>
+    <% } %>
   <% } %>
 </div>
 
@@ -117,6 +131,8 @@
   .manual-checks tr.is-due td { background: #fff8e6; }
   .due-tag { background: #e0a100; color: #fff; font-size: 0.72rem; padding: 1px 6px; border-radius: 999px; }
   .link-button { background: none; border: 0; padding: 0; color: var(--wales-green); cursor: pointer; font: inherit; text-decoration: underline; }
+  .manual-ok { margin-top: 1rem; }
+  .manual-ok summary { cursor: pointer; color: var(--text-secondary); }
 </style>
 
 <%- include('../partials/foot') %>
