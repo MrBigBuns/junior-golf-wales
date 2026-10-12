@@ -1,5 +1,5 @@
 // Adds/updates the 2027 Junior Opens at Ashburnham, Whitchurch, Abergele,
-// Conwy and Raglan with full detail (sourced from Golf Empire listings and
+// Conwy, Raglan and Royal Porthcawl with full detail (sourced from Golf Empire listings and
 // the clubs' own competition pages, Oct 2026).
 // Safe to re-run: clubs and events are upserted by slug.
 // Run via the Render web shell: node scripts/add-2027-junior-opens.js
@@ -151,6 +151,35 @@ const events = [
     catering: null,
     prizes: null,
     hcpAllowanceInfo: '90% handicap allowance. Open to junior members and visitors.'
+  },
+  {
+    // From the club's competition listing (screenshot, Oct 2026). The age rule
+    // there reads "under 18 on 1 January 2026", probably carried over from the
+    // 2026 event; shown as published.
+    club: {
+      name: 'Royal Porthcawl Golf Club',
+      region: 'South',
+      address: null,
+      website: null,
+      description: null
+    },
+    title: 'Royal Porthcawl Junior Open',
+    date: '2027-10-26',
+    startTime: null,
+    format: 'Medal (stroke play), in handicap divisions',
+    hcpIndexLimit: null,
+    ageCategory: 'Under 18 on 1 January 2026',
+    entryFee: 30.00,
+    feeTiers: null,
+    registrationOpens: '2026-11-10',
+    entryUrl: null,
+    sourceUrl: null,
+    yardage: null,
+    par: null,
+    juniorTeesNote: 'Boys play the white tees, girls the red tees.',
+    catering: 'Lunch included in the entry fee; meals served in the dining room after the round.',
+    prizes: 'Prize-giving straight after the final player returns their card.',
+    hcpAllowanceInfo: '95% handicap allowance. Maximum 75 entries, and no more than ten players from any one club. No caddies. Handicap certificate or CDH Lifetime ID needed when registering. Entries open at 11am on 10 November 2026.'
   }
 ];
 
@@ -187,9 +216,9 @@ async function run() {
       `INSERT INTO events (title, slug, club_id, date_start, start_time, format, holes,
                            gender, hcp_index_limit, age_category, entry_fee, entry_fee_tiers,
                            entry_url, source_url, yardage, par, junior_tees_note,
-                           catering, prizes, hcp_allowance_info, status, updated_at)
+                           catering, prizes, hcp_allowance_info, registration_opens, status, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, 18, 'Any Gender', $7, $8, $9, $10,
-               $11, $12, $13, $14, $15, $16, $17, $18, 'confirmed', now())
+               $11, $12, $13, $14, $15, $16, $17, $18, $19, 'confirmed', now())
        ON CONFLICT (slug) DO UPDATE SET
          title = EXCLUDED.title, club_id = EXCLUDED.club_id, start_time = EXCLUDED.start_time,
          format = EXCLUDED.format, holes = EXCLUDED.holes, gender = EXCLUDED.gender,
@@ -200,6 +229,7 @@ async function run() {
          par = COALESCE(EXCLUDED.par, events.par),
          junior_tees_note = EXCLUDED.junior_tees_note, catering = EXCLUDED.catering,
          prizes = EXCLUDED.prizes, hcp_allowance_info = EXCLUDED.hcp_allowance_info,
+         registration_opens = COALESCE(EXCLUDED.registration_opens, events.registration_opens),
          status = 'confirmed', updated_at = now()
        RETURNING slug, (xmax = 0) AS inserted`,
       [
@@ -207,7 +237,7 @@ async function run() {
         e.hcpIndexLimit, e.ageCategory, e.entryFee,
         e.feeTiers ? JSON.stringify(e.feeTiers) : null,
         e.entryUrl, e.sourceUrl, e.yardage, e.par, e.juniorTeesNote,
-        e.catering, e.prizes, e.hcpAllowanceInfo
+        e.catering, e.prizes, e.hcpAllowanceInfo, e.registrationOpens || null
       ]
     );
     console.log(`${rows[0].inserted ? 'Added' : 'Updated'}: ${rows[0].slug} (${club.name})`);
