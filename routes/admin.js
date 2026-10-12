@@ -881,6 +881,21 @@ router.post('/page-changes/manual-check-all', asyncHandler(async (req, res) => {
   res.redirect('/admin/page-changes#check-by-hand');
 }));
 
+// Undo hand-check ticks made between two dates (UK calendar), so those
+// pages show as due again
+router.post('/page-changes/manual-uncheck', asyncHandler(async (req, res) => {
+  const ok = d => /^\d{4}-\d{2}-\d{2}$/.test(d || '');
+  const from = req.body.from, to = ok(req.body.to) ? req.body.to : req.body.from;
+  if (ok(from) && ok(to)) {
+    await pool.query(
+      `UPDATE page_watch SET manual_checked_at = NULL
+       WHERE (manual_checked_at AT TIME ZONE 'Europe/London')::date BETWEEN $1::date AND $2::date`,
+      [from <= to ? from : to, from <= to ? to : from]
+    );
+  }
+  res.redirect('/admin/page-changes#check-by-hand');
+}));
+
 router.post('/page-changes/seen-all', asyncHandler(async (req, res) => {
   await pool.query(`UPDATE page_changes SET seen_at = now() WHERE seen_at IS NULL`);
   res.redirect('/admin/page-changes');

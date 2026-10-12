@@ -102,6 +102,12 @@
       <details class="manual-ok">
         <summary><%= okRows.length %> page<%= okRows.length === 1 ? '' : 's' %> checked in the last <%= manualDays %> days</summary>
         <% rowsTable(okRows); %>
+        <form method="post" action="/admin/page-changes/manual-uncheck" class="uncheck-form" onsubmit="return confirm('Clear the ticks made in these dates? Those pages will show as due again.');">
+          <span>Clear ticks made from</span>
+          <input type="date" name="from" required> <span>to</span> <input type="date" name="to">
+          <button type="submit" class="link-button">Clear</button>
+          <span class="muted small">Leave the second date empty for a single day.</span>
+        </form>
       </details>
     <% } %>
   <% } %>
@@ -133,6 +139,8 @@
   .link-button { background: none; border: 0; padding: 0; color: var(--wales-green); cursor: pointer; font: inherit; text-decoration: underline; }
   .manual-ok { margin-top: 1rem; }
   .manual-ok summary { cursor: pointer; color: var(--text-secondary); }
+  .uncheck-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 1rem; }
+  .uncheck-form input { padding: 5px 7px; border: 1px solid var(--border); border-radius: 6px; font: inherit; }
 </style>
 
 <%- include('../partials/foot') %>
