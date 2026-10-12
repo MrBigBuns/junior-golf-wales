@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<title>Club spotlight: <%= club.name %></title>
+<link rel="stylesheet" href="/css/cards.css">
+</head>
+<body class="card-page size-<%= size %><%= embed ? ' embed' : '' %>">
+
+<div class="card spotlight-card<%= card.logoUrl ? ' has-crest' : '' %>">
+  <div class="stripe"><i></i><i></i><i></i></div>
+  <div class="photo"<% if (card.photoUrl) { %> style="--photo: url('<%= card.photoUrl %>')"<% } %>>
+    <span class="pill">Club spotlight</span>
+  </div>
+  <% if (card.logoUrl) { %><div class="crest"><img src="<%= card.logoUrl %>" alt=""></div><% } %>
+
+  <div class="panel">
+    <% if (card.where) { %><p class="where"><%= card.where %></p><% } %>
+    <h1 class="name <%= card.nameClass %>"><%= card.name %></h1>
+    <% if (card.intro) { %><p class="intro"><%= card.intro %></p><% } %>
+    <div class="stats">
+      <% card.stats.forEach(function(s) { %><div class="stat"><b><%= s.value %></b><span><%= s.label %></span></div><% }); %>
+    </div>
+  </div>
+
+  <div class="foot">
+    <% if (card.next) { %>
+      <div class="next"><span>Next junior event</span><b><%= card.next.title %></b><em><%= card.next.date %></em></div>
+    <% } else { %>
+      <div class="next"><span>Junior golf in Wales</span><b>Events, courses and scorecards</b></div>
+    <% } %>
+    <b class="host"><%= host %></b>
+  </div>
+</div>
+
+<%- include('_bar') %>
+</body>
+</html>

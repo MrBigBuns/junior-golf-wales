@@ -412,3 +412,141 @@ body.card-page.embed { padding: 0; background: none; }
 .size-landscape .goodluck-card .foot b { padding: 10px 22px; border-width: 3px; box-shadow: 0 4px 0 var(--navy); }
 .size-landscape .goodluck-card .cloud.a { display: none; }
 .size-landscape .goodluck-card .cloud.b, .size-landscape .goodluck-card .confetti { display: none; }
+
+
+/* =====================================================================
+   CLUB SPOTLIGHT CARD
+   Course photo on top (left in landscape), club logo on a white badge,
+   name, a line from the description, course figures, next junior event.
+   ===================================================================== */
+
+/* ============ SETTINGS ============ */
+.spotlight-card {
+  --pad: 64px;
+  --green: #3f6130;          /* stat numbers, web address button */
+  --accent: #ff9a55;         /* orange: "Club spotlight", county line */
+  --lime: #a6f940;
+  --ink: #1f2a1c;            /* club name */
+  --muted: #5f665c;          /* description */
+  --tint: #eef4e7;           /* stat boxes */
+  --paper: #ffffff;
+  --font: "Inter", "Segoe UI", Arial, sans-serif;
+
+  --photo-h: 430px;          /* photo height (square) */
+  --crest: 190px;            /* logo badge */
+  --where-size: 26px;
+  --name-size: 74px;         /* lowered for long names: .l and .xl */
+  --intro-size: 29px;
+  --stat-size: 50px;
+  --stat-label: 20px;
+  --foot-size: 26px;
+  --default-photo: url("/img/card-header.jpg");
+
+  background: var(--paper); color: var(--ink);
+}
+.spotlight-card .stripe { display: flex; height: 14px; flex: none; position: relative; z-index: 2; }
+.spotlight-card .stripe i { flex: 1; }
+.spotlight-card .stripe i:nth-child(1) { background: var(--accent); }
+.spotlight-card .stripe i:nth-child(2) { background: #fff; }
+.spotlight-card .stripe i:nth-child(3) { background: var(--lime); }
+
+/* ============ PHOTO, LABEL AND BADGE ============ */
+.spotlight-card .photo {
+  flex: none; height: var(--photo-h); position: relative;
+  background-color: #22381a; background-image: var(--photo, none), var(--default-photo);
+  background-size: cover; background-position: center; background-repeat: no-repeat;
+}
+.spotlight-card .pill {
+  position: absolute; left: var(--pad); top: 40px;
+  font-size: 26px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
+  color: #fff; background: var(--accent); padding: 12px 24px; border-radius: 999px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.3);
+}
+.spotlight-card .crest {
+  position: absolute; right: var(--pad); top: calc(14px + var(--photo-h) - var(--crest) * .6); z-index: 3;
+  width: var(--crest); height: var(--crest); padding: calc(var(--crest) * .08);
+  background: #fff; border-radius: 28px; box-shadow: 0 10px 28px rgba(0,0,0,.25);
+  display: flex; align-items: center; justify-content: center;
+}
+.spotlight-card .crest img { width: 100%; height: 100%; object-fit: contain; }
+
+/* ============ TEXT ============ */
+.spotlight-card .panel { flex: 1; min-height: 0; padding: 38px var(--pad) 0; display: flex; flex-direction: column; }
+.spotlight-card.has-crest .where, .spotlight-card.has-crest .name { padding-right: calc(var(--crest) + 20px); }
+.spotlight-card .where { margin: 0; font-size: var(--where-size); font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--accent); }
+.spotlight-card .name { margin: 12px 0 0; font-size: var(--name-size); font-weight: 800; line-height: 1.04; letter-spacing: -0.015em; }
+.spotlight-card .name.l  { font-size: calc(var(--name-size) * .84); }
+.spotlight-card .name.xl { font-size: calc(var(--name-size) * .7); }
+.spotlight-card .intro {
+  margin: 18px 0 0; font-size: var(--intro-size); line-height: 1.4; color: var(--muted);
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
+}
+.spotlight-card .stats { margin-top: auto; padding-bottom: 30px; display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 16px; }
+.spotlight-card .stat { background: var(--tint); border-radius: 18px; padding: 16px 12px 14px; text-align: center; }
+.spotlight-card .stat b { display: block; font-size: var(--stat-size); font-weight: 800; line-height: 1.05; color: var(--green); }
+.spotlight-card .stat span { display: block; margin-top: 6px; font-size: var(--stat-label); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+/* ============ FOOTER ============ */
+.spotlight-card .foot {
+  flex: none; margin: 0 var(--pad); padding: 22px 0 34px; border-top: 4px solid var(--lime);
+  display: flex; align-items: center; gap: 28px;
+}
+.spotlight-card .next { flex: 1; min-width: 0; font-size: var(--foot-size); line-height: 1.3; }
+.spotlight-card .next span { display: block; font-size: .78em; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
+.spotlight-card .next b { display: block; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.spotlight-card .next em { display: block; font-style: normal; color: var(--muted); }
+.spotlight-card .host { flex: none; font-size: var(--foot-size); font-weight: 600; color: #fff; background: var(--green); padding: 14px 28px; border-radius: 999px; }
+
+/* ============ PORTRAIT: bigger photo, more description ============ */
+.size-portrait .spotlight-card { --photo-h: 560px; --crest: 220px; --name-size: 82px; --intro-size: 32px; }
+.size-portrait .spotlight-card .intro { -webkit-line-clamp: 4; }
+
+/* ============ SQUARE: two lines of description ============ */
+.size-square .spotlight-card .intro { -webkit-line-clamp: 2; }
+
+/* ============ LANDSCAPE: photo on the left, text on the right ============ */
+.size-landscape .spotlight-card {
+  display: grid; grid-template-columns: 470px minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto;
+  --pad: 40px; --crest: 140px; --where-size: 18px; --name-size: 54px; --intro-size: 23px;
+  --stat-size: 32px; --stat-label: 14px; --foot-size: 19px;
+}
+.size-landscape .spotlight-card .stripe { grid-column: 1 / 3; height: 10px; }
+.size-landscape .spotlight-card .photo { grid-column: 1; grid-row: 2 / 4; height: auto; }
+.size-landscape .spotlight-card .pill { left: 30px; top: 28px; font-size: 17px; padding: 9px 18px; }
+.size-landscape .spotlight-card .crest { top: auto; right: auto; left: 30px; bottom: 30px; border-radius: 22px; }
+.size-landscape .spotlight-card .panel { grid-column: 2; grid-row: 2; padding: 30px var(--pad) 0; }
+.size-landscape .spotlight-card.has-crest .where, .size-landscape .spotlight-card.has-crest .name { padding-right: 0; }
+.size-landscape .spotlight-card .name { margin-top: 8px; }
+.size-landscape .spotlight-card .intro { margin-top: 12px; -webkit-line-clamp: 3; }
+.size-landscape .spotlight-card .stats { gap: 10px; padding-bottom: 18px; }
+.size-landscape .spotlight-card .stat { border-radius: 12px; padding: 10px 6px 9px; }
+.size-landscape .spotlight-card .stat span { margin-top: 3px; }
+.size-landscape .spotlight-card .foot { grid-column: 2; grid-row: 3; padding: 14px 0 22px; gap: 18px; border-top-width: 3px; }
+.size-landscape .spotlight-card .host { padding: 10px 18px; }
+
+
+/* =====================================================================
+   GOLF TIP CARD: the Good luck card's sky and hill with a tip on a panel.
+   Uses the .goodluck-card settings above; these lines only adjust.
+   ===================================================================== */
+.tip-card { --tip-title: 74px; --tip-body: 42px; }
+.tip-card .sticker { flex-direction: column; font-size: calc(var(--sticker-text) * 1.35); }
+.tip-card .sticker span { font-size: .55em; font-weight: 600; margin-bottom: 4px; }
+.tip-card .date .count { margin-left: 0; font-size: 1em; padding: 6px 22px; }
+.tip-card .flag { display: none; }
+.tip-card .panel { padding: 40px 48px 46px; transform: translateY(36px); }
+/* Centre the tip on the grass (beats the size rules for .goodluck-card .panel) */
+.card-page .tip-card.goodluck-card .panel { margin-top: auto; margin-bottom: auto; }
+.tip-card .panel .name { font-size: var(--tip-title); }
+.tip-card .panel .name.l { font-size: calc(var(--tip-title) * .82); }
+.tip-card .panel .body { margin: 18px 0 0; font-size: var(--tip-body); font-weight: 500; line-height: 1.3; color: var(--navy); }
+.tip-card .panel .body.l { font-size: calc(var(--tip-body) * .86); }
+.size-portrait .tip-card { --tip-title: 80px; --tip-body: 46px; }
+.size-portrait .tip-card .panel { padding: 50px 54px 56px; }
+.size-square .tip-card { --tip-title: 64px; --tip-body: 38px; }
+.size-square .tip-card .panel { padding: 32px 44px 38px; }
+.size-landscape .tip-card { --tip-title: 46px; --tip-body: 28px; }
+.size-landscape .tip-card .sticker { top: 250px; }
+.size-landscape .tip-card .date .count { display: inline-block; }
+.size-landscape .tip-card .panel { margin: auto 40px auto 20px; padding: 24px 30px 28px; transform: translateY(20px); }
+.size-landscape .tip-card .panel .body { margin-top: 10px; }

@@ -908,9 +908,16 @@ router.get('/social', asyncHandler(async (req, res) => {
   const event = req.query.event ? await social.cardEventById(pool, req.query.event) : null;
   const day = social.resolveDay(req.query);
   const dayEvents = await social.dayEvents(pool, day.date);
+  const { rows: clubs } = await pool.query(
+    `SELECT id, name FROM clubs WHERE archived_at IS NULL ORDER BY name`
+  );
+  const spot = req.query.club ? await social.spotlightClub(pool, req.query.club) : null;
+  const tip = social.tipByNumber(req.query.tip);
 
   res.render('admin/social', {
-    period, events, upcoming, recent, tag, event, day, dayEvents,
+    period, events, upcoming, recent, tag, event, day, dayEvents, clubs, spot, tip, tips: social.TIPS,
+    spotCaptions: spot ? social.spotlightCaptions(spot) : null,
+    tipCaptions: social.tipCaptions(tip),
     goodLuckCaptions: dayEvents.length ? social.goodLuckCaptions(day, dayEvents) : null,
     today: social.londonToday(),
     sizes: social.SIZES, tags: social.TAGS, regions: social.REGIONS,
@@ -971,6 +978,33 @@ router.get('/social/goodluck', asyncHandler(async (req, res) => {
     selfUrl: sz => `/admin/social/goodluck?day=${day.date}&size=${sz}`,
     backUrl: `/admin/social?day=${day.date}#goodluck`,
     fileName: `wales-junior-golf-good-luck-${day.date}-${size}.png`
+  });
+}));
+
+// The club spotlight card itself
+router.get('/social/spotlight/:clubId', asyncHandler(async (req, res) => {
+  const club = await social.spotlightClub(pool, req.params.clubId);
+  if (!club) return res.status(404).send('Club not found');
+  const size = cardSize(req.query.size);
+  res.render('admin/cards/spotlight', {
+    club, size, sizes: social.SIZES, host: social.PUBLIC_HOST, embed: !!req.query.embed,
+    card: social.spotlightCard(club, size),
+    selfUrl: sz => `/admin/social/spotlight/${club.id}?size=${sz}`,
+    backUrl: `/admin/social?club=${club.id}#spotlight`,
+    fileName: `club-spotlight-${club.slug}-${size}.png`
+  });
+}));
+
+// The golf tip card itself
+router.get('/social/tip/:n', asyncHandler(async (req, res) => {
+  const tip = social.tipByNumber(req.params.n);
+  const size = cardSize(req.query.size);
+  res.render('admin/cards/tip', {
+    size, sizes: social.SIZES, host: social.PUBLIC_HOST, embed: !!req.query.embed,
+    card: social.tipCard(tip),
+    selfUrl: sz => `/admin/social/tip/${tip.number}?size=${sz}`,
+    backUrl: `/admin/social?tip=${tip.number}#tip`,
+    fileName: `golf-tip-${tip.number}-${size}.png`
   });
 }));
 
