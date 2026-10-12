@@ -8,27 +8,33 @@
   <% if (typeof error !== 'undefined' && error) { %>
     <p class="error-message"><%= error %></p>
   <% } %>
+  <% const v = typeof values !== 'undefined' ? values : {}; %>
   <form method="post" class="submit-form">
     <label>Event name
-      <input type="text" name="event_title" required>
+      <input type="text" name="event_title" required value="<%= v.event_title || '' %>">
     </label>
     <label>Club
-      <input type="text" name="club_name" required>
+      <input type="text" name="club_name" required list="club-list" autocomplete="off" placeholder="Start typing the club's name" value="<%= v.club_name || '' %>">
     </label>
+    <% if (typeof clubs !== 'undefined' && clubs.length) { %>
+    <datalist id="club-list">
+      <% clubs.forEach(function (name) { %><option value="<%= name %>"></option><% }); %>
+    </datalist>
+    <% } %>
     <label>Date
-      <input type="date" name="event_date" required>
+      <input type="date" name="event_date" required value="<%= v.event_date || '' %>">
     </label>
     <label>Entry fee (£, leave blank if TBC)
-      <input type="text" name="entry_fee">
+      <input type="text" name="entry_fee" value="<%= v.entry_fee || '' %>">
     </label>
     <label>How to enter (link, email, or phone number)
-      <input type="text" name="entry_info" placeholder="e.g. a booking link, or an email address">
+      <input type="text" name="entry_info" placeholder="e.g. a booking link, or an email address" value="<%= v.entry_info || '' %>">
     </label>
     <label>Your email
-      <input type="email" name="contact_email" required>
+      <input type="email" name="contact_email" required value="<%= v.contact_email || '' %>">
     </label>
     <label>Notes (format, age category, anything else)
-      <textarea name="notes" rows="4"></textarea>
+      <textarea name="notes" rows="4"><%= v.notes || '' %></textarea>
     </label>
     <button type="submit">Submit event</button>
   </form>
