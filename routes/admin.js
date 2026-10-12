@@ -800,7 +800,7 @@ router.post('/club-suggestions/:id/reject', asyncHandler(async (req, res) => {
 // useful on (content drawn in by JavaScript, or listed in a PDF/image).
 async function manualCheckList() {
   const { rows } = await pool.query(
-    `SELECT c.id AS club_id, c.name AS club_name, k.kind, k.url, w.manual_checked_at,
+    `SELECT c.id AS club_id, c.name AS club_name, k.kind, k.url, w.manual_checked_at, w.manual_due_at,
             (w.lines IS NOT NULL AND CASE WHEN jsonb_typeof(w.lines) = 'array'
                                           THEN jsonb_array_length(w.lines) = 0 ELSE FALSE END) AS empty_page,
             w.last_error
@@ -820,7 +820,8 @@ async function manualCheckList() {
           : /nothing readable this time/i.test(r.last_error) ? 'Nothing readable this week'
           : `Didn't load (${r.last_error})`)
         : 'Nothing readable',
-      due: !r.manual_checked_at || new Date(r.manual_checked_at).getTime() < cutoff
+      due: r.manual_due_at ? new Date(r.manual_due_at).getTime() <= Date.now()
+        : !r.manual_checked_at || new Date(r.manual_checked_at).getTime() < cutoff
     }));
 }
 
@@ -861,7 +862,7 @@ router.post('/page-changes/manual-check', asyncHandler(async (req, res) => {
     if (url) {
       await pool.query(
         `INSERT INTO page_watch (club_id, kind, url, manual_checked_at) VALUES ($1, $2, $3, now())
-         ON CONFLICT (club_id, kind) DO UPDATE SET url = EXCLUDED.url, manual_checked_at = now()`,
+         ON CONFLICT (club_id, kind) DO UPDATE SET url = EXCLUDED.url, manual_checked_at = now(), manual_due_at = NULL`,
         [rows[0].id, kinds[0], url]
       );
     }
@@ -874,21 +875,23 @@ router.post('/page-changes/manual-check-all', asyncHandler(async (req, res) => {
   for (const r of due) {
     await pool.query(
       `INSERT INTO page_watch (club_id, kind, url, manual_checked_at) VALUES ($1, $2, $3, now())
-       ON CONFLICT (club_id, kind) DO UPDATE SET url = EXCLUDED.url, manual_checked_at = now()`,
+       ON CONFLICT (club_id, kind) DO UPDATE SET url = EXCLUDED.url, manual_checked_at = now(), manual_due_at = NULL`,
       [r.club_id, r.kind, r.url]
     );
   }
   res.redirect('/admin/page-changes#check-by-hand');
 }));
 
-// Undo hand-check ticks made between two dates (UK calendar), so those
-// pages show as due again
+// Bring back pages ticked between two dates (UK calendar): due again now,
+// or from next Monday, when the weekly check runs
 router.post('/page-changes/manual-uncheck', asyncHandler(async (req, res) => {
   const ok = d => /^\d{4}-\d{2}-\d{2}$/.test(d || '');
   const from = req.body.from, to = ok(req.body.to) ? req.body.to : req.body.from;
   if (ok(from) && ok(to)) {
+    const when = req.body.when === 'now' ? `now()`
+      : `(date_trunc('week', now() AT TIME ZONE 'Europe/London') + interval '7 days') AT TIME ZONE 'Europe/London'`;
     await pool.query(
-      `UPDATE page_watch SET manual_checked_at = NULL
+      `UPDATE page_watch SET manual_due_at = ${when}
        WHERE (manual_checked_at AT TIME ZONE 'Europe/London')::date BETWEEN $1::date AND $2::date`,
       [from <= to ? from : to, from <= to ? to : from]
     );

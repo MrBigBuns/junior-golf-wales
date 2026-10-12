@@ -72,7 +72,8 @@
     <% } %>
 <% const dueRows = manual.filter(function(m) { return m.due; }); %>
     <% const okRows = manual.filter(function(m) { return !m.due; }); %>
-    <% const nextDue = okRows.length ? new Date(Math.min.apply(null, okRows.map(function(m) { return new Date(m.manual_checked_at).getTime(); })) + manualDays * 86400000) : null; %>
+    <% const nextMonday = (function () { const d = new Date(); d.setDate(d.getDate() + ((8 - d.getDay()) % 7 || 7)); return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); })(); %>
+    <% const nextDue = okRows.length ? new Date(Math.min.apply(null, okRows.map(function(m) { return m.manual_due_at ? new Date(m.manual_due_at).getTime() - manualDays * 86400000 : new Date(m.manual_checked_at).getTime(); })) + manualDays * 86400000) : null; %>
     <% const rowsTable = function (rows) { %>
     <table class="admin-table manual-checks">
       <thead><tr><th>Club</th><th>Page</th><th>Why</th><th>Last checked</th><th></th></tr></thead>
@@ -82,7 +83,7 @@
             <td><%= m.club_name %></td>
             <td><a href="<%= m.url %>" target="_blank" rel="noopener"><%= m.kind === 'opens' ? 'Open competitions' : 'Junior page' %></a></td>
             <td class="muted small"><%= m.reason %></td>
-            <td><% if (m.manual_checked_at) { %><%= new Date(m.manual_checked_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) %><% } else { %><span class="muted">never</span><% } %><% if (m.due) { %> <span class="due-tag">Due</span><% } %></td>
+            <td><% if (m.manual_checked_at) { %><%= new Date(m.manual_checked_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) %><% } else { %><span class="muted">never</span><% } %><% if (m.due) { %> <span class="due-tag">Due</span><% } else if (m.manual_due_at) { %> <span class="muted small">· due <%= new Date(m.manual_due_at).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) %></span><% } %></td>
             <td>
               <form method="post" action="/admin/page-changes/manual-check" style="display:inline;">
                 <input type="hidden" name="club_id" value="<%= m.club_id %>">
@@ -102,10 +103,12 @@
       <details class="manual-ok">
         <summary><%= okRows.length %> page<%= okRows.length === 1 ? '' : 's' %> checked in the last <%= manualDays %> days</summary>
         <% rowsTable(okRows); %>
-        <form method="post" action="/admin/page-changes/manual-uncheck" class="uncheck-form" onsubmit="return confirm('Clear the ticks made in these dates? Those pages will show as due again.');">
-          <span>Clear ticks made from</span>
+        <form method="post" action="/admin/page-changes/manual-uncheck" class="uncheck-form" onsubmit="return confirm('Bring back the pages ticked in these dates?');">
+          <span>Pages ticked from</span>
           <input type="date" name="from" required> <span>to</span> <input type="date" name="to">
-          <button type="submit" class="link-button">Clear</button>
+          <span>come due</span>
+          <select name="when"><option value="monday">next Monday (<%= nextMonday %>)</option><option value="now">now</option></select>
+          <button type="submit" class="link-button">Apply</button>
           <span class="muted small">Leave the second date empty for a single day.</span>
         </form>
       </details>
