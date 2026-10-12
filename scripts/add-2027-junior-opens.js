@@ -1,7 +1,10 @@
-// Adds/updates the 2027 Junior Opens at Ashburnham, Whitchurch, Abergele and
-// Conwy with full detail (sourced from Golf Empire listings, Oct 2026).
+// Adds/updates the 2027 Junior Opens at Ashburnham, Whitchurch, Abergele,
+// Conwy and Raglan with full detail (sourced from Golf Empire listings and
+// the clubs' own competition pages, Oct 2026).
 // Safe to re-run: clubs and events are upserted by slug.
 // Run via the Render web shell: node scripts/add-2027-junior-opens.js
+// Just one club's event (leaves the others, and any edits made to them in
+// admin, alone): node scripts/add-2027-junior-opens.js --only raglan
 require('dotenv').config();
 const pool = require('../db/pool');
 const { geocodeAddress } = require('../lib/geocode');
@@ -120,12 +123,40 @@ const events = [
     catering: null,
     prizes: 'Run with the Justin Rose & Daily Telegraph Junior Championship. Best gross and nett scores from the leading boy and girl go forward, with potential to qualify for the finals at Quinta do Lago, Portugal. Prize presentation after the last group finishes.',
     hcpAllowanceInfo: 'Handicap qualifier: all players must have a handicap index of 36.0 or less. Not open to iGolfers.'
+  },
+  {
+    // From the club's competition page (compid 1863). The page heading says
+    // Friday 13 August 2027; its description still says "Fri 14th Aug",
+    // which was the Friday in 2026, so the heading date is used.
+    club: {
+      name: 'Raglan Parc Golf Club',
+      region: 'South',
+      address: null,
+      website: 'https://www.raglangolfclub.co.uk',
+      description: null
+    },
+    title: 'Raglan Juniors Open',
+    date: '2027-08-13',
+    startTime: null,
+    format: '90% handicap Stableford',
+    hcpIndexLimit: null,
+    ageCategory: 'Juniors (all ages)',
+    entryFee: null,
+    feeTiers: null,
+    entryUrl: 'https://www.raglangolfclub.co.uk/competition2.php?tab=details&compid=1863',
+    sourceUrl: 'https://www.raglangolfclub.co.uk/competition2.php?tab=details&compid=1863',
+    yardage: null,
+    par: null,
+    juniorTeesNote: 'Boys and girls play from the green tees.',
+    catering: null,
+    prizes: null,
+    hcpAllowanceInfo: '90% handicap allowance. Open to junior members and visitors.'
   }
 ];
 
 async function upsertClub(c) {
   const slug = slugify(c.name);
-  const geo = await geocodeAddress(c.address);
+  const geo = c.address ? await geocodeAddress(c.address) : null;
   const { rows } = await pool.query(
     `INSERT INTO clubs (name, slug, region, address, website, description, lat, lng)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -143,7 +174,11 @@ async function upsertClub(c) {
 }
 
 async function run() {
-  for (const e of events) {
+  const i = process.argv.indexOf('--only');
+  const only = i >= 0 ? String(process.argv[i + 1] || '').toLowerCase() : null;
+  const chosen = only ? events.filter(e => e.club.name.toLowerCase().includes(only)) : events;
+  if (only && !chosen.length) throw new Error(`No event's club matches "${only}"`);
+  for (const e of chosen) {
     const club = await upsertClub(e.club);
     // Slug keyed on 'Junior Open' so it matches rows created by seed.js
     const slug = slugify(`Junior Open-${e.club.name}-${e.date}`);
