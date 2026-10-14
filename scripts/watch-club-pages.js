@@ -43,6 +43,27 @@ async function fetchPage(url) {
   }
 }
 
+// A fingerprint of the page's visible text. Pages ticked by hand under
+// Check by hand come back when it changes.
+const crypto = require('crypto');
+function pageFingerprint(html) {
+  const text = decodeEntities(String(html)
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ').replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<!--[\s\S]*?-->/g, ' ').replace(/<[^>]+>/g, ' ')).replace(/\s+/g, ' ').trim();
+  return crypto.createHash('sha1').update(text).digest('hex');
+}
+// Store it; a page ticked before fingerprints existed takes this one as its baseline
+async function recordFingerprint(p, html) {
+  if (DRY_RUN) return;
+  const h = pageFingerprint(html);
+  await pool.query(
+    `UPDATE page_watch SET page_hash = $3,
+       manual_hash = CASE WHEN manual_checked_at IS NOT NULL AND manual_hash IS NULL THEN $3 ELSE manual_hash END
+     WHERE club_id = $1 AND kind = $2`,
+    [p.club_id, p.kind, h]
+  );
+}
+
 // Pages that render in the browser: nothing useful in the raw HTML
 const unreadable = isScriptedPage;
 
@@ -147,6 +168,7 @@ async function run() {
           [p.club_id, p.kind]
         );
       }
+      await recordFingerprint(p, page.html);
       await sleep(DELAY_MS);
       continue;
     }
@@ -189,6 +211,7 @@ async function run() {
         [p.club_id, p.kind, p.url, JSON.stringify(lines)]
       );
     }
+    await recordFingerprint(p, page.html);
     await sleep(DELAY_MS);
   }
 

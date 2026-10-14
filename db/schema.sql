@@ -309,3 +309,9 @@ ALTER TABLE clubs ADD COLUMN IF NOT EXISTS x_followed_at TIMESTAMPTZ;
 -- Entry conditions and rules for an event (dress code, phones, caddies,
 -- start sheet, oversubscription...), one per line; shown as a list.
 ALTER TABLE events ADD COLUMN IF NOT EXISTS conditions TEXT;
+
+-- Fingerprint of each page's visible text from the weekly check, and the
+-- fingerprint when it was last ticked by hand: a ticked page stays hidden
+-- until the two differ (or MANUAL_CHECK_DAYS pass, for pages that can't be read)
+ALTER TABLE page_watch ADD COLUMN IF NOT EXISTS page_hash TEXT;
+ALTER TABLE page_watch ADD COLUMN IF NOT EXISTS manual_hash TEXT;

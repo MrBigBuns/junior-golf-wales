@@ -17,7 +17,7 @@ const { extractScorecardFromImage, deriveTotals, isScorecard } = require('../lib
 const { toCsv, parseCsv, decodeUpload } = require('../lib/csv');
 const { COUNTY_NAMES } = require('../lib/site');
 const { courseFigures, slugifyCourse } = require('../lib/courses');
-const { isScriptedPage, MANUAL_CHECK_DAYS } = require('../lib/pagewatch');
+const { isScriptedPage } = require('../lib/pagewatch');
 const linkOrNull = v => { const t = (v || '').trim(); return /^https?:\/\//i.test(t) ? t : null; };
 
 
@@ -795,12 +795,28 @@ router.post('/club-suggestions/:id/reject', asyncHandler(async (req, res) => {
   res.redirect('/admin/club-suggestions');
 }));
 
-// Pages to check by hand, oldest/never-checked first: booking-system pages
-// (BRS etc.) the watcher can't read, plus pages it can load but finds nothing
-// useful on (content drawn in by JavaScript, or listed in a PDF/image).
+// Pages to check by hand: booking-system pages (BRS etc.) the watcher can't
+// read, plus pages it can load but finds nothing useful on (content drawn in
+// by JavaScript, or listed in a PDF/image). A page is due until it's ticked,
+// and comes back after the next weekly check.
+// A ticked page stays hidden until the weekly check has run since the tick.
+// Pages it can load come back only if their text changed since the tick;
+// booking-system pages and sites that block it come back after every run,
+// since there's no way to tell.
+function dueState(r, lastRun) {
+  if (!r.manual_checked_at) return { due: true, changed: false };
+  const ticked = new Date(r.manual_checked_at).getTime();
+  if (lastRun <= ticked) return { due: false, changed: false };
+  const loadable = !isScriptedPage(r.url) && !(r.last_error && !/nothing readable/i.test(r.last_error));
+  if (!loadable) return { due: true, changed: false };
+  const fresh = r.checked_at && new Date(r.checked_at).getTime() > ticked;
+  const changed = !!(fresh && r.page_hash && r.manual_hash && r.page_hash !== r.manual_hash);
+  return { due: changed, changed };
+}
+
 async function manualCheckList() {
   const { rows } = await pool.query(
-    `SELECT c.id AS club_id, c.name AS club_name, k.kind, k.url, w.manual_checked_at, w.manual_due_at,
+    `SELECT c.id AS club_id, c.name AS club_name, k.kind, k.url, w.manual_checked_at, w.manual_due_at, w.checked_at, w.page_hash, w.manual_hash,
             (w.lines IS NOT NULL AND CASE WHEN jsonb_typeof(w.lines) = 'array'
                                           THEN jsonb_array_length(w.lines) = 0 ELSE FALSE END) AS empty_page,
             w.last_error
@@ -810,7 +826,8 @@ async function manualCheckList() {
      WHERE c.archived_at IS NULL AND k.url IS NOT NULL
      ORDER BY w.manual_checked_at NULLS FIRST, c.name`
   );
-  const cutoff = Date.now() - MANUAL_CHECK_DAYS * 86400000;
+  const { rows: run } = await pool.query(`SELECT MAX(checked_at) AS last_run FROM page_watch`);
+  const lastRun = run[0].last_run ? new Date(run[0].last_run).getTime() : 0;
   return rows
     .filter(r => isScriptedPage(r.url) || r.empty_page || r.last_error)
     .map(r => ({
@@ -820,8 +837,7 @@ async function manualCheckList() {
           : /nothing readable this time/i.test(r.last_error) ? 'Nothing readable this week'
           : `Didn't load (${r.last_error})`)
         : 'Nothing readable',
-      due: r.manual_due_at ? new Date(r.manual_due_at).getTime() <= Date.now()
-        : !r.manual_checked_at || new Date(r.manual_checked_at).getTime() < cutoff
+      ...dueState(r, lastRun)
     }));
 }
 
@@ -846,7 +862,7 @@ router.get('/page-changes', asyncHandler(async (req, res) => {
      WHERE w.last_error IS NOT NULL ORDER BY c.name`
   );
   const manual = await manualCheckList();
-  res.render('admin/page-changes', { changes, stats: stats[0], failing, showSeen, manual, manualDays: MANUAL_CHECK_DAYS });
+  res.render('admin/page-changes', { changes, stats: stats[0], failing, showSeen, manual });
 }));
 
 router.post('/page-changes/:id/seen', asyncHandler(async (req, res) => {
@@ -862,7 +878,7 @@ router.post('/page-changes/manual-check', asyncHandler(async (req, res) => {
     if (url) {
       await pool.query(
         `INSERT INTO page_watch (club_id, kind, url, manual_checked_at) VALUES ($1, $2, $3, now())
-         ON CONFLICT (club_id, kind) DO UPDATE SET url = EXCLUDED.url, manual_checked_at = now(), manual_due_at = NULL`,
+         ON CONFLICT (club_id, kind) DO UPDATE SET url = EXCLUDED.url, manual_checked_at = now(), manual_due_at = NULL, manual_hash = page_watch.page_hash`,
         [rows[0].id, kinds[0], url]
       );
     }
@@ -875,25 +891,8 @@ router.post('/page-changes/manual-check-all', asyncHandler(async (req, res) => {
   for (const r of due) {
     await pool.query(
       `INSERT INTO page_watch (club_id, kind, url, manual_checked_at) VALUES ($1, $2, $3, now())
-       ON CONFLICT (club_id, kind) DO UPDATE SET url = EXCLUDED.url, manual_checked_at = now(), manual_due_at = NULL`,
+       ON CONFLICT (club_id, kind) DO UPDATE SET url = EXCLUDED.url, manual_checked_at = now(), manual_due_at = NULL, manual_hash = page_watch.page_hash`,
       [r.club_id, r.kind, r.url]
-    );
-  }
-  res.redirect('/admin/page-changes#check-by-hand');
-}));
-
-// Bring back pages ticked between two dates (UK calendar): due again now,
-// or from next Monday, when the weekly check runs
-router.post('/page-changes/manual-uncheck', asyncHandler(async (req, res) => {
-  const ok = d => /^\d{4}-\d{2}-\d{2}$/.test(d || '');
-  const from = req.body.from, to = ok(req.body.to) ? req.body.to : req.body.from;
-  if (ok(from) && ok(to)) {
-    const when = req.body.when === 'now' ? `now()`
-      : `(date_trunc('week', now() AT TIME ZONE 'Europe/London') + interval '7 days') AT TIME ZONE 'Europe/London'`;
-    await pool.query(
-      `UPDATE page_watch SET manual_due_at = ${when}
-       WHERE (manual_checked_at AT TIME ZONE 'Europe/London')::date BETWEEN $1::date AND $2::date`,
-      [from <= to ? from : to, from <= to ? to : from]
     );
   }
   res.redirect('/admin/page-changes#check-by-hand');
