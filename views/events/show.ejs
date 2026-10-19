@@ -38,7 +38,8 @@
         <div class="how-to-enter">
           <span class="enter-button enter-button-pending" aria-disabled="true"><%= entry.label %></span>
           <% if (entry.opens) { %><p class="enter-note">Opens <%= new Date(entry.opens).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) %></p><% } %>
-          <% if (event.entry_url) { %><p class="enter-note"><a href="<%= event.entry_url %>" target="_blank" rel="noopener">Club booking page</a></p><% } %>
+          <% if (entry.closedOn) { %><p class="enter-note">Closed <%= new Date(entry.closedOn).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) %></p><% } %>
+          <% if (event.entry_url && entry.state !== 'closed') { %><p class="enter-note"><a href="<%= event.entry_url %>" target="_blank" rel="noopener">Club booking page</a></p><% } %>
           <% if (event.entry_email) { %>
             <p class="enter-contact"><i>Email:</i> <a href="mailto:<%= event.entry_email %>"><%= event.entry_email %></a></p>
           <% } %>

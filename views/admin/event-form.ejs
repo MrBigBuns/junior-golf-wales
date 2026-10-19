@@ -96,6 +96,8 @@
     <label>Registration opens <input type="date" name="registration_opens" value="<%= event.registration_opens ? new Date(event.registration_opens).toISOString().slice(0,10) : '' %>"></label>
     <label><input type="checkbox" name="entries_not_open" <%= event.entries_not_open ? 'checked' : '' %>> Entries not open yet (no opening date known)</label>
     <p class="scorecard-note">Shows "Entries open soon" instead of the entry button. Untick when bookings open. Ignored if a registration opening date is set above: the date decides.</p>
+    <label><input type="checkbox" name="entries_closed" <%= event.entries_closed ? 'checked' : '' %>> Entries closed or full (e.g. fully booked)</label>
+    <p class="scorecard-note">Shows "Entries closed" instead of the entry button. This also happens by itself once the entry deadline below has passed, or the event date has gone.</p>
     <label>Entry deadline <input type="date" name="entry_deadline" value="<%= event.entry_deadline ? new Date(event.entry_deadline).toISOString().slice(0,10) : '' %>"></label>
     <label>Entry URL (link to enter) <input type="text" name="entry_url" value="<%= event.entry_url || '' %>"></label>
     <label>Entry email <input type="email" name="entry_email" value="<%= event.entry_email || '' %>"></label>
