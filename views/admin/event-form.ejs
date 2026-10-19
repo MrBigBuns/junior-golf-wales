@@ -94,6 +94,8 @@
     <label>Entry fee (£, single) <input type="text" name="entry_fee" value="<%= event.entry_fee || '' %>" placeholder="leave blank if using fee tiers below"></label>
     <label>Entry fee tiers (JSON) <textarea name="entry_fee_tiers" rows="3" placeholder='[{"label":"Member","amount":12},{"label":"Non-member","amount":15}]'><%= event.entry_fee_tiers ? JSON.stringify(event.entry_fee_tiers) : '' %></textarea></label>
     <label>Registration opens <input type="date" name="registration_opens" value="<%= event.registration_opens ? new Date(event.registration_opens).toISOString().slice(0,10) : '' %>"></label>
+    <label><input type="checkbox" name="entries_not_open" <%= event.entries_not_open ? 'checked' : '' %>> Entries not open yet (no opening date known)</label>
+    <p class="scorecard-note">Shows "Entries open soon" instead of the entry button. Untick when bookings open. Ignored if a registration opening date is set above: the date decides.</p>
     <label>Entry deadline <input type="date" name="entry_deadline" value="<%= event.entry_deadline ? new Date(event.entry_deadline).toISOString().slice(0,10) : '' %>"></label>
     <label>Entry URL (link to enter) <input type="text" name="entry_url" value="<%= event.entry_url || '' %>"></label>
     <label>Entry email <input type="email" name="entry_email" value="<%= event.entry_email || '' %>"></label>

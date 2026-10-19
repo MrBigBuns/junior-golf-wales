@@ -4,6 +4,7 @@ const pool = require('../db/pool');
 const asyncHandler = require('../lib/asyncHandler');
 const { coursePhrase } = require('../lib/courses');
 const { getForecastForDate } = require('../lib/weather');
+const { entryStatus } = require('../lib/entryStatus');
 const { eventSchema } = require('../lib/eventSchema');
 
 // GET /events — filterable list
@@ -128,7 +129,7 @@ router.get('/:slug', asyncHandler(async (req, res) => {
     [event.id]
   );
 
-  res.render('events/show', { event, otherAtClub, updates, schemaJson: eventSchema(event) });
+  res.render('events/show', { event, otherAtClub, updates, entry: entryStatus(event), schemaJson: eventSchema(event) });
 }));
 
 // GET /events/:slug/calendar.ics — downloadable calendar invite

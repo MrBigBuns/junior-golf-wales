@@ -180,7 +180,7 @@ router.post('/events', asyncHandler(async (req, res) => {
     ]
   );
 
-  await pool.query(`UPDATE events SET conditions = $1 WHERE id = $2`, [cleanConditions(b.conditions), rows[0].id]);
+  await pool.query(`UPDATE events SET conditions = $1, entries_not_open = $2 WHERE id = $3`, [cleanConditions(b.conditions), b.entries_not_open === 'on', rows[0].id]);
   await saveEventCourse(rows[0].id, b.club_id, b.course_id);
   res.redirect(`/admin/events/${rows[0].id}/edit`);
 }));
@@ -233,7 +233,7 @@ router.post('/events/:id/update', asyncHandler(async (req, res) => {
       req.params.id
     ]
   );
-  await pool.query(`UPDATE events SET conditions = $1 WHERE id = $2`, [cleanConditions(b.conditions), req.params.id]);
+  await pool.query(`UPDATE events SET conditions = $1, entries_not_open = $2 WHERE id = $3`, [cleanConditions(b.conditions), b.entries_not_open === 'on', req.params.id]);
 
   await saveEventCourse(req.params.id, b.club_id, b.course_id);
   res.redirect(`/admin/events/${req.params.id}/edit?saved=1`);
