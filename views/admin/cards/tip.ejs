@@ -6,7 +6,7 @@
 <title>Golf tip <%= card.number %>: <%= card.title %></title>
 <link rel="stylesheet" href="/css/cards.css">
 </head>
-<body class="card-page size-<%= size %><%= embed ? ' embed' : '' %>">
+<body class="card-page size-<%= sizes[size].layout || size %><%= sizes[size].layout ? ' size-' + size : '' %><%= embed ? ' embed' : '' %>">
 
 <%# Shares the Good luck card's sky, hill and lettering (cards.css) %>
 <div class="card goodluck-card tip-card">

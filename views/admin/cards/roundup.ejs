@@ -6,7 +6,7 @@
 <title>Round-up card: <%= period.title %></title>
 <link rel="stylesheet" href="/css/cards.css">
 </head>
-<body class="card-page size-<%= size %><%= embed ? ' embed' : '' %>">
+<body class="card-page size-<%= sizes[size].layout || size %><%= sizes[size].layout ? ' size-' + size : '' %><%= embed ? ' embed' : '' %>">
 
 <div class="card roundup-card">
   <div class="stripe"><i></i><i></i><i></i></div>

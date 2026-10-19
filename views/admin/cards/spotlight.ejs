@@ -6,7 +6,7 @@
 <title>Club spotlight: <%= club.name %></title>
 <link rel="stylesheet" href="/css/cards.css">
 </head>
-<body class="card-page size-<%= size %><%= embed ? ' embed' : '' %>">
+<body class="card-page size-<%= sizes[size].layout || size %><%= sizes[size].layout ? ' size-' + size : '' %><%= embed ? ' embed' : '' %>">
 
 <div class="card spotlight-card<%= card.logoUrl ? ' has-crest' : '' %>">
   <div class="stripe"><i></i><i></i><i></i></div>
