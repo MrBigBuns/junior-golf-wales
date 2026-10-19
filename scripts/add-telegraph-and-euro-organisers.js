@@ -2,8 +2,8 @@
 // as organisers (series), so they appear in the event organiser dropdown and
 // get a /tours/<slug> page.
 // Sources: acedsport.com/tours-daily-telegraph and progressjuniorgolf.com
-// (Oct 2026). The Junior European Open has no description or website yet:
-// fill them in below and re-run (existing text is kept if a field is left null).
+// (Oct 2026). The Junior European Open details are from golforganiser.com.
+// Re-running updates a field only when a value is set here (a null keeps what is saved).
 // Safe to re-run: organisers are upserted by slug.
 // Run via the Render web shell: node scripts/add-telegraph-and-euro-organisers.js
 require('dotenv').config();
@@ -25,8 +25,8 @@ const organisers = [
   },
   {
     name: 'Junior European Open',
-    website: null,
-    description: null
+    website: 'https://www.golforganiser.com/junior-european-open',
+    description: 'First staged in 1993, the Junior European Open is widely considered the toughest test in junior golf across Europe. A record 176 juniors played in the 2025 Finals. The Champions Week Finals are played in Spain over five rounds, with qualifying events leading up to them.'
   }
 ];
 
