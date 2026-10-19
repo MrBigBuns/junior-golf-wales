@@ -129,11 +129,46 @@ async function alreadyKnown(r) {
   return null;
 }
 
+// Reads only the Competition Details block of a BRS detail page: stops at the
+// "Upcoming Open Competitions" list (or the Book Now link), so the other
+// events and the page footer never end up in the notes. Drops "Slots Filled"
+// (a live count that goes stale) and flags implausible tee times, which BRS
+// publishes as entered by the club (e.g. 01:20 am).
+function parseDetail(lines) {
+  const start = lines.findIndex(l => DATE_RE.test(l));
+  if (start < 0) return '(no detail block found)';
+
+  const block = [];
+  for (const l of lines.slice(Math.max(0, start - 3))) {
+    if (/^Upcoming Open Competitions/i.test(l) || /^Book Now$/i.test(l)) break;
+    block.push(l);
+  }
+
+  const fields = {};
+  const fees = block.find(l => /Members:/.test(l) && /£/.test(l));
+  if (fees) fields.Fees = fees;
+  for (let i = 0; i < block.length - 1; i++) {
+    const m = block[i].match(/^(Date|Time|Type|Holes):$/);
+    if (m) fields[m[1]] = block[i + 1];
+  }
+
+  const parts = [];
+  if (fields.Fees) parts.push(`Fees: ${fields.Fees}`);
+  if (fields.Date) parts.push(`Date: ${fields.Date}`);
+  if (fields.Time) {
+    const t = fields.Time.match(/^(\d{1,2}):(\d{2})\s*(am|pm)/i);
+    let hour24 = t ? Number(t[1]) % 12 + (t[3].toLowerCase() === 'pm' ? 12 : 0) : null;
+    const odd = hour24 !== null && (hour24 < 6 || hour24 > 20);
+    parts.push(`Time: ${fields.Time}${odd ? ' (unlikely tee time as listed by BRS, check with the club)' : ''}`);
+  }
+  if (fields.Type) parts.push(`Type: ${fields.Type}`);
+  if (fields.Holes) parts.push(`Holes: ${fields.Holes}`);
+  return parts.join(' | ');
+}
+
 async function detailText(url) {
   try {
-    const lines = htmlToLines(await get(url));
-    const start = lines.findIndex(l => DATE_RE.test(l));
-    return lines.slice(Math.max(0, start - 2), start + 40).join(' | ').slice(0, 1500);
+    return parseDetail(htmlToLines(await get(url))).slice(0, 600);
   } catch (e) {
     return `(could not fetch detail page: ${e.message})`;
   }
