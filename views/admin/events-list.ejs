@@ -6,6 +6,19 @@
 </div>
 <p><a href="/admin">&larr; Dashboard</a></p>
 
+<% if (removed !== null) { %>
+  <p><strong><%= removed === 0 ? 'No past tentative events to remove.' : 'Removed ' + removed + ' past tentative event' + (removed === 1 ? '' : 's') + '.' %></strong></p>
+<% } %>
+
+<% if (removable > 0) { %>
+  <form method="post" action="/admin/events/remove-past-tentative" onsubmit="return confirm('Permanently delete <%= removable %> tentative event<%= removable === 1 ? '' : 's' %> with a date in the past? This cannot be undone.');">
+    <button type="submit" class="admin-button"><%= 'Remove ' + removable + ' past tentative event' + (removable === 1 ? '' : 's') %></button>
+  </form>
+<% } %>
+<% if (kept > 0) { %>
+  <p class="course-address"><%= kept %> past tentative event<%= kept === 1 ? ' has' : 's have' %> an entry form and will not be removed. Delete <%= kept === 1 ? 'it' : 'them' %> individually if you are sure.</p>
+<% } %>
+
 <table class="admin-table">
   <thead>
     <tr><th>Title</th><th>Club</th><th>Date</th><th>Status</th><th></th></tr>
