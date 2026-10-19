@@ -330,3 +330,8 @@ CREATE TABLE IF NOT EXISTS club_photos (
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS idx_club_photos_club ON club_photos(club_id, course_id);
+
+-- Ticked in admin for events whose entries are not open yet and have no
+-- opening date: the event page shows "Entries open soon" instead of the entry
+-- button. Ignored when registration_opens is set (the date decides).
+ALTER TABLE events ADD COLUMN IF NOT EXISTS entries_not_open BOOLEAN NOT NULL DEFAULT false;

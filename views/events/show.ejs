@@ -34,7 +34,19 @@
         </table>
       <% } %>
 
-      <% if (event.form_id) { %>
+      <% if (entry.state !== 'open') { %>
+        <div class="how-to-enter">
+          <span class="enter-button enter-button-pending" aria-disabled="true"><%= entry.label %></span>
+          <% if (entry.opens) { %><p class="enter-note">Opens <%= new Date(entry.opens).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) %></p><% } %>
+          <% if (event.entry_url) { %><p class="enter-note"><a href="<%= event.entry_url %>" target="_blank" rel="noopener">Club booking page</a></p><% } %>
+          <% if (event.entry_email) { %>
+            <p class="enter-contact"><i>Email:</i> <a href="mailto:<%= event.entry_email %>"><%= event.entry_email %></a></p>
+          <% } %>
+          <% if (event.entry_phone) { %>
+            <p class="enter-contact"><i>Phone:</i> <a href="tel:<%= event.entry_phone.replace(/\s+/g, '') %>"><%= event.entry_phone %></a></p>
+          <% } %>
+        </div>
+      <% } else if (event.form_id) { %>
         <div class="how-to-enter">
           <a class="enter-button" href="/events/<%= event.slug %>/register">Register for this event</a>
         </div>

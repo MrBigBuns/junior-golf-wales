@@ -182,7 +182,7 @@ const events = [
     catering: null,
     prizes: null,
     hcpAllowanceInfo: null,
-    conditions: 'For players aged under 18 years as at midnight on 1st January 2027.\nBookings open soon.'
+    conditions: 'For players aged under 18 years as at midnight on 1st January 2027.'
   },
   {
     // From the club's competition listing (screenshot, Oct 2026). The age rule
