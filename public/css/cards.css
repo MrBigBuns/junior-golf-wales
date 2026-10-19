@@ -16,6 +16,14 @@ body.card-page.embed { padding: 0; background: none; }
 .size-portrait .card  { width: 1080px; height: 1350px; }
 .size-landscape .card { width: 1200px; height: 630px; }
 
+/* Instagram: the portrait layout with text and boxes held well in from the
+   sides, so Instagram's centre-cropped profile grid doesn't trim them */
+.size-instagram .event-card, .size-instagram .roundup-card, .size-instagram .goodluck-card,
+.size-instagram .spotlight-card, .size-instagram .tip-card { --pad: 104px; }
+.size-instagram .roundup-card .list li { gap: calc(28px * var(--k)); }
+.size-instagram .roundup-card .when { width: calc(var(--date-width) * var(--k) * 0.8); }
+.size-instagram .roundup-card .meta { font-size: calc(var(--meta-size) * var(--k) * 0.88); }
+
 
 /* =====================================================================
    EVENT CARD

@@ -6,7 +6,7 @@
 <title>Event card: <%= event.title %></title>
 <link rel="stylesheet" href="/css/cards.css">
 </head>
-<body class="card-page size-<%= size %><%= embed ? ' embed' : '' %>">
+<body class="card-page size-<%= sizes[size].layout || size %><%= sizes[size].layout ? ' size-' + size : '' %><%= embed ? ' embed' : '' %>">
 <%
   // Badge label on up to three lines
   const words = String(badge || '').toUpperCase().split(/\s+/).filter(Boolean);
