@@ -1,9 +1,10 @@
 <%# Photos for one course. Included on the club page (main course) and on each other course's page. Needs: club, photos, photoFlash; course is set on a course page. %>
 <% const forCourse = (typeof course !== 'undefined' && course && course.id) ? course : null; %>
-<% const label = forCourse ? forCourse.name : (club.main_course_name || 'the main course'); %>
+<% const hasOtherCourses = typeof courses !== 'undefined' && courses && courses.length > 0; %>
+<% const label = forCourse ? forCourse.name : (hasOtherCourses ? (club.main_course_name || 'the main course') : null); %>
 <section id="photos" class="photo-manager">
-  <h2>Photos: <%= label %></h2>
-  <p class="scorecard-note">Add as many as you like. When you make a Club spotlight card you choose which photo it uses, so a few good ones is better than the one that happens to be uploaded.<% if (!forCourse) { %> Photos for the club's other courses are added on each course's page.<% } %></p>
+  <h2>Photos<%= label ? ': ' + label : '' %></h2>
+  <p class="scorecard-note">Add as many as you like. When you make a Club spotlight card you choose which photo it uses, so a few good ones is better than the one that happens to be uploaded.<% if (!forCourse && hasOtherCourses) { %> Photos for the club's other courses are added on each course's page.<% } %></p>
 
   <% if (photoFlash.added) { %><p class="success-message"><%= photoFlash.added %> photo<%= photoFlash.added === 1 ? '' : 's' %> added.</p><% } %>
   <% if (photoFlash.skipped) { %><p class="error-message"><%= photoFlash.skipped %> file<%= photoFlash.skipped === 1 ? ' was' : 's were' %> skipped: only JPEG, PNG and WebP photos can be added.</p><% } %>
@@ -22,7 +23,7 @@
       <% }); %>
     </div>
   <% } else { %>
-    <p class="scorecard-note">No photos added yet for <%= label %>.</p>
+    <p class="scorecard-note">No photos added yet<%= label ? ' for ' + label : '' %>.</p>
   <% } %>
 
   <form method="post" action="/admin/clubs/<%= club.id %>/photos" enctype="multipart/form-data" class="admin-form">
