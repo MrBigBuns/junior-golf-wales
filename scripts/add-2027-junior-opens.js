@@ -155,7 +155,7 @@ const events = [
   {
     // From the club's competition listing (screenshot, Oct 2026). The age rule
     // there reads "under 18 on 1 January 2026", probably carried over from the
-    // 2026 event; shown as published.
+    // 2026 event, so 2027 is used here; confirm with the club.
     club: {
       name: 'Royal Porthcawl Golf Club',
       region: 'South',
@@ -168,7 +168,7 @@ const events = [
     startTime: null,
     format: 'Medal (stroke play), in handicap divisions',
     hcpIndexLimit: null,
-    ageCategory: 'Under 18 on 1 January 2026',
+    ageCategory: 'Under 18 on 1 January 2027',
     entryFee: 30.00,
     feeTiers: null,
     registrationOpens: '2026-11-10',
@@ -176,13 +176,13 @@ const events = [
     sourceUrl: null,
     yardage: null,
     par: null,
-    juniorTeesNote: 'Boys play the white tees, girls the red tees.',
+    juniorTeesNote: 'Yardage shown is the back tees. Juniors play the white tees (boys) and the red tees (girls).',
     catering: 'Lunch included in the entry fee; meals served in the dining room after the round.',
     prizes: 'Prize-giving straight after the final player returns their card.',
     hcpAllowanceInfo: '95% handicap allowance. Maximum 75 entries. Entries open at 11am on 10 November 2026.',
     // The club's conditions, as published (one per line)
     conditions: [
-      'All competitors must be under 18 years of age on 1 January 2026',
+      'All competitors must be under 18 years of age on 1 January 2027',
       'Players will play in their respective handicap divisions',
       'Maximum ten players from each Club',
       'No caddies permitted',
