@@ -3,6 +3,7 @@
 <p><a href="/club-portal">&larr; Back to dashboard</a></p>
 <h1><%= isNew ? 'New event' : 'Edit: ' + event.title %></h1>
 <p class="subtitle">For <%= clubUser.club_name %></p>
+<% if (typeof error !== 'undefined' && error) { %><p class="error-message"><strong>Not saved.</strong> <%= error %></p><% } %>
 
 <form method="post" action="<%= isNew ? '/club-portal/events' : '/club-portal/events/' + event.id + '/update' %>" class="admin-form">
 
@@ -17,7 +18,7 @@
 
   <fieldset>
     <legend>Entry</legend>
-    <label>Entry fee (£) <input type="text" name="entry_fee" value="<%= event.entry_fee || '' %>"></label>
+    <label>Entry fee (£) <input type="text" name="entry_fee" value="<%= event.entry_fee || '' %>" placeholder="e.g. 10, or Members £10, Visitors £30"></label>
     <label>Entry deadline <input type="date" name="entry_deadline" value="<%= event.entry_deadline ? new Date(event.entry_deadline).toISOString().slice(0,10) : '' %>"></label>
     <label>Entry link (booking form/page) <input type="text" name="entry_url" value="<%= event.entry_url || '' %>"></label>
     <label>Entry email <input type="email" name="entry_email" value="<%= event.entry_email || '' %>"></label>

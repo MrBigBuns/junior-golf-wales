@@ -2,6 +2,7 @@
 
 <p><a href="/admin/events">&larr; All events</a></p>
 <h1><%= isNew ? 'New event' : 'Edit: ' + event.title %></h1>
+<% if (typeof error !== 'undefined' && error) { %><p class="error-message"><strong>Not saved.</strong> <%= error %></p><% } %>
 
 <% if (typeof saved !== 'undefined' || (typeof query !== 'undefined')) { %><% } %>
 

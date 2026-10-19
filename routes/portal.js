@@ -14,6 +14,15 @@ const multer = require('multer');
 const scorecardUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 const { extractScorecardFromImage, deriveTotals, isScorecard } = require('../lib/scorecard');
 
+const { parseEntryFee } = require('../lib/fees');
+
+// Show the form again with what was typed and a message, rather than failing the save.
+function renderEventFormError(req, res, b, existing, error) {
+  res.status(400).render('portal/event-form', {
+    clubUser: req.clubUser, event: { ...(existing || {}), ...b }, isNew: !existing, error
+  });
+}
+
 function slugify(str) {
   return str
     .toLowerCase()
@@ -97,19 +106,22 @@ router.get('/events/new', requireClubLogin, requireApprovedClub, (req, res) => {
 router.post('/events', requireClubLogin, requireApprovedClub, asyncHandler(async (req, res) => {
   const b = req.body;
   const slug = slugify(`${b.title}-${req.clubUser.club_name}-${b.date_start}`);
+  const f = parseEntryFee(b.entry_fee);
+  if (f.error) return renderEventFormError(req, res, b, null, f.error);
 
   const { rows } = await pool.query(
     `INSERT INTO events (
       title, slug, club_id, date_start, format, age_category, gender,
       entry_fee, entry_deadline, entry_url, entry_email, entry_phone,
-      hcp_allowance_info, catering, prizes, status
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'confirmed')
+      hcp_allowance_info, catering, prizes, entry_fee_tiers, status
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16::jsonb,'confirmed')
      RETURNING id`,
     [
       b.title, slug, req.clubUser.club_id, b.date_start, b.format || null,
-      b.age_category || null, b.gender || null, b.entry_fee || null,
+      b.age_category || null, b.gender || null, f.fee,
       b.entry_deadline || null, b.entry_url || null, b.entry_email || null,
-      b.entry_phone || null, b.hcp_allowance_info || null, b.catering || null, b.prizes || null
+      b.entry_phone || null, b.hcp_allowance_info || null, b.catering || null, b.prizes || null,
+      f.tiers ? JSON.stringify(f.tiers) : null
     ]
   );
 
@@ -136,16 +148,23 @@ router.post('/events/:id/update', requireClubLogin, requireApprovedClub, asyncHa
   if (!owned.length) return res.status(404).send('Event not found, or it belongs to a different club.');
 
   const b = req.body;
+  const f = parseEntryFee(b.entry_fee);
+  if (f.error) {
+    const { rows: [existing] } = await pool.query(`SELECT * FROM events WHERE id = $1`, [req.params.id]);
+    return renderEventFormError(req, res, b, existing, f.error);
+  }
   await pool.query(
     `UPDATE events SET
       title=$1, date_start=$2, format=$3, age_category=$4, gender=$5,
       entry_fee=$6, entry_deadline=$7, entry_url=$8, entry_email=$9, entry_phone=$10,
-      hcp_allowance_info=$11, catering=$12, prizes=$13, updated_at=now()
-     WHERE id = $14`,
+      hcp_allowance_info=$11, catering=$12, prizes=$13,
+      entry_fee_tiers=COALESCE($14::jsonb, entry_fee_tiers), updated_at=now()
+     WHERE id = $15`,
     [
       b.title, b.date_start, b.format || null, b.age_category || null, b.gender || null,
-      b.entry_fee || null, b.entry_deadline || null, b.entry_url || null, b.entry_email || null,
+      f.fee, b.entry_deadline || null, b.entry_url || null, b.entry_email || null,
       b.entry_phone || null, b.hcp_allowance_info || null, b.catering || null, b.prizes || null,
+      f.tiers ? JSON.stringify(f.tiers) : null,
       req.params.id
     ]
   );
