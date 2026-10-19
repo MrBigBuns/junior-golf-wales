@@ -106,8 +106,8 @@ const events = [
     },
     title: 'Junior Open',
     date: '2027-08-25',
-    startTime: '10:00',
-    format: 'Individual Strokeplay',
+    startTime: '09:59',
+    format: 'Individual Medal',
     hcpIndexLimit: '36.0 (boys) 36.0 (girls)',
     ageCategory: 'Juniors',
     entryFee: 30.00,
@@ -121,8 +121,9 @@ const events = [
     par: null,
     juniorTeesNote: 'White tees (boys), red tees (girls).',
     catering: null,
-    prizes: 'Run with the Justin Rose & Daily Telegraph Junior Championship. Best gross and nett scores from the leading boy and girl go forward, with potential to qualify for the finals at Quinta do Lago, Portugal. Prize presentation after the last group finishes.',
-    hcpAllowanceInfo: 'Handicap qualifier: all players must have a handicap index of 36.0 or less. Not open to iGolfers.'
+    prizes: "Run in association with Justin Rose & The Daily Telegraph's Junior Championship. The best gross and nett scores from the leading girl and boy are sent through to The Daily Telegraph, with the potential to qualify for the finals at Quinta do Lago, Portugal. Prize presentation shortly after the last group has completed their round.",
+    hcpAllowanceInfo: 'Handicap qualifier: all players must have a handicap index of 36.0 or less.',
+    conditions: 'Caddies not permitted\nFull competition rules: Telegraph.co.uk/junior-golf'
   },
   {
     // From the club's competition page (compid 1863). The page heading says
