@@ -178,7 +178,7 @@ const events = [
     sourceUrl: 'https://visitors.brsgolf.com/aberdovey',
     yardage: null,
     par: null,
-    juniorTeesNote: 'Boys play the Gold tees (handicap index 28.0 or less), girls the Orange tees (handicap index 36.0 or less).',
+    juniorTeesNote: 'Yardage shown is the club’s course length, not the junior tees. Boys play the Gold tees (handicap index 28.0 or less), girls the Orange tees (handicap index 36.0 or less).',
     catering: null,
     prizes: null,
     hcpAllowanceInfo: null,
