@@ -77,7 +77,18 @@ router.get('/events', asyncHandler(async (req, res) => {
      FROM events e JOIN clubs c ON c.id = e.club_id
      ORDER BY e.date_start DESC`
   );
-  res.render('admin/events-list', { events });
+  // Past tentative events can be cleared in bulk. Events that have an entry
+  // form are never touched: deleting one would also delete its sign-ups.
+  const { rows: [counts] } = await pool.query(
+    `SELECT
+       COUNT(*) FILTER (WHERE f.id IS NULL)::int AS removable,
+       COUNT(*) FILTER (WHERE f.id IS NOT NULL)::int AS kept
+     FROM events e
+     LEFT JOIN event_forms f ON f.event_id = e.id
+     WHERE e.status = 'tentative' AND e.date_start < CURRENT_DATE`
+  );
+  const removed = req.query.removed !== undefined ? Number(req.query.removed) || 0 : null;
+  res.render('admin/events-list', { events, removable: counts.removable, kept: counts.kept, removed });
 }));
 
 // The event's course: one of the club's other courses, or NULL for the main
@@ -190,6 +201,35 @@ router.post('/events/:id/update', asyncHandler(async (req, res) => {
 router.post('/events/:id/delete', asyncHandler(async (req, res) => {
   await pool.query(`DELETE FROM events WHERE id = $1`, [req.params.id]);
   res.redirect('/admin/events');
+}));
+
+// Bulk-remove tentative events whose date has passed (old placeholders that
+// were never confirmed). Skips any event with an entry form. Submissions that
+// were linked to a removed event are kept, just unlinked.
+router.post('/events/remove-past-tentative', asyncHandler(async (req, res) => {
+  const client = await pool.connect();
+  let removed = 0;
+  try {
+    await client.query('BEGIN');
+    const { rows } = await client.query(
+      `SELECT e.id FROM events e
+       WHERE e.status = 'tentative' AND e.date_start < CURRENT_DATE
+         AND NOT EXISTS (SELECT 1 FROM event_forms f WHERE f.event_id = e.id)`
+    );
+    const ids = rows.map(r => r.id);
+    if (ids.length) {
+      await client.query(`UPDATE submissions SET linked_event_id = NULL WHERE linked_event_id = ANY($1::int[])`, [ids]);
+      const del = await client.query(`DELETE FROM events WHERE id = ANY($1::int[])`, [ids]);
+      removed = del.rowCount;
+    }
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+  res.redirect(`/admin/events?removed=${removed}`);
 }));
 
 router.post('/events/:id/add-update', asyncHandler(async (req, res) => {
