@@ -15,6 +15,7 @@ const { geocodeAddress } = require('../lib/geocode');
 const { purgeOldSubmissions } = require('../lib/retention');
 const { extractScorecardFromImage, deriveTotals, isScorecard } = require('../lib/scorecard');
 const { toCsv, parseCsv, decodeUpload } = require('../lib/csv');
+const { parseEntryFee } = require('../lib/fees');
 const { COUNTY_NAMES } = require('../lib/site');
 const { courseFigures, slugifyCourse } = require('../lib/courses');
 const { isScriptedPage } = require('../lib/pagewatch');
@@ -113,6 +114,38 @@ async function allCourseOptions() {
   return { courseOptions: rows, mainNames: Object.fromEntries(mains.map(m => [m.id, m.main_course_name])) };
 }
 
+// The fee box and the tiers box together: typed tiers win, otherwise tiers
+// are read from the fee box ("Members £10, Visitors £30"). A bad entry comes
+// back as { error } to show on the form instead of failing the save.
+function feeFromForm(b) {
+  const typed = parseJsonField(b.entry_fee_tiers);
+  if (typed && typed.__parse_error) {
+    return { error: 'The fee tiers box is not valid JSON. Leave it blank, or use the form [{"label":"Member","amount":12},{"label":"Non-member","amount":15}].' };
+  }
+  const parsed = parseEntryFee(b.entry_fee);
+  if (parsed.error) return parsed;
+  return { fee: parsed.fee, tiers: typed || parsed.tiers };
+}
+
+// Show the event form again with what was typed and a message, so nothing
+// has to be re-entered. existing is the saved event when editing, else null.
+async function renderEventFormError(res, b, existing, error) {
+  const typed = parseJsonField(b.entry_fee_tiers);
+  const event = { ...(existing || {}), ...b, entry_fee_tiers: typed && !typed.__parse_error ? typed : null };
+  const isNew = !existing;
+  const clubId = Number(event.club_id) || 0;
+  const { rows: clubs } = await pool.query(`SELECT id, name FROM clubs WHERE archived_at IS NULL OR id = $1 ORDER BY name`, [clubId]);
+  const { rows: organisers } = await pool.query(`SELECT id, name FROM organisers ORDER BY name`);
+  const { rows: updates } = isNew ? { rows: [] }
+    : await pool.query(`SELECT * FROM event_updates WHERE event_id = $1 ORDER BY created_at DESC`, [existing.id]);
+  const { rows: clubCard } = clubId
+    ? await pool.query(`SELECT id, name, scorecard, par, yardage FROM clubs WHERE id = $1`, [clubId])
+    : { rows: [] };
+  res.status(400).render('admin/event-form', {
+    event, clubs, organisers, isNew, updates, clubCard: clubCard[0] || null, error, ...(await allCourseOptions())
+  });
+}
+
 router.get('/events/new', asyncHandler(async (req, res) => {
   const { rows: clubs } = await pool.query(`SELECT id, name FROM clubs WHERE archived_at IS NULL ORDER BY name`);
   const { rows: organisers } = await pool.query(`SELECT id, name FROM organisers ORDER BY name`);
@@ -122,6 +155,8 @@ router.get('/events/new', asyncHandler(async (req, res) => {
 router.post('/events', asyncHandler(async (req, res) => {
   const b = req.body;
   const slug = b.slug ? slugify(b.slug) : slugify(`${b.title}-${b.club_name_hint || ''}-${b.date_start}`);
+  const f = feeFromForm(b);
+  if (f.error) return renderEventFormError(res, b, null, f.error);
 
   const { rows } = await pool.query(
     `INSERT INTO events (
@@ -136,10 +171,10 @@ router.post('/events', asyncHandler(async (req, res) => {
     [
       b.title, slug, b.club_id || null, b.organiser_id || null, b.date_start, b.date_end || null, b.start_time || null,
       b.age_category || null, b.age_cutoff_date || null, b.gender || null, b.format || null, b.holes || null, b.junior_tees_note || null,
-      b.entry_fee || null, b.entry_deadline || null, b.registration_opens || null, b.accompanying_adult_required === 'on',
+      f.fee, b.entry_deadline || null, b.registration_opens || null, b.accompanying_adult_required === 'on',
       b.organiser_contact || null, b.hcp_allowance_info || null, b.hcp_index_limit || null, b.catering || null, b.prizes || null,
       b.yardage || null, b.par || null, b.entry_url || null, b.entry_email || null, b.entry_phone || null,
-      JSON.stringify(parseJsonField(b.entry_fee_tiers)),
+      JSON.stringify(f.tiers),
       JSON.stringify(eventScorecardFromForm(b)),
       b.status || 'confirmed'
     ]
@@ -170,6 +205,12 @@ router.get('/events/:id/edit', asyncHandler(async (req, res) => {
 router.post('/events/:id/update', asyncHandler(async (req, res) => {
   const b = req.body;
   const slug = slugify(b.slug);
+  const f = feeFromForm(b);
+  if (f.error) {
+    const { rows: [existing] } = await pool.query(`SELECT * FROM events WHERE id = $1`, [req.params.id]);
+    if (!existing) return res.status(404).send('Event not found');
+    return renderEventFormError(res, b, existing, f.error);
+  }
 
   await pool.query(
     `UPDATE events SET
@@ -183,10 +224,10 @@ router.post('/events/:id/update', asyncHandler(async (req, res) => {
     [
       b.title, slug, b.club_id || null, b.organiser_id || null, b.date_start, b.date_end || null, b.start_time || null,
       b.age_category || null, b.age_cutoff_date || null, b.gender || null, b.format || null, b.holes || null, b.junior_tees_note || null,
-      b.entry_fee || null, b.entry_deadline || null, b.registration_opens || null, b.accompanying_adult_required === 'on',
+      f.fee, b.entry_deadline || null, b.registration_opens || null, b.accompanying_adult_required === 'on',
       b.organiser_contact || null, b.hcp_allowance_info || null, b.hcp_index_limit || null, b.catering || null, b.prizes || null,
       b.yardage || null, b.par || null, b.entry_url || null, b.entry_email || null, b.entry_phone || null,
-      JSON.stringify(parseJsonField(b.entry_fee_tiers)),
+      JSON.stringify(f.tiers),
       JSON.stringify(eventScorecardFromForm(b)),
       b.status || 'confirmed',
       req.params.id
