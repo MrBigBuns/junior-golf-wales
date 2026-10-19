@@ -1,5 +1,5 @@
 // Adds/updates the 2027 Junior Opens at Ashburnham, Whitchurch, Abergele,
-// Conwy, Raglan and Royal Porthcawl with full detail (sourced from Golf Empire listings and
+// Conwy, Raglan, Aberdovey and Royal Porthcawl with full detail (sourced from Golf Empire listings and
 // the clubs' own competition pages, Oct 2026).
 // Safe to re-run: clubs and events are upserted by slug.
 // Run via the Render web shell: node scripts/add-2027-junior-opens.js
@@ -151,6 +151,37 @@ const events = [
     catering: null,
     prizes: null,
     hcpAllowanceInfo: '90% handicap allowance. Open to junior members and visitors.'
+  },
+  {
+    // From the club's Junior Open listing (screenshot, Oct 2026): a Daily
+    // Telegraph qualifier. Bookings were "open soon", so no fee, link or start
+    // time is set yet; the club's BRS page is https://visitors.brsgolf.com/aberdovey.
+    // Whether it counts as an official Telegraph qualifier is unconfirmed, so
+    // no organiser is set; the title carries the club's wording.
+    club: {
+      name: 'Aberdovey Golf Club',
+      region: 'Mid',
+      address: null,
+      website: null,
+      description: null
+    },
+    title: 'Junior Open (Daily Telegraph qualifier)',
+    date: '2027-08-03',
+    startTime: null,
+    format: '18 hole individual medal',
+    hcpIndexLimit: '28.0 (boys) 36.0 (girls)',
+    ageCategory: 'Under 18 on 1 January 2027',
+    entryFee: null,
+    feeTiers: null,
+    entryUrl: 'https://visitors.brsgolf.com/aberdovey',
+    sourceUrl: 'https://visitors.brsgolf.com/aberdovey',
+    yardage: null,
+    par: null,
+    juniorTeesNote: 'Boys play the Gold tees (handicap index 28.0 or less), girls the Orange tees (handicap index 36.0 or less).',
+    catering: null,
+    prizes: null,
+    hcpAllowanceInfo: null,
+    conditions: 'For players aged under 18 years as at midnight on 1st January 2027.\nBookings open soon.'
   },
   {
     // From the club's competition listing (screenshot, Oct 2026). The age rule
