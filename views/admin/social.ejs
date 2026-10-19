@@ -261,10 +261,32 @@
     <button type="submit" class="admin-button">Show</button>
   </form>
   <% if (spot) { %>
-    <% const missing = [!spot.has_photo && 'a course photo', !spot.has_logo && 'a logo', !spot.description && 'a description', !(spot.par || spot.scorecard) && 'course figures'].filter(Boolean); %>
+    <% const missing = [!spot.has_photo && !spotPhotos.length && 'a course photo', !spot.has_logo && 'a logo', !spot.description && 'a description', !(spot.par || spot.scorecard) && 'course figures'].filter(Boolean); %>
     <h3 class="social-sub"><%= spot.name %> <span class="muted">· <%= spot.events.length %> upcoming junior event<%= spot.events.length === 1 ? '' : 's' %></span></h3>
     <% if (missing.length) { %><p class="scorecard-note">This club has no <%= missing.join(', ').replace(/, ([^,]*)$/, ' or $1') %> yet, so the card leaves <%= missing.length === 1 ? 'it' : 'them' %> out or uses the default picture. <a href="/admin/clubs/<%= spot.id %>/edit">Edit the club</a> to add <%= missing.length === 1 ? 'it' : 'them' %>.</p><% } %>
-    <% preview('/admin/social/spotlight/' + spot.id); %>
+    <% if (spot.has_photo || spotPhotos.length) { %>
+      <form method="get" action="/admin/social#spotlight" class="social-form">
+        <%- hidden() %>
+        <input type="hidden" name="club" value="<%= spot.id %>">
+        <p class="scorecard-note"><strong>Photo for the card.</strong> Click one to use it. Add more on the <a href="/admin/clubs/<%= spot.id %>/edit#photos">club's page</a>, or on a course's page for its other courses.</p>
+        <div class="photo-pick">
+          <label>
+            <input type="radio" name="photo" value="" <%= !spotPhoto ? 'checked' : '' %> onchange="this.form.submit()">
+            <% if (spot.has_photo) { %><img src="/admin/social/photo/<%= spot.id %>" alt="" loading="lazy"><% } else { %><span class="photo-none">Default picture</span><% } %>
+            <span><%= spot.has_photo ? 'Club photo (the usual one)' : 'Default picture' %></span>
+          </label>
+          <% spotPhotos.forEach(function(p) { %>
+            <label>
+              <input type="radio" name="photo" value="<%= p.id %>" <%= spotPhoto === p.id ? 'checked' : '' %> onchange="this.form.submit()">
+              <img src="/admin/photos/<%= p.id %>/image" alt="" loading="lazy">
+              <span><%= p.caption || 'Photo' %> &middot; <%= p.course_name || 'Main course' %></span>
+            </label>
+          <% }); %>
+        </div>
+        <noscript><button type="submit" class="admin-button">Use this photo</button></noscript>
+      </form>
+    <% } %>
+    <% preview('/admin/social/spotlight/' + spot.id + (spotPhoto ? '?photo=' + spotPhoto : '')); %>
     <% captions('s', spotCaptions, 16, 'The @ name is the club\'s Instagram account. On Facebook, type @ and the club\'s name to tag its page.'); %>
   <% } %>
 </div>

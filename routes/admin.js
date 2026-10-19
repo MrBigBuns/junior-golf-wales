@@ -375,7 +375,10 @@ async function loadCourse(id) {
 router.get('/courses/:id/edit', asyncHandler(async (req, res) => {
   const course = await loadCourse(req.params.id);
   if (!course) return res.status(404).send('Course not found');
-  res.render('admin/course-form', { club: { id: course.club_id, name: course.club_name, slug: course.club_slug }, course, isNew: false, error: null, saved: !!req.query.saved });
+  res.render('admin/course-form', {
+    club: { id: course.club_id, name: course.club_name, slug: course.club_slug }, course, isNew: false, error: null, saved: !!req.query.saved,
+    photos: await loadPhotos(course.club_id, course.id), photoFlash: photoFlash(req.query)
+  });
 }));
 
 router.post('/courses/:id/update', asyncHandler(async (req, res) => {
@@ -405,6 +408,95 @@ router.post('/courses/:id/delete', asyncHandler(async (req, res) => {
   // Events on this course fall back to the club's main course (ON DELETE SET NULL)
   await pool.query(`DELETE FROM club_courses WHERE id = $1`, [existing.id]);
   res.redirect(`/admin/clubs/${existing.club_id}/edit`);
+}));
+
+// ---------- Course photos ----------
+// Extra photos per course (course_id NULL = the club's main course), picked
+// from when making the Club spotlight card. Only JPEG, PNG and WebP are kept,
+// judged by the file's own first bytes rather than the name or the browser's
+// say-so, so nothing like an SVG (which can carry script) is ever stored.
+const photoUpload = upload.array('photos', 10);
+
+function sniffImageType(buf) {
+  if (!buf || buf.length < 12) return null;
+  if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return 'image/jpeg';
+  if (buf.slice(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'image/png';
+  if (buf.slice(0, 4).toString('latin1') === 'RIFF' && buf.slice(8, 12).toString('latin1') === 'WEBP') return 'image/webp';
+  return null;
+}
+
+// Where to go back to: the course page, or the club page for its main course
+function photosBack(clubId, courseId, flash) {
+  const base = courseId ? `/admin/courses/${courseId}/edit` : `/admin/clubs/${clubId}/edit`;
+  return `${base}?${flash}#photos`;
+}
+
+async function loadPhotos(clubId, courseId) {
+  const { rows } = await pool.query(
+    `SELECT id, caption, course_id, created_at FROM club_photos
+     WHERE club_id = $1 AND course_id IS NOT DISTINCT FROM $2::int
+     ORDER BY created_at, id`,
+    [clubId, courseId || null]
+  );
+  return rows;
+}
+
+function photoFlash(q) {
+  return { added: Number(q.added) || 0, skipped: Number(q.skipped) || 0, removed: q.photo === 'removed' };
+}
+
+router.post('/clubs/:id/photos', (req, res, next) => {
+  photoUpload(req, res, err => {
+    if (!err) return next();
+    const msg = err.code === 'LIMIT_FILE_SIZE' ? 'A photo is over 10 MB.' : 'The upload failed.';
+    res.status(400).send(`${msg} <a href="javascript:history.back()">Go back</a>`);
+  });
+}, asyncHandler(async (req, res) => {
+  const clubId = Number(req.params.id) || 0;
+  const { rows: club } = await pool.query(`SELECT id FROM clubs WHERE id = $1`, [clubId]);
+  if (!club.length) return res.status(404).send('Club not found');
+
+  // A course only counts if it belongs to this club
+  let courseId = Number(req.body.course_id) || null;
+  if (courseId) {
+    const { rows } = await pool.query(`SELECT 1 FROM club_courses WHERE id = $1 AND club_id = $2`, [courseId, clubId]);
+    if (!rows.length) courseId = null;
+  }
+
+  const caption = String(req.body.caption || '').trim().slice(0, 120) || null;
+  let added = 0, skipped = 0;
+  for (const f of req.files || []) {
+    const type = sniffImageType(f.buffer);
+    if (!type) { skipped++; continue; }
+    await pool.query(
+      `INSERT INTO club_photos (club_id, course_id, caption, image, image_type) VALUES ($1, $2, $3, $4, $5)`,
+      [clubId, courseId, caption, f.buffer, type]
+    );
+    added++;
+  }
+  res.redirect(photosBack(clubId, courseId, `added=${added}&skipped=${skipped}`));
+}));
+
+router.post('/photos/:id/delete', asyncHandler(async (req, res) => {
+  const { rows } = await pool.query(
+    `DELETE FROM club_photos WHERE id = $1 RETURNING club_id, course_id`,
+    [Number(req.params.id) || 0]
+  );
+  if (!rows.length) return res.redirect('/admin/clubs');
+  res.redirect(photosBack(rows[0].club_id, rows[0].course_id, 'photo=removed'));
+}));
+
+// A stored photo, from our own address so cards can be saved as PNG
+router.get('/photos/:id/image', asyncHandler(async (req, res) => {
+  const { rows } = await pool.query(
+    `SELECT image, image_type FROM club_photos WHERE id = $1`,
+    [Number(req.params.id) || 0]
+  );
+  if (!rows.length) return res.status(404).send('No photo');
+  res.set('Content-Type', rows[0].image_type);
+  res.set('Cache-Control', 'private, max-age=600');
+  res.set('X-Content-Type-Options', 'nosniff');
+  res.send(rows[0].image);
 }));
 
 // ---------- Clubs ----------
@@ -470,7 +562,10 @@ router.get('/clubs/:id/edit', asyncHandler(async (req, res) => {
     `SELECT id, name, slug, holes, par, yardage, scorecard FROM club_courses WHERE club_id = $1 ORDER BY sort_order, name`, [req.params.id]
   );
   const courses = courseRows.map(c => ({ id: c.id, name: c.name, slug: c.slug, ...courseFigures(c) }));
-  res.render('admin/club-form', { club: rows[0], courses, isNew: false, deleteBlocked: req.query.delete_blocked || null });
+  res.render('admin/club-form', {
+    club: rows[0], courses, isNew: false, deleteBlocked: req.query.delete_blocked || null,
+    photos: await loadPhotos(rows[0].id, null), photoFlash: photoFlash(req.query)
+  });
 }));
 
 router.post('/clubs/:id/update', clubImageUpload, asyncHandler(async (req, res) => {
@@ -969,10 +1064,13 @@ router.get('/social', asyncHandler(async (req, res) => {
     `SELECT id, name FROM clubs WHERE archived_at IS NULL ORDER BY name`
   );
   const spot = req.query.club ? await social.spotlightClub(pool, req.query.club) : null;
+  const spotPhotos = spot ? await social.spotlightPhotos(pool, spot.id) : [];
+  const spotPhoto = spot ? await chosenPhoto(spot.id, req.query.photo) : null;
   const tip = social.tipByNumber(req.query.tip);
 
   res.render('admin/social', {
     period, events, upcoming, recent, tag, event, day, dayEvents, clubs, spot, tip, tips: social.TIPS,
+    spotPhotos, spotPhoto,
     spotCaptions: spot ? social.spotlightCaptions(spot) : null,
     tipCaptions: social.tipCaptions(tip),
     goodLuckCaptions: dayEvents.length ? social.goodLuckCaptions(day, dayEvents) : null,
@@ -1038,17 +1136,27 @@ router.get('/social/goodluck', asyncHandler(async (req, res) => {
   });
 }));
 
+// The photo chosen for a spotlight card, only if it belongs to that club
+async function chosenPhoto(clubId, photoId) {
+  const id = Number(photoId) || 0;
+  if (!id) return null;
+  const { rows } = await pool.query(`SELECT id FROM club_photos WHERE id = $1 AND club_id = $2`, [id, clubId]);
+  return rows.length ? id : null;
+}
+
 // The club spotlight card itself
 router.get('/social/spotlight/:clubId', asyncHandler(async (req, res) => {
   const club = await social.spotlightClub(pool, req.params.clubId);
   if (!club) return res.status(404).send('Club not found');
   const size = cardSize(req.query.size);
+  const photoId = await chosenPhoto(club.id, req.query.photo);
+  const keep = photoId ? `&photo=${photoId}` : '';
   res.render('admin/cards/spotlight', {
     club, size, sizes: social.SIZES, host: social.PUBLIC_HOST, embed: !!req.query.embed,
-    card: social.spotlightCard(club, size),
-    selfUrl: sz => `/admin/social/spotlight/${club.id}?size=${sz}`,
-    backUrl: `/admin/social?club=${club.id}#spotlight`,
-    fileName: `club-spotlight-${club.slug}-${size}.png`
+    card: social.spotlightCard(club, size, photoId),
+    selfUrl: sz => `/admin/social/spotlight/${club.id}?size=${sz}${keep}`,
+    backUrl: `/admin/social?club=${club.id}${keep}#spotlight`,
+    fileName: `club-spotlight-${club.slug}${photoId ? '-photo-' + photoId : ''}-${size}.png`
   });
 }));
 

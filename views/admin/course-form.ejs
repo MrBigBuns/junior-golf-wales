@@ -42,6 +42,10 @@
   <button type="submit"><%= isNew ? 'Add course' : 'Save course' %></button>
 </form>
 
+<% if (!isNew && typeof photos !== 'undefined') { %>
+  <%- include('_photos') %>
+<% } %>
+
 <% if (!isNew) { %>
   <div class="admin-danger-zone">
     <form method="post" action="/admin/courses/<%= course.id %>/delete" onsubmit="return confirm('Delete this course? Any events set to it will switch to the club\'s main course.');">

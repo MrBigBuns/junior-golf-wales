@@ -315,3 +315,18 @@ ALTER TABLE events ADD COLUMN IF NOT EXISTS conditions TEXT;
 -- until the two differ (or MANUAL_CHECK_DAYS pass, for pages that can't be read)
 ALTER TABLE page_watch ADD COLUMN IF NOT EXISTS page_hash TEXT;
 ALTER TABLE page_watch ADD COLUMN IF NOT EXISTS manual_hash TEXT;
+
+-- Extra photos for a club's courses, chosen from when making social cards
+-- (e.g. the Club spotlight). course_id NULL = the club's main course; a row
+-- in club_courses = one of its other courses. Stored in Postgres like the
+-- club's logo and course photo.
+CREATE TABLE IF NOT EXISTS club_photos (
+  id SERIAL PRIMARY KEY,
+  club_id INTEGER NOT NULL REFERENCES clubs(id) ON DELETE CASCADE,
+  course_id INTEGER REFERENCES club_courses(id) ON DELETE CASCADE,
+  caption TEXT,
+  image BYTEA NOT NULL,
+  image_type TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_club_photos_club ON club_photos(club_id, course_id);

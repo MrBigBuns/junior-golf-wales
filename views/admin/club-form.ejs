@@ -100,6 +100,10 @@
   <button type="submit">Save club</button>
 </form>
 
+<% if (!isNew && typeof photos !== 'undefined') { %>
+  <%- include('_photos', { course: null }) %>
+<% } %>
+
 <% if (!isNew) { %>
   <div class="admin-danger-zone">
     <% if (club.archived_at) { %>

@@ -524,6 +524,18 @@ body {
 
 /* Uploaded image previews */
 .admin-image-preview { display: block; max-width: 200px; max-height: 120px; border-radius: 6px; margin: 6px 0; border: 1px solid var(--border); }
+
+/* Course photos: manager on the club/course edit pages, picker on the social page */
+.photo-manager { margin-top: 2rem; }
+.photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; margin: 1rem 0; }
+.photo-item { margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.photo-item img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); }
+.photo-item figcaption { font-size: 0.8rem; color: var(--text-secondary); }
+.photo-pick { display: flex; flex-wrap: wrap; gap: 12px; margin: 0.75rem 0 1rem; }
+.photo-pick label { display: flex; flex-direction: column; gap: 4px; width: 150px; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer; }
+.photo-pick img, .photo-pick .photo-none { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 6px; border: 2px solid var(--border); background: var(--border); display: flex; align-items: center; justify-content: center; text-align: center; font-size: 0.75rem; }
+.photo-pick input:checked + img, .photo-pick input:checked + .photo-none { border-color: #5b9a3c; box-shadow: 0 0 0 2px #5b9a3c; }
+.photo-pick input { position: absolute; opacity: 0; pointer-events: none; }
 .club-logo-inline { width: 40px; height: 40px; object-fit: contain; border-radius: 6px; }
 
 .club-banner-wrap { position: relative; margin-bottom: 0.5rem; }
