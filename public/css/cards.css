@@ -68,8 +68,12 @@ body.card-page.embed { padding: 0; background: none; }
   background-size: cover; background-position: var(--photo-focus); background-repeat: no-repeat;
   border-bottom: 4px solid var(--rule);
 }
-.event-card .badge { position: absolute; left: 72px; top: 34px; width: 250px; filter: drop-shadow(0 8px 14px rgba(0,0,0,.45)); }
-.size-portrait .event-card .badge { width: 290px; }
+.event-card .pill {
+  position: absolute; left: var(--pad); top: 40px;
+  font-size: 28px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase;
+  color: #fff; background: var(--navy); padding: 13px 26px; border-radius: 999px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.3);
+}
 
 /* ============ TEXT ============ */
 .event-card .panel { flex: none; padding: calc(34px * var(--s)) var(--pad) 0; }
@@ -101,7 +105,7 @@ body.card-page.embed { padding: 0; background: none; }
 /* ============ LANDSCAPE: photo on the left, text on the right ============ */
 .size-landscape .event-card { flex-direction: row; --s: 0.7; --pad: 40px; --photo-focus: 79% 50%; }
 .size-landscape .event-card .photo { flex: 0 0 440px; border-bottom: 0; border-right: 4px solid var(--rule); }
-.size-landscape .event-card .badge { left: 28px; top: 26px; width: 176px; }
+.size-landscape .event-card .pill { left: 28px; top: 26px; font-size: 20px; padding: 10px 20px; }
 .size-landscape .event-card .panel { flex: 1; min-width: 0; display: flex; flex-direction: column; padding-top: 14px; }
 .size-landscape .event-card .panel-main { flex: 1; display: flex; flex-direction: column; justify-content: center; }
 
