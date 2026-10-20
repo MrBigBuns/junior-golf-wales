@@ -1156,6 +1156,7 @@ router.get('/social/event/:id', asyncHandler(async (req, res) => {
     columns: twoCols ? [data.details.slice(0, half), data.details.slice(half)] : [data.details],
     titleSize: social.titleSize(event.title),
     photoUrl: event.has_photo ? `/admin/social/photo/${event.club_id}` : null,
+    logoUrl: event.has_logo ? `/admin/social/logo/${event.club_id}` : null,
     selfUrl: sz => `/admin/social/event/${event.id}?size=${sz}&tag=${tag}`,
     backUrl: `/admin/social?event=${event.id}&tag=${tag}#event`,
     fileName: `${event.slug}-${tag}-${size}.png`

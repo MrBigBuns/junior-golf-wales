@@ -23,7 +23,7 @@
 
 <div class="card event-card" style="--title-size: <%= titleSize %>px;<% if (photoUrl) { %> --photo: url('<%= photoUrl %>');<% } %>">
 
-  <div class="photo"></div>
+  <div class="photo"><% if (logoUrl) { %><div class="crest"><img src="<%= logoUrl %>" alt=""></div><% } %></div>
 
   <% if (badgeLines.length) { %>
   <div class="pill"><%= badgeLines.join(' ') %></div>
