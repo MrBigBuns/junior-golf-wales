@@ -75,6 +75,16 @@ body.card-page.embed { padding: 0; background: none; }
   box-shadow: 0 6px 18px rgba(0,0,0,.3);
 }
 
+/* Club logo on a white tile over the photo's lower corner, as on the spotlight card */
+.event-card .photo { position: relative; }
+.event-card .crest {
+  position: absolute; right: var(--pad); bottom: -62px; z-index: 3; width: 200px; height: 200px; padding: 16px;
+  background: #fff; border-radius: 28px; box-shadow: 0 10px 28px rgba(0,0,0,.25);
+  display: flex; align-items: center; justify-content: center;
+}
+.event-card .crest img { width: 100%; height: 100%; object-fit: contain; }
+.size-square .event-card .crest { width: 170px; height: 170px; bottom: -52px; }
+
 /* ============ TEXT ============ */
 .event-card .panel { flex: none; padding: calc(34px * var(--s)) var(--pad) 0; }
 .event-card .date  { margin: 0 0 calc(14px * var(--s)); font-size: calc(var(--date-size) * var(--s)); font-weight: 600; color: var(--navy); }
@@ -105,6 +115,7 @@ body.card-page.embed { padding: 0; background: none; }
 /* ============ LANDSCAPE: photo on the left, text on the right ============ */
 .size-landscape .event-card { flex-direction: row; --s: 0.7; --pad: 40px; --photo-focus: 79% 50%; }
 .size-landscape .event-card .photo { flex: 0 0 440px; border-bottom: 0; border-right: 4px solid var(--rule); }
+.size-landscape .event-card .crest { right: auto; left: 28px; bottom: 28px; width: 150px; height: 150px; padding: 12px; border-radius: 22px; }
 .size-landscape .event-card .pill { left: 28px; top: 26px; font-size: 20px; padding: 10px 20px; }
 .size-landscape .event-card .panel { flex: 1; min-width: 0; display: flex; flex-direction: column; padding-top: 14px; }
 .size-landscape .event-card .panel-main { flex: 1; display: flex; flex-direction: column; justify-content: center; }
