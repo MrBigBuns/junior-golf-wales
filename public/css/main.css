@@ -540,6 +540,7 @@ body {
 .photo-pick input:checked + img, .photo-pick input:checked + .photo-none { border-color: #5b9a3c; box-shadow: 0 0 0 2px #5b9a3c; }
 .photo-pick input { position: absolute; opacity: 0; pointer-events: none; }
 .club-logo-inline { width: 40px; height: 40px; object-fit: contain; border-radius: 6px; }
+.course-club-name:has(> .club-logo-inline) { display: flex; align-items: center; gap: 10px; }
 
 .club-banner-wrap { position: relative; margin-bottom: 0.5rem; }
 .club-banner-image { width: 100%; height: 220px; object-fit: cover; border-radius: 12px; display: block; }
