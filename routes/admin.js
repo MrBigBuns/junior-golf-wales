@@ -1108,8 +1108,15 @@ router.get('/social', asyncHandler(async (req, res) => {
   const spotPhotos = spot ? await social.spotlightPhotos(pool, spot.id) : [];
   const spotPhoto = spot ? await chosenPhoto(spot.id, req.query.photo) : null;
   const tip = social.tipByNumber(req.query.tip);
+  // Club photos to choose from on the single event card and the Good luck card
+  const eventPhotos = event ? await social.spotlightPhotos(pool, event.club_id) : [];
+  const eventPhoto = event ? await chosenPhoto(event.club_id, req.query.eventphoto) : null;
+  const goodPhotoClub = dayEvents.length === 1 ? dayEvents[0] : null;
+  const goodPhotos = goodPhotoClub ? await social.spotlightPhotos(pool, goodPhotoClub.club_id) : [];
+  const goodPhoto = goodPhotoClub ? await chosenGoodLuckPhoto(goodPhotoClub.club_id, req.query.gphoto) : null;
 
   res.render('admin/social', {
+    eventPhotos, eventPhoto, goodPhotos, goodPhoto, goodPhotoClub,
     period, events, upcoming, recent, tag, event, day, dayEvents, clubs, spot, tip, tips: social.TIPS,
     spotPhotos, spotPhoto,
     spotCaptions: spot ? social.spotlightCaptions(spot) : null,
@@ -1147,6 +1154,8 @@ router.get('/social/event/:id', asyncHandler(async (req, res) => {
   const size = cardSize(req.query.size);
   const tag = cardTag(req.query.tag);
   const data = social.eventCardData(event);
+  const photoId = await chosenPhoto(event.club_id, req.query.photo);
+  const keep = photoId ? `&photo=${photoId}` : '';
   // Two halves side by side unless a value is too long for half the width
   const twoCols = data.details.length > 1 && data.details.every(d => d.value.length <= 16);
   const half = Math.ceil(data.details.length / 2);
@@ -1155,11 +1164,11 @@ router.get('/social/event/:id', asyncHandler(async (req, res) => {
     badge: social.TAGS[tag],
     columns: twoCols ? [data.details.slice(0, half), data.details.slice(half)] : [data.details],
     titleSize: social.titleSize(event.title),
-    photoUrl: event.has_photo ? `/admin/social/photo/${event.club_id}` : null,
+    photoUrl: photoId ? `/admin/photos/${photoId}/image` : (event.has_photo ? `/admin/social/photo/${event.club_id}` : null),
     logoUrl: event.has_logo ? `/admin/social/logo/${event.club_id}` : null,
-    selfUrl: sz => `/admin/social/event/${event.id}?size=${sz}&tag=${tag}`,
-    backUrl: `/admin/social?event=${event.id}&tag=${tag}#event`,
-    fileName: `${event.slug}-${tag}-${size}.png`
+    selfUrl: sz => `/admin/social/event/${event.id}?size=${sz}&tag=${tag}${keep}`,
+    backUrl: `/admin/social?event=${event.id}&tag=${tag}${keep.replace('photo=', 'eventphoto=')}#event`,
+    fileName: `${event.slug}-${tag}${photoId ? '-photo-' + photoId : ''}-${size}.png`
   });
 }));
 
@@ -1169,12 +1178,14 @@ router.get('/social/goodluck', asyncHandler(async (req, res) => {
   const events = await social.dayEvents(pool, day.date);
   if (!events.length) return res.status(404).send('No events on this day');
   const size = cardSize(req.query.size);
+  const photo = events.length === 1 ? await chosenGoodLuckPhoto(events[0].club_id, req.query.photo) : null;
+  const keep = photo ? `&photo=${photo}` : '';
   res.render('admin/cards/goodluck', {
     day, events, size, sizes: social.SIZES, host: social.PUBLIC_HOST, embed: !!req.query.embed,
-    card: social.goodLuckCard(events, size, day.date),
-    selfUrl: sz => `/admin/social/goodluck?day=${day.date}&size=${sz}`,
-    backUrl: `/admin/social?day=${day.date}#goodluck`,
-    fileName: `wales-junior-golf-good-luck-${day.date}-${size}.png`
+    card: social.goodLuckCard(events, size, day.date, photo),
+    selfUrl: sz => `/admin/social/goodluck?day=${day.date}&size=${sz}${keep}`,
+    backUrl: `/admin/social?day=${day.date}${keep.replace('photo=', 'gphoto=')}#goodluck`,
+    fileName: `wales-junior-golf-good-luck-${day.date}${photo ? '-photo-' + photo : ''}-${size}.png`
   });
 }));
 
@@ -1184,6 +1195,12 @@ async function chosenPhoto(clubId, photoId) {
   if (!id) return null;
   const { rows } = await pool.query(`SELECT id FROM club_photos WHERE id = $1 AND club_id = $2`, [id, clubId]);
   return rows.length ? id : null;
+}
+
+// For the Good luck card: a photo id from the club, 'main' for its usual photo, or null (the logo)
+async function chosenGoodLuckPhoto(clubId, value) {
+  if (value === 'main') return 'main';
+  return chosenPhoto(clubId, value);
 }
 
 // The club spotlight card itself
