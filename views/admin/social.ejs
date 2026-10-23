@@ -120,9 +120,33 @@
 
   <% if (event) { %>
     <h3 class="social-sub"><%= event.title %> <span class="muted">· <%= event.club_name %> · <%= eventData.dateLine %></span></h3>
+    <% if (event.has_photo || eventPhotos.length) { %>
+      <form method="get" action="/admin/social#event">
+        <input type="hidden" name="period" value="<%= period.period %>">
+        <input type="hidden" name="start" value="<%= period.start %>">
+        <% if (period.region) { %><input type="hidden" name="region" value="<%= period.region %>"><% } %>
+        <input type="hidden" name="event" value="<%= event.id %>">
+        <input type="hidden" name="tag" value="<%= tag %>">
+        <p class="scorecard-note"><strong>Photo for the card.</strong> Click one to use it. Add more on the <a href="/admin/clubs/<%= event.club_id %>/edit#photos">club's page</a>.</p>
+        <div class="photo-pick">
+          <label>
+            <input type="radio" name="eventphoto" value="" <%= !eventPhoto ? 'checked' : '' %> onchange="this.form.submit()">
+            <% if (event.has_photo) { %><img src="/admin/social/photo/<%= event.club_id %>" alt="" loading="lazy"><% } else { %><span class="photo-none">Default picture</span><% } %>
+            <span><%= event.has_photo ? 'Club photo (the usual one)' : 'Default picture' %></span>
+          </label>
+          <% eventPhotos.forEach(function(p) { %>
+            <label>
+              <input type="radio" name="eventphoto" value="<%= p.id %>" <%= eventPhoto === p.id ? 'checked' : '' %> onchange="this.form.submit()">
+              <img src="/admin/photos/<%= p.id %>/image" alt="" loading="lazy">
+              <span><%= p.caption || 'Photo' %> &middot; <%= p.course_name || 'Main course' %></span>
+            </label>
+          <% }); %>
+        </div>
+      </form>
+    <% } %>
     <div class="social-grid">
       <% sizeKeys.forEach(function(key) { %>
-        <% const src = '/admin/social/event/' + event.id + '?size=' + key + '&tag=' + tag; %>
+        <% const src = '/admin/social/event/' + event.id + '?size=' + key + '&tag=' + tag + (eventPhoto ? '&photo=' + eventPhoto : ''); %>
         <div class="social-size social-<%= key %>">
           <p class="social-size-label"><strong><%= sizes[key].label %></strong> <span class="muted small"><%= sizes[key].px %> · <%= sizes[key].use %></span></p>
             <% const scale = key === 'landscape' ? 0.3333 : 0.26; %>
@@ -133,7 +157,7 @@
         </div>
       <% }); %>
     </div>
-    <p class="scorecard-note">The picture is the club's course photo where it has one, otherwise the default green and flag. Add or change a club's photo on its <a href="/admin/clubs">edit page</a>.</p>
+    <p class="scorecard-note">The picture is the club's course photo unless you pick another above; with none, it is the default green and flag.</p>
 
     <div class="social-captions">
       <div>
@@ -184,9 +208,39 @@
         <li><%= e.title %> <span class="muted small">· <%= e.club_name %><%= e.start_time ? ' · ' + String(e.start_time).slice(0, 5) : '' %></span></li>
       <% }); %>
     </ul>
+    <% if (goodPhotoClub && (goodPhotoClub.has_logo || goodPhotoClub.has_photo || goodPhotos.length)) { %>
+      <form method="get" action="/admin/social#goodluck">
+        <input type="hidden" name="period" value="<%= period.period %>">
+        <input type="hidden" name="start" value="<%= period.start %>">
+        <% if (period.region) { %><input type="hidden" name="region" value="<%= period.region %>"><% } %>
+        <input type="hidden" name="day" value="<%= day.date %>">
+        <p class="scorecard-note"><strong>Picture for the card.</strong> Click one to use it. Add more on the <a href="/admin/clubs/<%= goodPhotoClub.club_id %>/edit#photos">club's page</a>.</p>
+        <div class="photo-pick">
+          <label>
+            <input type="radio" name="gphoto" value="" <%= !goodPhoto ? 'checked' : '' %> onchange="this.form.submit()">
+            <% if (goodPhotoClub.has_logo) { %><img src="/admin/social/logo/<%= goodPhotoClub.club_id %>" alt="" loading="lazy" style="object-fit: contain; background: #fff"><% } else if (goodPhotoClub.has_photo) { %><img src="/admin/social/photo/<%= goodPhotoClub.club_id %>" alt="" loading="lazy"><% } else { %><span class="photo-none">Default picture</span><% } %>
+            <span><%= goodPhotoClub.has_logo ? 'Club logo (the usual one)' : (goodPhotoClub.has_photo ? 'Club photo (the usual one)' : 'Default picture') %></span>
+          </label>
+          <% if (goodPhotoClub.has_logo && goodPhotoClub.has_photo) { %>
+            <label>
+              <input type="radio" name="gphoto" value="main" <%= goodPhoto === 'main' ? 'checked' : '' %> onchange="this.form.submit()">
+              <img src="/admin/social/photo/<%= goodPhotoClub.club_id %>" alt="" loading="lazy">
+              <span>Club photo</span>
+            </label>
+          <% } %>
+          <% goodPhotos.forEach(function(p) { %>
+            <label>
+              <input type="radio" name="gphoto" value="<%= p.id %>" <%= goodPhoto === p.id ? 'checked' : '' %> onchange="this.form.submit()">
+              <img src="/admin/photos/<%= p.id %>/image" alt="" loading="lazy">
+              <span><%= p.caption || 'Photo' %> &middot; <%= p.course_name || 'Main course' %></span>
+            </label>
+          <% }); %>
+        </div>
+      </form>
+    <% } %>
     <div class="social-grid">
       <% sizeKeys.forEach(function(key) { %>
-        <% const src = '/admin/social/goodluck?day=' + day.date + '&size=' + key; %>
+        <% const src = '/admin/social/goodluck?day=' + day.date + '&size=' + key + (goodPhoto ? '&photo=' + goodPhoto : ''); %>
         <div class="social-size social-<%= key %>">
           <p class="social-size-label"><strong><%= sizes[key].label %></strong> <span class="muted small"><%= sizes[key].px %> · <%= sizes[key].use %></span></p>
           <% const scale = key === 'landscape' ? 0.3333 : 0.26; %>
