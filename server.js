@@ -10,6 +10,7 @@ const toursRouter = require('./routes/tours');
 const submitRouter = require('./routes/submit');
 const adminRouter = require('./routes/admin');
 const mapRouter = require('./routes/map');
+const plannerRouter = require('./routes/planner');
 const staticRouter = require('./routes/static');
 const portalRouter = require('./routes/portal');
 const countiesRouter = require('./routes/counties');
@@ -71,6 +72,7 @@ app.use('/tours', toursRouter);
 app.use('/submit-event', submitRouter);
 app.use('/admin', adminAuth, adminRouter);
 app.use('/map', mapRouter);
+app.use('/planner', plannerRouter);
 app.use('/club-portal', portalRouter);
 app.use('/', staticRouter);
 
