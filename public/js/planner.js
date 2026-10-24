@@ -205,8 +205,8 @@
       bounds.push([e.lat, e.lng]);
     });
     if (data.origin) {
-      var home = L.divIcon({ className: 'planner-home', html: '<span></span>', iconSize: [18, 18], iconAnchor: [9, 9] });
-      L.marker([data.origin.lat, data.origin.lng], { icon: home, title: 'You' }).addTo(map).bindTooltip('You', { permanent: false });
+      var home = L.divIcon({ className: 'planner-home', html: '<span></span>', iconSize: [24, 24], iconAnchor: [12, 12] });
+      L.marker([data.origin.lat, data.origin.lng], { icon: home, title: 'You are here', zIndexOffset: 1000 }).addTo(map).bindTooltip('You are here', { permanent: true, direction: 'top', offset: [0, -14], className: 'planner-you-label' });
       bounds.push([data.origin.lat, data.origin.lng]);
     }
     if (bounds.length > 1) map.fitBounds(bounds, { padding: [30, 30], maxZoom: 10 });
