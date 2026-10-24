@@ -47,7 +47,7 @@
   <form method="get" action="/planner" class="planner-form" id="planner-form">
     <div class="pf-field pf-wide"><label for="pf-from">From</label><input id="pf-from" type="date" name="from" value="<%= q.from %>" min="<%= today %>"></div>
     <div class="pf-field pf-wide"><label for="pf-to">To</label><input id="pf-to" type="date" name="to" value="<%= q.to %>"></div>
-    <div class="pf-field pf-narrow"><label for="pf-age">Age</label><input id="pf-age" type="number" name="age" inputmode="numeric" min="3" max="25" value="<%= q.age == null ? '' : q.age %>"></div>
+    <div class="pf-field pf-narrow"><label for="pf-age">Age</label><input id="pf-age" type="number" name="age" inputmode="numeric" min="3" max="25" placeholder="e.g. 14" value="<%= q.age == null ? '' : q.age %>"></div>
     <div class="pf-field pf-narrow"><label for="pf-hcp">Handicap index</label><input id="pf-hcp" type="text" name="hcp" inputmode="decimal" placeholder="e.g. 18.4" value="<%= q.hcp == null ? '' : q.hcp %>"></div>
     <div class="pf-field pf-wide"><label for="pf-pc">Travelling from</label><input id="pf-pc" type="text" name="pc" autocomplete="postal-code" placeholder="Postcode, e.g. SA31" value="<%= q.pc %>"></div>
     <% if (q.weekends) { %><input type="hidden" name="weekends" value="1"><% } %>
