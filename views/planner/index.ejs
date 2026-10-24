@@ -1,0 +1,183 @@
+<%- include('../partials/head', {
+  noIndex: true,
+  pageTitle: 'Junior Golf Tournament Planner for Wales ' + seasonYear,
+  pageDescription: 'Pick your dates, tell us your player\'s age and handicap, and see the Welsh junior golf events they can enter, how far each one is, and where it is.'
+}) %>
+<%
+  const dateFmt = (iso, opts) => new Date(iso + 'T00:00:00Z').toLocaleDateString('en-GB', Object.assign({ timeZone: 'UTC' }, opts));
+  // The current form as a query string, with changes
+  const qs = function (over) {
+    const base = {
+      from: q.from, to: q.to, age: q.age == null ? '' : q.age, hcp: q.hcp == null ? '' : q.hcp, pc: q.pc,
+      weekends: q.weekends ? '1' : '', within: q.within || '', m: calendar.monthKey, plan: plan.join(',')
+    };
+    const all = Object.assign(base, over || {});
+    const parts = [];
+    Object.keys(all).forEach(function (k) {
+      if (all[k] !== '' && all[k] != null) parts.push(encodeURIComponent(k) + '=' + encodeURIComponent(all[k]));
+    });
+    return '/planner' + (parts.length ? '?' + parts.join('&') : '');
+  };
+  const toggled = function (id) {
+    const next = plan.indexOf(id) >= 0 ? plan.filter(function (x) { return x !== id; }) : plan.concat([id]);
+    return next.join(',');
+  };
+  const addMonths = function (iso, n) { const d = new Date(iso + 'T00:00:00Z'); d.setUTCMonth(d.getUTCMonth() + n); return d.toISOString().slice(0, 10); };
+  const next3 = addMonths(today, 3);
+  const next6 = addMonths(today, 6);
+  const total = events.length;
+  const summary = [dateFmt(q.from, { day: 'numeric', month: 'short' }) + ' to ' + dateFmt(q.to, { day: 'numeric', month: 'short', year: 'numeric' })]
+    .concat(q.age != null ? ['Age ' + q.age] : [])
+    .concat(q.hcp != null ? ['Index ' + q.hcp] : [])
+    .concat(q.pc ? ['from ' + q.pc.toUpperCase()] : []).join(' · ');
+  const planOpen = plan.length;
+%>
+<link rel="stylesheet" href="/css/planner.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+
+<div class="planner">
+  <h1>Plan your junior golf</h1>
+  <p class="planner-intro">Pick your dates and tell us about your player. We show the events they can enter, how far each one is, and where it is. Nothing is saved on our side, and you can share your plan as a link.</p>
+
+  <div class="planner-summary">
+    <p class="planner-summary-text"><%= summary %></p>
+    <button type="button" class="planner-edit" aria-expanded="false" aria-controls="planner-form">Edit</button>
+  </div>
+
+  <form method="get" action="/planner" class="planner-form" id="planner-form">
+    <div class="pf-field pf-wide"><label for="pf-from">From</label><input id="pf-from" type="date" name="from" value="<%= q.from %>" min="<%= today %>"></div>
+    <div class="pf-field pf-wide"><label for="pf-to">To</label><input id="pf-to" type="date" name="to" value="<%= q.to %>"></div>
+    <div class="pf-field pf-narrow"><label for="pf-age">Age</label><input id="pf-age" type="number" name="age" inputmode="numeric" min="3" max="25" value="<%= q.age == null ? '' : q.age %>"></div>
+    <div class="pf-field pf-narrow"><label for="pf-hcp">Handicap index</label><input id="pf-hcp" type="text" name="hcp" inputmode="decimal" placeholder="e.g. 18.4" value="<%= q.hcp == null ? '' : q.hcp %>"></div>
+    <div class="pf-field pf-wide"><label for="pf-pc">Travelling from</label><input id="pf-pc" type="text" name="pc" autocomplete="postal-code" placeholder="Postcode, e.g. SA31" value="<%= q.pc %>"></div>
+    <% if (q.weekends) { %><input type="hidden" name="weekends" value="1"><% } %>
+    <% if (q.within) { %><input type="hidden" name="within" value="<%= q.within %>"><% } %>
+    <% if (plan.length) { %><input type="hidden" name="plan" value="<%= plan.join(',') %>"><% } %>
+    <button type="submit" class="pf-submit">Show events</button>
+    <p class="pf-quick">
+      Quick picks:
+      <a href="<%= qs({ from: today, to: next3, m: '' }) %>" class="<%= q.from === today && q.to === next3 ? 'on' : '' %>">Next 3 months</a>
+      <a href="<%= qs({ from: today, to: next6, m: '' }) %>" class="<%= q.from === today && q.to === next6 ? 'on' : '' %>">Next 6 months</a>
+      <a href="<%= qs({ weekends: q.weekends ? '' : '1' }) %>" class="<%= q.weekends ? 'on' : '' %>">Weekends only</a>
+      <% if (origin) { %><a href="<%= qs({ within: q.within === 60 ? '' : '60' }) %>" class="<%= q.within === 60 ? 'on' : '' %>">Within 60 miles</a><% } %>
+    </p>
+    <p class="pf-note">Handicap limits are shown for boys and girls, so there is no need to say which. Your postcode is only used to measure distances. We do not keep it.</p>
+  </form>
+
+  <% if (pcFailed) { %><p class="planner-warning">We could not find that postcode, so there are no distances. Try the first half, such as SA31, or a full postcode.</p><% } %>
+
+  <p class="planner-count" id="results">
+    <strong><%= total %> event<%= total === 1 ? '' : 's' %> in your dates</strong>
+    <% if (total && (q.age != null || q.hcp != null)) { %>
+      <span>&middot; <%= counts.ok %> you can enter<%= counts.check ? ', ' + counts.check + ' to check with the club' : '' %><%= counts.no ? ', ' + counts.no + ' you can\'t' : '' %></span>
+    <% } else if (total) { %>
+      <span>&middot; add an age and handicap above to see which ones fit</span>
+    <% } %>
+  </p>
+
+  <div class="planner-tabs" role="tablist" aria-label="View">
+    <button type="button" role="tab" data-tab="list" aria-selected="true">List</button>
+    <button type="button" role="tab" data-tab="calendar" aria-selected="false">Calendar</button>
+    <button type="button" role="tab" data-tab="map" aria-selected="false">Map</button>
+  </div>
+
+  <div class="planner-layout" data-active="list">
+
+    <div class="planner-col planner-col-main">
+
+      <section class="planner-card planner-calendar" data-pane="calendar" aria-label="Calendar">
+        <div class="pc-head">
+          <h2><%= calendar.monthLabel %></h2>
+          <a class="pc-nav" href="<%= qs({ m: calendar.prev }) %>" aria-label="Previous month">&lsaquo;</a>
+          <a class="pc-nav" href="<%= qs({ m: calendar.next }) %>" aria-label="Next month">&rsaquo;</a>
+        </div>
+        <div class="pc-days" aria-hidden="true"><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div><div>Sun</div></div>
+        <div class="pc-grid">
+          <% calendar.cells.forEach(function (c) { %>
+            <div class="pc-cell<%= c.inRange ? ' in-range' : '' %><%= c.thisMonth ? '' : ' other-month' %>">
+              <span class="pc-num"><%= c.n %></span>
+              <% c.events.forEach(function (e) { %>
+                <% if (e.num) { %>
+                  <a class="pc-chip" href="#e<%= e.id %>" title="<%= e.clubName %>"><b><%= e.num %></b> <%= e.clubName.replace(/ (Golf|Country) (Club|& .*)$/i, '') %></a>
+                <% } else { %>
+                  <a class="pc-chip faded" href="/events/<%= e.slug %>" title="<%= e.clubName %> (outside your dates)"><%= e.clubName.replace(/ (Golf|Country) (Club|& .*)$/i, '') %></a>
+                <% } %>
+              <% }); %>
+            </div>
+          <% }); %>
+        </div>
+        <p class="pc-legend">
+          <span><i class="lg lg-range"></i>Your dates</span>
+          <span><i class="lg lg-event"></i>Event in your dates</span>
+          <span><i class="lg lg-faded"></i>Event outside your dates</span>
+        </p>
+      </section>
+
+      <section class="planner-card planner-list" data-pane="list" aria-label="Events in your dates">
+        <div class="pl-head">
+          <h2>Events in your dates</h2>
+          <span><%= origin ? 'Sorted by date. Distances are approximate, in a straight line.' : 'Sorted by date.' %></span>
+        </div>
+        <% if (!total) { %>
+          <p class="pl-empty">No events fit those dates<%= q.weekends ? ' (weekends only)' : '' %><%= q.within ? ' within ' + q.within + ' miles' : '' %>. Try a longer range, or <a href="<%= qs({ from: today, to: next6, weekends: '', within: '', m: '' }) %>">the next 6 months</a>.</p>
+        <% } %>
+        <% events.forEach(function (e) { %>
+          <article class="pl-row<%= e.elig.level === 'no' ? ' is-no' : '' %>" id="e<%= e.id %>" data-id="<%= e.id %>">
+            <div class="pl-num"><%= e.num %></div>
+            <div class="pl-body">
+              <div class="pl-date"><%= dateFmt(e.date, { weekday: 'long', day: 'numeric', month: 'long' }) %></div>
+              <h3 class="pl-title"><a href="/events/<%= e.slug %>"><%= e.title %></a></h3>
+              <div class="pl-club"><%= e.clubName %><%= e.county ? ' · ' + e.county : '' %><%= e.dist != null ? ' · about ' + e.dist + ' miles' : '' %></div>
+              <div class="pl-tags">
+                <% if (e.elig.label) { %><span class="tag tag-<%= e.elig.level %>"><%= e.elig.label %></span><% } %>
+                <span class="tag tag-entry tag-<%= e.entry.state %>"><%= e.entry.label || 'Entries open' %></span>
+              </div>
+              <% if (e.elig.detail) { %><div class="pl-detail"><%= e.elig.detail %></div><% } %>
+            </div>
+            <div class="pl-actions">
+              <a class="plan-btn<%= plan.indexOf(e.id) >= 0 ? ' in-plan' : '' %>" data-id="<%= e.id %>" href="<%= qs({ plan: toggled(e.id) }) %>#e<%= e.id %>"><%= plan.indexOf(e.id) >= 0 ? 'In your plan' : 'Add to plan' %></a>
+              <a class="pl-more" href="/events/<%= e.slug %>">Event details</a>
+            </div>
+          </article>
+        <% }); %>
+      </section>
+    </div>
+
+    <div class="planner-col planner-col-side">
+      <section class="planner-card planner-map" data-pane="map" aria-label="Map">
+        <div class="pl-head"><h2>Where they are</h2><span>Numbers match the list.</span></div>
+        <div id="planner-map" role="img" aria-label="Map of the events in your dates"></div>
+      </section>
+
+      <section class="planner-card planner-plan" id="plan" aria-label="Your plan">
+        <div class="pp-head"><h2>Your plan</h2><p id="plan-count"><%= planOpen %> event<%= planOpen === 1 ? '' : 's' %> &middot; kept in this link and this browser</p></div>
+        <div id="plan-list"></div>
+        <div id="plan-notes"></div>
+        <div class="pp-actions">
+          <a class="pp-btn pp-primary" id="plan-ics" href="/planner/plan.ics?ids=<%= plan.join(',') %>"<%= planOpen ? '' : ' hidden' %>>Add all to calendar</a>
+          <button type="button" class="pp-btn pp-secondary" id="plan-share">Copy share link</button>
+        </div>
+        <noscript><p class="pp-note">Turn on JavaScript to build a plan here.</p></noscript>
+      </section>
+    </div>
+  </div>
+
+  <p class="planner-foot">Eligibility is a guide read from each event's age and handicap wording. Always check the club's entry page before you enter.</p>
+
+  <a class="planner-bar" href="#plan" id="planner-bar" hidden><span id="planner-bar-text">Your plan</span><span class="planner-bar-go">View plan</span></a>
+</div>
+
+<script>
+  window.PLANNER = {
+    events: <%- JSON.stringify(clientEvents.map(function (e) {
+      return { id: e.id, num: e.num || null, slug: e.slug, title: e.title, date: e.date, clubName: e.clubName, lat: e.lat, lng: e.lng, dist: e.dist, fee: e.fee, entry: e.entry.label || 'Entries open', level: e.elig.level };
+    })).replace(/</g, '\\u003c') %>,
+    plan: <%- JSON.stringify(plan) %>,
+    origin: <%- JSON.stringify(origin).replace(/</g, '\\u003c') %>,
+    query: <%- JSON.stringify({ from: q.from, to: q.to, age: q.age, hcp: q.hcp, pc: q.pc }) %>
+  };
+</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="/js/planner.js"></script>
+
+<%- include('../partials/foot') %>
