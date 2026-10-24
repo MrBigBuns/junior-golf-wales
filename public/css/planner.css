@@ -93,6 +93,7 @@ main.container { max-width: 1200px; }
 .pl-num, .pp-num {
   width: 34px; height: 34px; border-radius: 50%; background: var(--pl-orange); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; flex: none;
 }
+.pl-num.in-plan, .pp-num, .planner-pin.in-plan span { background: var(--pl-green); }
 .pl-body { flex: 1 1 260px; min-width: 0; }
 .pl-date { font-size: 0.8rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--pl-green-dark); }
 .pl-title { font-size: 1.15rem; font-weight: 700; margin-top: 3px !important; line-height: 1.25; }
@@ -121,6 +122,11 @@ main.container { max-width: 1200px; }
   width: 30px; height: 30px; border-radius: 50%; background: var(--pl-orange); color: #fff; border: 3px solid #fff; box-sizing: border-box;
   display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; box-shadow: 0 2px 6px rgba(0,0,0,.3);
 }
+.planner-pin.in-plan span { position: relative; box-shadow: 0 0 0 2px var(--pl-green), 0 2px 6px rgba(0,0,0,.3); }
+.planner-pin.in-plan span::after { content: '\2713'; position: absolute; right: -7px; top: -9px; width: 16px; height: 16px; border-radius: 50%; background: #fff; color: var(--pl-green); border: 2px solid var(--pl-green); font-size: 10px; line-height: 12px; text-align: center; font-weight: 800; box-sizing: border-box; }
+.pop-plan { display: block; margin: 8px 0 6px; width: 100%; min-height: 40px; padding: 0 12px; border: 2px solid var(--pl-green); border-radius: 8px; background: #fff; color: var(--pl-green-dark); font: inherit; font-weight: 700; cursor: pointer; }
+.pop-plan.in-plan { background: var(--pl-mint); }
+.pop-list { font-size: .9rem; }
 .planner-home span { display: block; width: 18px; height: 18px; border-radius: 50%; background: var(--pl-navy); border: 3px solid #fff; box-sizing: border-box; box-shadow: 0 2px 6px rgba(0,0,0,.3); }
 
 /* ---------- plan ---------- */

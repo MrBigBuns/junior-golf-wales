@@ -140,6 +140,14 @@
       b.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
 
+    // numbers in the list, and the pins on the map, turn green when planned
+    Array.prototype.forEach.call(document.querySelectorAll('.pl-row'), function (r) {
+      var n = r.querySelector('.pl-num');
+      var b = r.querySelector('.plan-btn');
+      if (n && b) n.classList.toggle('in-plan', plan.indexOf(Number(b.getAttribute('data-id'))) >= 0);
+    });
+    updatePins();
+
     // link and storage
     var url = new URL(location.href);
     if (plan.length) url.searchParams.set('plan', plan.join(','));
@@ -182,6 +190,39 @@
 
   // ----- map -----
   var map = null;
+  var pins = {};
+  function pinIcon(e) {
+    var on = plan.indexOf(e.id) >= 0;
+    return L.divIcon({
+      className: 'planner-pin' + (on ? ' in-plan' : ''),
+      html: '<span>' + e.num + '</span>',
+      iconSize: [30, 30], iconAnchor: [15, 15]
+    });
+  }
+  function popupFor(e) {
+    var pop = document.createElement('div');
+    var s = document.createElement('strong'); s.textContent = e.title; pop.appendChild(s);
+    pop.appendChild(document.createElement('br'));
+    pop.appendChild(document.createTextNode(e.clubName + ' \u00b7 ' + shortDate(e.date)));
+    pop.appendChild(document.createElement('br'));
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'pop-plan' + (plan.indexOf(e.id) >= 0 ? ' in-plan' : '');
+    btn.textContent = plan.indexOf(e.id) >= 0 ? 'In your plan - remove' : 'Add to plan';
+    btn.addEventListener('click', function () {
+      toggle(e.id);
+      var now = plan.indexOf(e.id) >= 0;
+      btn.className = 'pop-plan' + (now ? ' in-plan' : '');
+      btn.textContent = now ? 'In your plan - remove' : 'Add to plan';
+    });
+    pop.appendChild(btn);
+    var a = document.createElement('a'); a.href = '#e' + e.id; a.textContent = 'See in the list'; a.className = 'pop-list';
+    pop.appendChild(a);
+    return pop;
+  }
+  function updatePins() {
+    Object.keys(pins).forEach(function (id) { pins[id].marker.setIcon(pinIcon(pins[id].e)); });
+  }
   function buildMap() {
     var box = document.getElementById('planner-map');
     if (!box || !window.L) return;
@@ -193,15 +234,9 @@
     var bounds = [];
     data.events.forEach(function (e) {
       if (e.lat == null || !e.num) return;
-      var icon = L.divIcon({ className: 'planner-pin', html: '<span>' + e.num + '</span>', iconSize: [30, 30], iconAnchor: [15, 15] });
-      var m = L.marker([e.lat, e.lng], { icon: icon, title: e.clubName }).addTo(map);
-      var pop = document.createElement('div');
-      var s = document.createElement('strong'); s.textContent = e.title; pop.appendChild(s);
-      pop.appendChild(document.createElement('br'));
-      pop.appendChild(document.createTextNode(e.clubName + ' · ' + shortDate(e.date)));
-      pop.appendChild(document.createElement('br'));
-      var a = document.createElement('a'); a.href = '#e' + e.id; a.textContent = 'See in the list'; pop.appendChild(a);
-      m.bindPopup(pop);
+      var m = L.marker([e.lat, e.lng], { icon: pinIcon(e), title: e.clubName }).addTo(map);
+      pins[e.id] = { marker: m, e: e };
+      m.bindPopup(function () { return popupFor(e); });
       bounds.push([e.lat, e.lng]);
     });
     if (data.origin) {
