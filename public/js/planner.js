@@ -191,12 +191,34 @@
   // ----- map -----
   var map = null;
   var pins = {};
+  // Events at the same club share a spot, so their pins are spread a little
+  // sideways (in screen pixels, so it holds at every zoom level)
+  var shift = {};
+  function spreadPins() {
+    var groups = {};
+    data.events.forEach(function (e) {
+      if (e.lat == null || !e.num) return;
+      var k = e.lat.toFixed(4) + ',' + e.lng.toFixed(4);
+      (groups[k] = groups[k] || []).push(e);
+    });
+    Object.keys(groups).forEach(function (k) {
+      var g = groups[k];
+      g.forEach(function (e, i) { shift[e.id] = (i - (g.length - 1) / 2) * 30; });
+    });
+  }
   function pinIcon(e) {
     var on = plan.indexOf(e.id) >= 0;
+    var n = String(e.num);
+    var svg = '<svg viewBox="0 0 34 46" width="34" height="46" aria-hidden="true">'
+      + '<path class="pin-body" d="M17 44 C17 44 2 28 2 17 A15 15 0 1 1 32 17 C32 28 17 44 17 44 Z"/>'
+      + '<circle class="pin-hole" cx="17" cy="17" r="10.5"/>'
+      + '<text x="17" y="21.5" text-anchor="middle" class="pin-num">' + n + '</text>'
+      + (on ? '<circle class="pin-tick-bg" cx="29" cy="6" r="6.5"/><path class="pin-tick" d="M25.8 6.2 L28.2 8.6 L32.2 3.8"/>' : '')
+      + '</svg>';
     return L.divIcon({
       className: 'planner-pin' + (on ? ' in-plan' : ''),
-      html: '<span>' + e.num + '</span>',
-      iconSize: [30, 30], iconAnchor: [15, 15]
+      html: svg,
+      iconSize: [34, 46], iconAnchor: [17 - (shift[e.id] || 0), 45], popupAnchor: [shift[e.id] || 0, -42]
     });
   }
   function popupFor(e) {
@@ -232,9 +254,10 @@
       maxZoom: 18
     }).addTo(map);
     var bounds = [];
+    spreadPins();
     data.events.forEach(function (e) {
       if (e.lat == null || !e.num) return;
-      var m = L.marker([e.lat, e.lng], { icon: pinIcon(e), title: e.clubName }).addTo(map);
+      var m = L.marker([e.lat, e.lng], { icon: pinIcon(e), title: e.clubName, riseOnHover: true }).addTo(map);
       pins[e.id] = { marker: m, e: e };
       m.bindPopup(function () { return popupFor(e); });
       bounds.push([e.lat, e.lng]);
