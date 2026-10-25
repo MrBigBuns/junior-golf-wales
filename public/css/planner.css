@@ -9,7 +9,7 @@ main.container { max-width: 1200px; }
   --pl-green: #3d6130;
   --pl-green-dark: #2e5a1f;
   --pl-mint: #e7f3dc;
-  --pl-range: #f1f7ea;
+  --pl-range: #eaf3df;
   --pl-orange: #c24a22;
   --pl-navy: #14274a;
   color: var(--pl-ink);
@@ -66,17 +66,22 @@ main.container { max-width: 1200px; }
 .pc-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
 .pc-cell { min-height: 96px; padding: 8px; border-top: 1px solid var(--pl-line); border-left: 1px solid var(--pl-line); display: flex; flex-direction: column; gap: 6px; background: #fff; min-width: 0; }
 .pc-cell:nth-child(7n+1) { border-left: 0; }
+.pc-cell { background: #eeede8; }
+.pc-cell .pc-num { color: #8a8d84; }
 .pc-cell.in-range { background: var(--pl-range); }
+.pc-cell.in-range .pc-num { color: var(--pl-ink); }
+.pc-cell.in-range.other-month .pc-num { color: #6f756b; }
 /* weekends stand out inside the chosen dates: white, with an orange number */
 .pc-cell.in-range:nth-child(7n+6), .pc-cell.in-range:nth-child(7n) { background: #fff; }
 .pc-cell.in-range:nth-child(7n+6) .pc-num, .pc-cell.in-range:nth-child(7n) .pc-num { color: var(--pl-orange); }
-.pc-cell.other-month .pc-num { color: #6f756b; }
 .pc-num { font-size: 0.82rem; font-weight: 600; }
 .pc-chip {
   font-size: 0.75rem; font-weight: 700; padding: 5px 6px; border-radius: 6px; background: var(--pl-green); color: #fff !important; text-decoration: none;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;
 }
 .pc-chip b { margin-right: 2px; }
+.pc-chip.planned { background: var(--pl-mint); color: var(--pl-green-dark) !important; box-shadow: inset 0 0 0 2px var(--pl-green); }
+.pc-chip.planned::before { content: '\2713 '; font-weight: 800; }
 .pc-chip.faded { background: #ecebe6; color: var(--pl-muted) !important; border: 1px dashed #9a9d94; font-weight: 600; }
 .pc-legend { margin: 0; padding: 0.8rem 1.2rem; border-top: 1px solid var(--pl-line); display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; font-size: 0.8rem; color: var(--pl-muted); }
 .pc-legend span { display: flex; align-items: center; gap: 8px; }
@@ -84,6 +89,8 @@ main.container { max-width: 1200px; }
 .lg-weekend { background: #fff; border: 1px solid #c9c8c0; border-radius: 0; }
 .lg-range { background: var(--pl-range); border: 1px solid #c9d8b8; border-radius: 0; }
 .lg-event { background: var(--pl-green); }
+.lg-out { background: #eeede8; border: 1px solid #d6d5cf; border-radius: 0; }
+.lg-planned { background: var(--pl-mint); box-shadow: inset 0 0 0 2px var(--pl-green); }
 .lg-faded { background: #ecebe6; border: 1px dashed #9a9d94; }
 
 /* ---------- list ---------- */

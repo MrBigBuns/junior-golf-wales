@@ -146,6 +146,9 @@
       var b = r.querySelector('.plan-btn');
       if (n && b) n.classList.toggle('in-plan', plan.indexOf(Number(b.getAttribute('data-id'))) >= 0);
     });
+    Array.prototype.forEach.call(document.querySelectorAll('.pc-chip[href^="#e"]'), function (c) {
+      c.classList.toggle('planned', plan.indexOf(Number(c.getAttribute('href').slice(2))) >= 0);
+    });
     updatePins();
 
     // link and storage
