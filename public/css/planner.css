@@ -68,11 +68,11 @@ main.container { max-width: 1200px; }
 .pc-cell:nth-child(7n+1) { border-left: 0; }
 .pc-cell { background: #eeede8; }
 .pc-cell .pc-num { color: #8a8d84; }
-.pc-cell.in-range { background: var(--pl-range); }
+.pc-cell.in-range { background: #fff; }
 .pc-cell.in-range .pc-num { color: var(--pl-ink); }
 .pc-cell.in-range.other-month .pc-num { color: #6f756b; }
-/* weekends inside the chosen dates: the same green at 20% strength, with an orange number */
-.pc-cell.in-range:nth-child(7n+6), .pc-cell.in-range:nth-child(7n) { background: #fbfdf9; background: color-mix(in srgb, var(--pl-range) 20%, #fff); }
+/* weekends inside the chosen dates: soft sage, with an orange number */
+.pc-cell.in-range:nth-child(7n+6), .pc-cell.in-range:nth-child(7n) { background: #f3f5ef; }
 .pc-cell.in-range:nth-child(7n+6) .pc-num, .pc-cell.in-range:nth-child(7n) .pc-num { color: var(--pl-orange); }
 .pc-num { font-size: 0.82rem; font-weight: 600; }
 .pc-chip {
@@ -86,8 +86,8 @@ main.container { max-width: 1200px; }
 .pc-legend { margin: 0; padding: 0.8rem 1.2rem; border-top: 1px solid var(--pl-line); display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; font-size: 0.8rem; color: var(--pl-muted); }
 .pc-legend span { display: flex; align-items: center; gap: 8px; }
 .lg { width: 14px; height: 14px; display: inline-block; border-radius: 3px; }
-.lg-weekend { background: #fbfdf9; background: color-mix(in srgb, var(--pl-range) 20%, #fff); border: 1px solid #dde6d1; border-radius: 0; }
-.lg-range { background: var(--pl-range); border: 1px solid #c9d8b8; border-radius: 0; }
+.lg-weekend { background: #f3f5ef; border: 1px solid #dfe3d6; border-radius: 0; }
+.lg-range { background: #fff; border: 1px solid #c9c8c0; border-radius: 0; }
 .lg-event { background: var(--pl-green); }
 .lg-out { background: #eeede8; border: 1px solid #d6d5cf; border-radius: 0; }
 .lg-planned { background: var(--pl-mint); box-shadow: inset 0 0 0 2px var(--pl-green); }
