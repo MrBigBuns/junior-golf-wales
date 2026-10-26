@@ -1,6 +1,7 @@
 <%- include('../partials/head', { pageTitle: 'Admin — Submissions' }) %>
 
 <h1>Submissions</h1>
+<% if (typeof removed !== 'undefined' && removed) { %><p class="success-message">Event removed. The submission is back in the queue.</p><% } %>
 <p><a href="/admin">&larr; Dashboard</a></p>
 
 <% if (submissions.length === 0) { %>
@@ -20,16 +21,22 @@
     <% if (s.raw_data.notes) { %><p>Notes: <%= s.raw_data.notes %></p><% } %>
     <p class="course-address">Submitted <%= new Date(s.created_at).toLocaleDateString('en-GB') %></p>
 
-    <% if (s.status === 'pending') { %>
-      <form method="post" action="/admin/submissions/<%= s.id %>/status" style="display:inline">
-        <input type="hidden" name="status" value="approved">
-        <button type="submit">Approve</button>
+    <% if (s.linked_event_id) { %>
+      <p>Event created: <a href="/admin/events/<%= s.linked_event_id %>/edit"><%= s.event_title %></a></p>
+      <form method="post" action="/admin/submissions/<%= s.id %>/remove-event" style="display:inline"
+            onsubmit="return confirm('Delete this event from the site and put the submission back in the queue?')">
+        <button type="submit" class="admin-delete-button">Remove event</button>
       </form>
-      <form method="post" action="/admin/submissions/<%= s.id %>/status" style="display:inline">
-        <input type="hidden" name="status" value="rejected">
-        <button type="submit" class="admin-delete-button">Reject</button>
-      </form>
-      <p class="scorecard-note">Approving just marks it reviewed — create the actual event via "+ New event" using these details.</p>
+    <% } else if (s.status !== 'rejected') { %>
+      <a class="admin-button" href="/admin/events/new?submission=<%= s.id %>">Create event</a>
+      <% if (s.status === 'pending') { %>
+        <form method="post" action="/admin/submissions/<%= s.id %>/status" style="display:inline">
+          <input type="hidden" name="status" value="rejected">
+          <button type="submit" class="admin-delete-button">Reject</button>
+        </form>
+      <% } else { %>
+        <p class="scorecard-note">Approved earlier, but no event was created from it.</p>
+      <% } %>
     <% } %>
   </div>
 <% }); %>
