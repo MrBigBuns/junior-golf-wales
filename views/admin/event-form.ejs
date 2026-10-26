@@ -6,7 +6,16 @@
 
 <% if (typeof saved !== 'undefined' || (typeof query !== 'undefined')) { %><% } %>
 
+<% if (typeof submission !== 'undefined' && submission) { %>
+  <div class="detail-card">
+    <p><strong>Filled in from submission #<%= submission.id %></strong> (<%= submission.submitted_by_email || 'no email' %>). Check each box, then save to make it live.</p>
+    <% if (submission.raw_data.notes) { %><p class="course-address"><%= submission.raw_data.notes %></p><% } %>
+    <% if (!event.club_id) { %><p class="error-message">The club "<%= submission.raw_data.club_name %>" was not matched. Choose it below.</p><% } %>
+  </div>
+<% } %>
+
 <form method="post" action="<%= isNew ? '/admin/events' : '/admin/events/' + event.id + '/update' %>" class="admin-form">
+  <% if (isNew && event.submission_id) { %><input type="hidden" name="submission_id" value="<%= event.submission_id %>"><% } %>
 
   <fieldset>
     <legend>Basics</legend>

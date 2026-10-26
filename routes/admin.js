@@ -146,10 +146,46 @@ async function renderEventFormError(res, b, existing, error) {
   });
 }
 
+// Club names from imports differ in case and punctuation ("Vale Of Llangollen")
+function clubKey(name) {
+  return String(name || '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '');
+}
+
+// Turn a submission into starting values for the New event form
+function eventFromSubmission(sub, clubs) {
+  const d = sub.raw_data || {};
+  const notes = String(d.notes || '');
+  const key = clubKey(d.club_name);
+  const club = key && (clubs.find(c => clubKey(c.name) === key)
+    || clubs.find(c => clubKey(c.name).includes(key) || key.includes(clubKey(c.name))));
+  const type = notes.split(/\.\s*(?:BRS listing|Detail):/i)[0].trim();
+  const holes = notes.match(/Holes:\s*(\d{1,2})/i);
+  return {
+    submission_id: sub.id,
+    title: d.event_title || '',
+    club_id: club ? club.id : null,
+    date_start: /^\d{4}-\d{2}-\d{2}/.test(d.event_date || '') ? String(d.event_date).slice(0, 10) : null,
+    entry_fee: d.entry_fee || '',
+    entry_url: /^https?:\/\//i.test(d.entry_info || '') ? d.entry_info : '',
+    format: type && type.length < 80 ? type : '',
+    holes: holes ? Number(holes[1]) : null
+  };
+}
+
 router.get('/events/new', asyncHandler(async (req, res) => {
   const { rows: clubs } = await pool.query(`SELECT id, name FROM clubs WHERE archived_at IS NULL ORDER BY name`);
   const { rows: organisers } = await pool.query(`SELECT id, name FROM organisers ORDER BY name`);
-  res.render('admin/event-form', { event: {}, clubs, organisers, isNew: true, clubCard: null, ...(await allCourseOptions()) });
+  let event = {};
+  let submission = null;
+  const subId = parseInt(req.query.submission, 10);
+  if (subId > 0) {
+    const { rows } = await pool.query(`SELECT * FROM submissions WHERE id = $1`, [subId]);
+    if (rows.length) {
+      submission = rows[0];
+      event = eventFromSubmission(submission, clubs);
+    }
+  }
+  res.render('admin/event-form', { event, submission, clubs, organisers, isNew: true, clubCard: null, ...(await allCourseOptions()) });
 }));
 
 router.post('/events', asyncHandler(async (req, res) => {
@@ -182,6 +218,10 @@ router.post('/events', asyncHandler(async (req, res) => {
 
   await pool.query(`UPDATE events SET conditions = $1, entries_not_open = $2, entries_closed = $3 WHERE id = $4`, [cleanConditions(b.conditions), b.entries_not_open === 'on', b.entries_closed === 'on', rows[0].id]);
   await saveEventCourse(rows[0].id, b.club_id, b.course_id);
+  const subId = parseInt(b.submission_id, 10);
+  if (subId > 0) {
+    await pool.query(`UPDATE submissions SET status = 'approved', linked_event_id = $1 WHERE id = $2`, [rows[0].id, subId]);
+  }
   res.redirect(`/admin/events/${rows[0].id}/edit`);
 }));
 
@@ -240,6 +280,8 @@ router.post('/events/:id/update', asyncHandler(async (req, res) => {
 }));
 
 router.post('/events/:id/delete', asyncHandler(async (req, res) => {
+  // a submission linked to this event goes back to the queue rather than blocking the delete
+  await pool.query(`UPDATE submissions SET linked_event_id = NULL, status = 'pending' WHERE linked_event_id = $1`, [req.params.id]);
   await pool.query(`DELETE FROM events WHERE id = $1`, [req.params.id]);
   res.redirect('/admin/events');
 }));
@@ -1295,9 +1337,32 @@ router.post('/follow-list/:id/:platform', asyncHandler(async (req, res) => {
 // ---------- Submissions ----------
 router.get('/submissions', asyncHandler(async (req, res) => {
   const { rows: submissions } = await pool.query(
-    `SELECT * FROM submissions ORDER BY created_at DESC LIMIT 100`
+    `SELECT s.*, e.title AS event_title, e.date_start AS event_date
+     FROM submissions s LEFT JOIN events e ON e.id = s.linked_event_id
+     ORDER BY s.created_at DESC LIMIT 100`
   );
-  res.render('admin/submissions', { submissions });
+  res.render('admin/submissions', { submissions, removed: req.query.removed === '1' });
+}));
+
+// Delete the event made from a submission and put the submission back in the queue
+router.post('/submissions/:id/remove-event', asyncHandler(async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const { rows } = await client.query(`SELECT linked_event_id FROM submissions WHERE id = $1 FOR UPDATE`, [req.params.id]);
+    const eventId = rows[0] && rows[0].linked_event_id;
+    if (eventId) {
+      await client.query(`UPDATE submissions SET linked_event_id = NULL, status = 'pending' WHERE linked_event_id = $1`, [eventId]);
+      await client.query(`DELETE FROM events WHERE id = $1`, [eventId]);
+    }
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    throw err;
+  } finally {
+    client.release();
+  }
+  res.redirect('/admin/submissions?removed=1');
 }));
 
 router.post('/submissions/:id/status', asyncHandler(async (req, res) => {
