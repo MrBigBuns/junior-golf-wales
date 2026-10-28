@@ -73,10 +73,17 @@ router.get('/', asyncHandler(async (req, res) => {
 
 // ---------- Events ----------
 router.get('/events', asyncHandler(async (req, res) => {
+  // Sort by date (default, newest first) or club. Only these exact values reach the SQL.
+  const sort = req.query.sort === 'club' ? 'club' : 'date';
+  const dir = req.query.dir === 'asc' ? 'asc' : req.query.dir === 'desc' ? 'desc' : (sort === 'club' ? 'asc' : 'desc');
+  const d = dir === 'asc' ? 'ASC' : 'DESC';
+  const orderBy = sort === 'club'
+    ? `LOWER(c.name) ${d}, e.date_start DESC, e.title`
+    : `e.date_start ${d}, LOWER(c.name), e.title`;
   const { rows: events } = await pool.query(
     `SELECT e.id, e.title, e.slug, e.date_start, e.status, c.name AS club_name
      FROM events e JOIN clubs c ON c.id = e.club_id
-     ORDER BY e.date_start DESC`
+     ORDER BY ${orderBy}`
   );
   // Past tentative events can be cleared in bulk. Events that have an entry
   // form are never touched: deleting one would also delete its sign-ups.
@@ -89,7 +96,7 @@ router.get('/events', asyncHandler(async (req, res) => {
      WHERE e.status = 'tentative' AND e.date_start < CURRENT_DATE`
   );
   const removed = req.query.removed !== undefined ? Number(req.query.removed) || 0 : null;
-  res.render('admin/events-list', { events, removable: counts.removable, kept: counts.kept, removed });
+  res.render('admin/events-list', { events, removable: counts.removable, kept: counts.kept, removed, sort, dir });
 }));
 
 // The event's course: one of the club's other courses, or NULL for the main

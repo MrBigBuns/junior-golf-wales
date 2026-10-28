@@ -21,7 +21,21 @@
 
 <table class="admin-table">
   <thead>
-    <tr><th>Title</th><th>Club</th><th>Date</th><th>Status</th><th></th></tr>
+    <%
+      // Clicking the active column flips the order; the other column starts at its usual order
+      function sortLink(col, label, firstDir) {
+        const active = sort === col;
+        const next = active ? (dir === 'asc' ? 'desc' : 'asc') : firstDir;
+        const arrow = active ? (dir === 'asc' ? ' \u25B2' : ' \u25BC') : '';
+        return '<a class="sort-link" href="/admin/events?sort=' + col + '&dir=' + next + '" title="Sort by ' + label.toLowerCase() + '">' + label + arrow + '</a>';
+      }
+    %>
+    <tr>
+      <th>Title</th>
+      <th aria-sort="<%= sort === 'club' ? (dir === 'asc' ? 'ascending' : 'descending') : 'none' %>"><%- sortLink('club', 'Club', 'asc') %></th>
+      <th aria-sort="<%= sort === 'date' ? (dir === 'asc' ? 'ascending' : 'descending') : 'none' %>"><%- sortLink('date', 'Date', 'desc') %></th>
+      <th>Status</th><th></th>
+    </tr>
   </thead>
   <tbody>
     <% events.forEach(function(e) { %>
