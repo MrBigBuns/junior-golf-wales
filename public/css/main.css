@@ -734,3 +734,4 @@ body {
 /* Sortable column headings in admin tables */
 .admin-table th a.sort-link { color: inherit; text-decoration: none; font-weight: 600; white-space: nowrap; }
 .admin-table th a.sort-link:hover { text-decoration: underline; }
+.admin-table th .sort-idle { color: var(--text-secondary); opacity: 0.55; font-weight: 400; }

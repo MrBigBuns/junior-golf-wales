@@ -26,7 +26,7 @@
       function sortLink(col, label, firstDir) {
         const active = sort === col;
         const next = active ? (dir === 'asc' ? 'desc' : 'asc') : firstDir;
-        const arrow = active ? (dir === 'asc' ? ' \u25B2' : ' \u25BC') : '';
+        const arrow = active ? (dir === 'asc' ? ' \u25B2' : ' \u25BC') : ' <span class="sort-idle">\u21C5</span>';
         return '<a class="sort-link" href="/admin/events?sort=' + col + '&dir=' + next + '" title="Sort by ' + label.toLowerCase() + '">' + label + arrow + '</a>';
       }
     %>
