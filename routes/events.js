@@ -10,6 +10,7 @@ const { eventSchema } = require('../lib/eventSchema');
 // GET /events — filterable list
 router.get('/', asyncHandler(async (req, res) => {
   const { region, age, q, county } = req.query;
+  const byTour = req.query.view === 'tours';
   const conditions = ["e.date_start >= CURRENT_DATE", "e.status != 'cancelled'"];
   const params = [];
 
@@ -30,13 +31,17 @@ router.get('/', asyncHandler(async (req, res) => {
     conditions.push(`(e.title ILIKE $${params.length} OR c.name ILIKE $${params.length})`);
   }
 
+  if (byTour) conditions.push('e.organiser_id IS NOT NULL');
+
   const { rows: events } = await pool.query(
-    `SELECT e.*, c.name AS club_name, c.slug AS club_slug, c.region, c.county
+    `SELECT e.*, c.name AS club_name, c.slug AS club_slug, c.region, c.county,
+            o.name AS organiser_name, o.slug AS organiser_slug
      FROM events e
      JOIN clubs c ON c.id = e.club_id
+     LEFT JOIN organisers o ON o.id = e.organiser_id
      WHERE ${conditions.join(' AND ')}
      ORDER BY
-       CASE c.region WHEN 'North' THEN 1 WHEN 'Mid' THEN 2 WHEN 'South' THEN 3 ELSE 4 END,
+       ${byTour ? 'o.name ASC,' : "CASE c.region WHEN 'North' THEN 1 WHEN 'Mid' THEN 2 WHEN 'South' THEN 3 ELSE 4 END,"}
        e.date_start ASC,
        e.title ASC
      LIMIT 100`,
@@ -50,7 +55,17 @@ router.get('/', asyncHandler(async (req, res) => {
     grouped[key].push(e);
   });
 
-  res.render('events/index', { grouped, totalCount: events.length, region, age, q, county });
+  // Grouped by tour (organiser), in the order the query returned them
+  const tourGroups = [];
+  if (byTour) {
+    events.forEach(e => {
+      let g = tourGroups[tourGroups.length - 1];
+      if (!g || g.slug !== e.organiser_slug) { g = { name: e.organiser_name, slug: e.organiser_slug, events: [] }; tourGroups.push(g); }
+      g.events.push(e);
+    });
+  }
+
+  res.render('events/index', { grouped, tourGroups, byTour, totalCount: events.length, region, age, q, county });
 }));
 
 // GET /events/:slug — detail page
