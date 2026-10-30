@@ -167,9 +167,15 @@ function eventFromSubmission(sub, clubs) {
     || clubs.find(c => clubKey(c.name).includes(key) || key.includes(clubKey(c.name))));
   const type = notes.split(/\.\s*(?:BRS listing|Detail):/i)[0].trim();
   const holes = notes.match(/Holes:\s*(\d{1,2})/i);
+  // Standard format: a bare "Junior Open" becomes "<Club> Junior Open".
+  let title = String(d.event_title || '').trim();
+  const shortClub = club ? club.name.replace(/\s+(Golf\s+(Club|Course|Links)|Golf\s*&\s*Country\s+Club)\s*$/i, '').trim() : '';
+  if (shortClub && /^juniors?\s+open\b/i.test(title)) {
+    title = title.replace(/^juniors?\s+open\b/i, `${shortClub} Junior Open`);
+  }
   return {
     submission_id: sub.id,
-    title: d.event_title || '',
+    title,
     club_id: club ? club.id : null,
     date_start: /^\d{4}-\d{2}-\d{2}/.test(d.event_date || '') ? String(d.event_date).slice(0, 10) : null,
     entry_fee: d.entry_fee || '',
