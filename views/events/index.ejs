@@ -4,8 +4,8 @@
   pageDescription: 'Every upcoming junior golf competition in ' + place + ': junior opens, the PING Welsh Junior Tour, Mini Masters and club events for boys and girls of all ages, ' + seasonYear + ' season.'
 }) %>
 
-<h1>Junior golf competitions in <%= place %> <%= seasonYear %></h1>
-<p class="subtitle">Junior opens, national tours and club competitions for boys and girls<% if (!county) { %> · <a href="/county">Browse by county</a><% } %></p>
+<h1><%= byTour ? 'Junior golf tours and series' : 'Junior golf competitions' %> in <%= place %> <%= seasonYear %></h1>
+<p class="subtitle"><% if (byTour) { %>Upcoming events grouped by tour · <a href="/events">See all events</a><% } else { %>Junior opens, national tours and club competitions for boys and girls<% if (!county) { %> · <a href="/county">Browse by county</a><% } %> · <a href="/events?view=tours">Group by tour</a><% } %></p>
 
 <form method="get" class="filters">
   <input type="text" name="q" value="<%= q || '' %>" placeholder="Search by event, club, or tour">
@@ -20,6 +20,7 @@
     <% counties.forEach(function(c) { %><option value="<%= c.name %>" <%= county === c.name ? 'selected' : '' %>><%= c.name %></option><% }); %>
   </select>
   <% if (age) { %><input type="hidden" name="age" value="<%= age %>"><% } %>
+  <% if (byTour) { %><input type="hidden" name="view" value="tours"><% } %>
   <button type="submit">Search</button>
 </form>
 <% if (age) { %><p class="scorecard-note">Filtered by category: <%= age %> — <a href="/events<%= region ? '?region=' + region : '' %>">clear</a></p><% } %>
@@ -28,7 +29,27 @@
   <p>No upcoming competitions found<%= county || region ? ' for this area' : '' %>. <a href="/events">See all of Wales</a> or <a href="/submit-event">submit one</a>.</p>
 <% } %>
 
-<% ['North', 'Mid', 'South', 'Other'].forEach(function(r) { %>
+<% if (byTour) { %>
+  <% tourGroups.forEach(function(g) { %>
+    <div class="section-header">
+      <h2><%= g.name %></h2>
+      <a href="/tours/<%= g.slug %>">About this tour</a>
+    </div>
+    <div class="event-list">
+      <% g.events.forEach(function(event) { %>
+        <a class="event-card" href="/events/<%= event.slug %>">
+          <p class="event-card-title"><%= event.title %></p>
+          <p class="event-card-club"><%= event.club_name %></p>
+          <p class="event-card-meta">
+            <%= new Date(event.date_start).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) %>
+          </p>
+        </a>
+      <% }); %>
+    </div>
+  <% }); %>
+<% } %>
+
+<% (byTour ? [] : ['North', 'Mid', 'South', 'Other']).forEach(function(r) { %>
   <% if (grouped[r] && grouped[r].length) { %>
     <div class="section-header">
       <h2><%= r === 'Other' ? 'Region not set' : r + ' Wales' %></h2>
