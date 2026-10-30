@@ -1,0 +1,29 @@
+<%- include('../partials/head', { pageTitle: 'Admin — Organisers' }) %>
+
+<div class="admin-header-row">
+  <h1>Organisers</h1>
+  <a class="admin-button" href="/admin/organisers/new">+ New organiser</a>
+</div>
+<p><a href="/admin">&larr; Dashboard</a></p>
+<p class="course-address">Series and tours such as the PING Welsh Junior Tour. Each one gets its own page at /tours/&hellip; and appears in the organiser box on the event form.</p>
+
+<% if (typeof saved !== 'undefined' && saved) { %><p class="success-message">Organiser saved.</p><% } %>
+<% if (typeof deleted !== 'undefined' && deleted) { %><p class="success-message">Organiser deleted.</p><% } %>
+
+<table class="admin-table">
+  <thead>
+    <tr><th>Name</th><th>Page</th><th>Events</th><th></th></tr>
+  </thead>
+  <tbody>
+    <% organisers.forEach(function(o) { %>
+      <tr>
+        <td><%= o.name %></td>
+        <td><a href="/tours/<%= o.slug %>" target="_blank">/tours/<%= o.slug %></a></td>
+        <td><%= o.events %></td>
+        <td><a href="/admin/organisers/<%= o.id %>/edit">Edit</a></td>
+      </tr>
+    <% }); %>
+  </tbody>
+</table>
+
+<%- include('../partials/foot') %>

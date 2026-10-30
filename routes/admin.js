@@ -1394,4 +1394,81 @@ router.post('/club-accounts/:id/status', asyncHandler(async (req, res) => {
   res.redirect('/admin/club-accounts');
 }));
 
+// ---------- Organisers (series / tours) ----------
+router.get('/organisers', asyncHandler(async (req, res) => {
+  const { rows: organisers } = await pool.query(
+    `SELECT o.id, o.name, o.slug, o.website, COUNT(e.id)::int AS events
+     FROM organisers o LEFT JOIN events e ON e.organiser_id = o.id
+     GROUP BY o.id ORDER BY LOWER(o.name)`
+  );
+  res.render('admin/organisers-list', { organisers, saved: req.query.saved === '1', deleted: req.query.deleted === '1' });
+}));
+
+router.get('/organisers/new', (req, res) => {
+  res.render('admin/organiser-form', { organiser: {}, events: [], isNew: true, error: null });
+});
+
+router.post('/organisers', asyncHandler(async (req, res) => {
+  const b = req.body;
+  const name = String(b.name || '').trim();
+  const slug = slugify(String(b.slug || '').trim() || name);
+  const organiser = { name, slug: b.slug || '', website: b.website || '', description: b.description || '' };
+  if (!name || !slug) {
+    return res.status(400).render('admin/organiser-form', { organiser, events: [], isNew: true, error: 'Give the organiser a name.' });
+  }
+  const { rows: dup } = await pool.query(`SELECT 1 FROM organisers WHERE slug = $1`, [slug]);
+  if (dup.length) {
+    return res.status(400).render('admin/organiser-form', { organiser, events: [], isNew: true, error: `There is already an organiser with the address "${slug}". Change the name or the slug.` });
+  }
+  const { rows } = await pool.query(
+    `INSERT INTO organisers (name, slug, website, description) VALUES ($1, $2, $3, $4) RETURNING id`,
+    [name, slug, linkOrNull(b.website), String(b.description || '').trim() || null]
+  );
+  res.redirect(`/admin/organisers/${rows[0].id}/edit?saved=1`);
+}));
+
+router.get('/organisers/:id/edit', asyncHandler(async (req, res) => {
+  const { rows } = await pool.query(`SELECT * FROM organisers WHERE id = $1`, [req.params.id]);
+  if (!rows.length) return res.status(404).send('Organiser not found');
+  const { rows: events } = await pool.query(
+    `SELECT e.id, e.title, e.date_start, c.name AS club_name
+     FROM events e JOIN clubs c ON c.id = e.club_id
+     WHERE e.organiser_id = $1 ORDER BY e.date_start DESC`, [req.params.id]
+  );
+  res.render('admin/organiser-form', { organiser: rows[0], events, isNew: false, error: null, saved: req.query.saved === '1' });
+}));
+
+router.post('/organisers/:id/update', asyncHandler(async (req, res) => {
+  const b = req.body;
+  const { rows: [existing] } = await pool.query(`SELECT * FROM organisers WHERE id = $1`, [req.params.id]);
+  if (!existing) return res.status(404).send('Organiser not found');
+  const name = String(b.name || '').trim();
+  const slug = slugify(String(b.slug || '').trim() || name);
+  const fail = async (error) => {
+    const { rows: events } = await pool.query(
+      `SELECT e.id, e.title, e.date_start, c.name AS club_name FROM events e JOIN clubs c ON c.id = e.club_id
+       WHERE e.organiser_id = $1 ORDER BY e.date_start DESC`, [existing.id]
+    );
+    return res.status(400).render('admin/organiser-form', {
+      organiser: { ...existing, name, slug: b.slug || '', website: b.website || '', description: b.description || '' },
+      events, isNew: false, error
+    });
+  };
+  if (!name || !slug) return fail('Give the organiser a name.');
+  const { rows: dup } = await pool.query(`SELECT 1 FROM organisers WHERE slug = $1 AND id <> $2`, [slug, existing.id]);
+  if (dup.length) return fail(`There is already an organiser with the address "${slug}". Change the slug.`);
+  await pool.query(
+    `UPDATE organisers SET name = $1, slug = $2, website = $3, description = $4 WHERE id = $5`,
+    [name, slug, linkOrNull(b.website), String(b.description || '').trim() || null, existing.id]
+  );
+  res.redirect(`/admin/organisers/${existing.id}/edit?saved=1`);
+}));
+
+// Only an organiser with no events can be deleted, so no event is left without its series
+router.post('/organisers/:id/delete', asyncHandler(async (req, res) => {
+  const { rows: [n] } = await pool.query(`SELECT COUNT(*)::int AS n FROM events WHERE organiser_id = $1`, [req.params.id]);
+  if (n.n === 0) await pool.query(`DELETE FROM organisers WHERE id = $1`, [req.params.id]);
+  res.redirect(n.n === 0 ? '/admin/organisers?deleted=1' : `/admin/organisers/${req.params.id}/edit`);
+}));
+
 module.exports = router;
