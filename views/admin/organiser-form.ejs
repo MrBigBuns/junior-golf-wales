@@ -1,0 +1,41 @@
+<%- include('../partials/head', { pageTitle: isNew ? 'New organiser' : 'Edit organiser' }) %>
+
+<p><a href="/admin/organisers">&larr; All organisers</a></p>
+<h1><%= isNew ? 'New organiser' : 'Edit: ' + organiser.name %></h1>
+<% if (error) { %><p class="error-message"><strong>Not saved.</strong> <%= error %></p><% } %>
+<% if (typeof saved !== 'undefined' && saved) { %><p class="success-message">Saved.</p><% } %>
+
+<form method="post" action="<%= isNew ? '/admin/organisers' : '/admin/organisers/' + organiser.id + '/update' %>" class="admin-form">
+  <label>Name <input type="text" name="name" value="<%= organiser.name || '' %>" required></label>
+  <label>Slug <input type="text" name="slug" value="<%= organiser.slug || '' %>" placeholder="auto-generated from the name if blank"></label>
+  <label>Website <input type="text" name="website" value="<%= organiser.website || '' %>" placeholder="https://..."></label>
+  <label>Description <textarea name="description" rows="6"><%= organiser.description || '' %></textarea></label>
+  <button type="submit" class="admin-button"><%= isNew ? 'Add organiser' : 'Save organiser' %></button>
+</form>
+
+<% if (!isNew) { %>
+  <h2>Events under this organiser</h2>
+  <% if (events.length === 0) { %>
+    <p class="course-address">None yet. Pick this organiser in the "Organiser / tour" box when you edit an event.</p>
+    <form method="post" action="/admin/organisers/<%= organiser.id %>/delete" onsubmit="return confirm('Delete this organiser?');">
+      <button type="submit" class="admin-delete-button">Delete organiser</button>
+    </form>
+  <% } else { %>
+    <table class="admin-table">
+      <thead><tr><th>Event</th><th>Club</th><th>Date</th><th></th></tr></thead>
+      <tbody>
+        <% events.forEach(function(e) { %>
+          <tr>
+            <td><%= e.title %></td>
+            <td><%= e.club_name %></td>
+            <td><%= new Date(e.date_start).toLocaleDateString('en-GB') %></td>
+            <td><a href="/admin/events/<%= e.id %>/edit">Edit</a></td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+    <p class="course-address">An organiser with events can't be deleted. Move or delete its events first.</p>
+  <% } %>
+<% } %>
+
+<%- include('../partials/foot') %>
