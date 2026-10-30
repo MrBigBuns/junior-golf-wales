@@ -6,6 +6,13 @@
 <h1><%= organiser.name %> <%= seasonYear %></h1>
 <% if (organiser.description) { %><p class="subtitle"><%= organiser.description %></p><% } %>
 <% if (organiser.website) { %><p><a href="<%= organiser.website %>" target="_blank" rel="noopener">Official site</a></p><% } %>
+<% if (organiser.facebook_url || organiser.instagram_url || organiser.x_url) { %>
+  <div class="social-links">
+    <% if (organiser.facebook_url) { %><a href="<%= organiser.facebook_url %>" target="_blank" rel="noopener" aria-label="Facebook"><%- include('../partials/icon-facebook') %></a><% } %>
+    <% if (organiser.instagram_url) { %><a href="<%= organiser.instagram_url %>" target="_blank" rel="noopener" aria-label="Instagram"><%- include('../partials/icon-instagram') %></a><% } %>
+    <% if (organiser.x_url) { %><a href="<%= organiser.x_url %>" target="_blank" rel="noopener" aria-label="X"><%- include('../partials/icon-x') %></a><% } %>
+  </div>
+<% } %>
 
 <h2>Upcoming dates and venues</h2>
 <% if (events.length === 0) { %>

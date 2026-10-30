@@ -9,6 +9,9 @@
   <label>Name <input type="text" name="name" value="<%= organiser.name || '' %>" required></label>
   <label>Slug <input type="text" name="slug" value="<%= organiser.slug || '' %>" placeholder="auto-generated from the name if blank"></label>
   <label>Website <input type="text" name="website" value="<%= organiser.website || '' %>" placeholder="https://..."></label>
+  <label>Facebook URL <input type="text" name="facebook_url" value="<%= organiser.facebook_url || '' %>" placeholder="https://www.facebook.com/..."></label>
+  <label>Instagram URL <input type="text" name="instagram_url" value="<%= organiser.instagram_url || '' %>" placeholder="https://www.instagram.com/..."></label>
+  <label>X / Twitter URL <input type="text" name="x_url" value="<%= organiser.x_url || '' %>" placeholder="https://x.com/..."></label>
   <label>Description <textarea name="description" rows="6"><%= organiser.description || '' %></textarea></label>
   <button type="submit" class="admin-button"><%= isNew ? 'Add organiser' : 'Save organiser' %></button>
 </form>
