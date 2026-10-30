@@ -340,3 +340,7 @@ ALTER TABLE events ADD COLUMN IF NOT EXISTS entries_not_open BOOLEAN NOT NULL DE
 -- fully booked); the event page shows "Entries closed". An entry deadline that
 -- has passed, or an event already played, shows the same without the tick.
 ALTER TABLE events ADD COLUMN IF NOT EXISTS entries_closed BOOLEAN NOT NULL DEFAULT false;
+
+ALTER TABLE organisers ADD COLUMN IF NOT EXISTS facebook_url TEXT;
+ALTER TABLE organisers ADD COLUMN IF NOT EXISTS instagram_url TEXT;
+ALTER TABLE organisers ADD COLUMN IF NOT EXISTS x_url TEXT;

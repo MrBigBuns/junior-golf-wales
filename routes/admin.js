@@ -1418,7 +1418,7 @@ router.post('/organisers', asyncHandler(async (req, res) => {
   const b = req.body;
   const name = String(b.name || '').trim();
   const slug = slugify(String(b.slug || '').trim() || name);
-  const organiser = { name, slug: b.slug || '', website: b.website || '', description: b.description || '' };
+  const organiser = { name, slug: b.slug || '', website: b.website || '', facebook_url: b.facebook_url || '', instagram_url: b.instagram_url || '', x_url: b.x_url || '', description: b.description || '' };
   if (!name || !slug) {
     return res.status(400).render('admin/organiser-form', { organiser, events: [], isNew: true, error: 'Give the organiser a name.' });
   }
@@ -1427,8 +1427,8 @@ router.post('/organisers', asyncHandler(async (req, res) => {
     return res.status(400).render('admin/organiser-form', { organiser, events: [], isNew: true, error: `There is already an organiser with the address "${slug}". Change the name or the slug.` });
   }
   const { rows } = await pool.query(
-    `INSERT INTO organisers (name, slug, website, description) VALUES ($1, $2, $3, $4) RETURNING id`,
-    [name, slug, linkOrNull(b.website), String(b.description || '').trim() || null]
+    `INSERT INTO organisers (name, slug, website, description, facebook_url, instagram_url, x_url) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+    [name, slug, linkOrNull(b.website), String(b.description || '').trim() || null, linkOrNull(b.facebook_url), linkOrNull(b.instagram_url), linkOrNull(b.x_url)]
   );
   res.redirect(`/admin/organisers/${rows[0].id}/edit?saved=1`);
 }));
@@ -1456,7 +1456,7 @@ router.post('/organisers/:id/update', asyncHandler(async (req, res) => {
        WHERE e.organiser_id = $1 ORDER BY e.date_start DESC`, [existing.id]
     );
     return res.status(400).render('admin/organiser-form', {
-      organiser: { ...existing, name, slug: b.slug || '', website: b.website || '', description: b.description || '' },
+      organiser: { ...existing, name, slug: b.slug || '', website: b.website || '', facebook_url: b.facebook_url || '', instagram_url: b.instagram_url || '', x_url: b.x_url || '', description: b.description || '' },
       events, isNew: false, error
     });
   };
@@ -1464,8 +1464,8 @@ router.post('/organisers/:id/update', asyncHandler(async (req, res) => {
   const { rows: dup } = await pool.query(`SELECT 1 FROM organisers WHERE slug = $1 AND id <> $2`, [slug, existing.id]);
   if (dup.length) return fail(`There is already an organiser with the address "${slug}". Change the slug.`);
   await pool.query(
-    `UPDATE organisers SET name = $1, slug = $2, website = $3, description = $4 WHERE id = $5`,
-    [name, slug, linkOrNull(b.website), String(b.description || '').trim() || null, existing.id]
+    `UPDATE organisers SET name = $1, slug = $2, website = $3, description = $4, facebook_url = $6, instagram_url = $7, x_url = $8 WHERE id = $5`,
+    [name, slug, linkOrNull(b.website), String(b.description || '').trim() || null, existing.id, linkOrNull(b.facebook_url), linkOrNull(b.instagram_url), linkOrNull(b.x_url)]
   );
   res.redirect(`/admin/organisers/${existing.id}/edit?saved=1`);
 }));
