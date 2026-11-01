@@ -7,10 +7,19 @@ const { getForecastForDate } = require('../lib/weather');
 const { entryStatus } = require('../lib/entryStatus');
 const { eventSchema } = require('../lib/eventSchema');
 
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+const londonDay = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London' }).format(new Date());
+const addDaysISO = (iso, n) => { const d = new Date(`${iso}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); };
+const addMonthsISO = (iso, n) => { const d = new Date(`${iso}T00:00:00Z`); d.setUTCMonth(d.getUTCMonth() + n); return d.toISOString().slice(0, 10); };
+
 // GET /events — filterable list
 router.get('/', asyncHandler(async (req, res) => {
   const { region, age, q, county } = req.query;
-  const byTour = req.query.view === 'tours';
+  const view = ['tours', 'open'].includes(req.query.view) ? req.query.view : 'all';
+  const byTour = view === 'tours';
+  const today = londonDay();
+  const from = ISO_DAY.test(req.query.from || '') ? req.query.from : '';
+  const to = ISO_DAY.test(req.query.to || '') ? req.query.to : '';
   const conditions = ["e.date_start >= CURRENT_DATE", "e.status != 'cancelled'"];
   const params = [];
 
@@ -32,6 +41,15 @@ router.get('/', asyncHandler(async (req, res) => {
   }
 
   if (byTour) conditions.push('e.organiser_id IS NOT NULL');
+  // Date range: the list only ever shows upcoming events, so a start before today is ignored
+  if (from && from > today) {
+    params.push(from);
+    conditions.push(`e.date_start >= $${params.length}`);
+  }
+  if (to) {
+    params.push(to);
+    conditions.push(`e.date_start <= $${params.length}`);
+  }
 
   const { rows: events } = await pool.query(
     `SELECT e.*, c.name AS club_name, c.slug AS club_slug, c.region, c.county,
@@ -47,6 +65,18 @@ router.get('/', asyncHandler(async (req, res) => {
      LIMIT 100`,
     params
   );
+
+  // Entries open: enterable now, closing soonest first (no deadline last)
+  let openEvents = [];
+  if (view === 'open') {
+    openEvents = events
+      .filter(e => entryStatus(e).state === 'open')
+      .sort((a, b) => {
+        const da = a.entry_deadline ? String(a.entry_deadline.toISOString ? a.entry_deadline.toISOString() : a.entry_deadline).slice(0, 10) : '9999-12-31';
+        const db = b.entry_deadline ? String(b.entry_deadline.toISOString ? b.entry_deadline.toISOString() : b.entry_deadline).slice(0, 10) : '9999-12-31';
+        return da < db ? -1 : da > db ? 1 : 0;
+      });
+  }
 
   const grouped = {};
   events.forEach(e => {
@@ -65,7 +95,36 @@ router.get('/', asyncHandler(async (req, res) => {
     });
   }
 
-  res.render('events/index', { grouped, tourGroups, byTour, totalCount: events.length, region, age, q, county });
+  // Links for the view tabs and the date quick picks keep the other filters
+  const hrefWith = overrides => {
+    const p = new URLSearchParams();
+    const merged = { view: view === 'all' ? '' : view, region, county, age, q, from, to, ...overrides };
+    Object.entries(merged).forEach(([k, v]) => { if (v) p.set(k, v); });
+    const s = p.toString();
+    return '/events' + (s ? '?' + s : '');
+  };
+  const tabs = [
+    { label: 'All events', href: hrefWith({ view: '' }), active: view === 'all' },
+    { label: 'By tour', href: hrefWith({ view: 'tours' }), active: view === 'tours' },
+    { label: 'Entries open', href: hrefWith({ view: 'open' }), active: view === 'open' }
+  ];
+  const quick = [
+    { label: 'Next 30 days', to: addDaysISO(today, 30) },
+    { label: 'Next 3 months', to: addMonthsISO(today, 3) },
+    { label: 'Next 6 months', to: addMonthsISO(today, 6) }
+  ].map(p => ({ label: p.label, href: hrefWith({ from: today, to: p.to }), active: to === p.to && (!from || from === today) }));
+  quick.push({ label: 'Whole season', href: hrefWith({ from: '', to: '' }), active: !from && !to });
+
+  const { rows: ageOptions } = await pool.query(
+    `SELECT DISTINCT age_category FROM events WHERE age_category IS NOT NULL AND date_start >= CURRENT_DATE ORDER BY age_category ASC`
+  );
+
+  res.render('events/index', {
+    grouped, tourGroups, byTour, view, openEvents, tabs, quick, clearAgeHref: hrefWith({ age: '' }),
+    ageOptions: ageOptions.map(r => r.age_category),
+    totalCount: view === 'open' ? openEvents.length : events.length,
+    region, age, q, county, from, to
+  });
 }));
 
 // GET /events/:slug — detail page

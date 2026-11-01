@@ -39,7 +39,8 @@
     <p class="stat-label">Tours tracked</p>
     <p class="stat-value"><%= stats.tours %></p>
   </a>
-  <a class="stat-card" href="/events">
+  <% const _n = new Date(); const monthEnd = new Date(Date.UTC(_n.getUTCFullYear(), _n.getUTCMonth() + 1, 0)).toISOString().slice(0, 10); %>
+  <a class="stat-card" href="/events?to=<%= monthEnd %>">
     <p class="stat-label">This month</p>
     <p class="stat-value"><%= stats.thisMonth %></p>
   </a>
