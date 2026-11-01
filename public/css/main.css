@@ -782,6 +782,6 @@ body {
 .filter-status { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px 16px; margin: 0.25rem 0 0.5rem; }
 .filter-status-text { font-size: 0.95rem; color: var(--text-secondary); }
 .filter-status-text strong { color: var(--text-primary); }
-.clear-filters { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; box-sizing: border-box; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; background: white; color: var(--text-primary); font-size: 0.95rem; font-weight: 600; text-decoration: none; }
-.clear-filters:hover, .clear-filters:focus-visible { border-color: var(--wales-green); color: var(--wales-green); }
+.clear-filters { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; box-sizing: border-box; padding: 0 12px; border: 1px solid #cfcdc3; border-radius: 8px; background: #ebeae4; color: var(--text-primary); font-size: 0.95rem; font-weight: 600; text-decoration: none; }
+.clear-filters:hover, .clear-filters:focus-visible { background: #dedcd2; border-color: #a9a79b; }
 .clear-filters:focus-visible { outline: 3px solid var(--wales-green); outline-offset: 2px; }
