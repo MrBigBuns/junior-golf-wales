@@ -47,6 +47,16 @@
     </label>
   </div>
 
+  <% if (activeFilters > 0) { %>
+    <div class="filter-status" role="status">
+      <span class="filter-status-text"><strong><%= totalCount %></strong> <%= totalCount === 1 ? 'event matches' : 'events match' %> · <%= activeFilters %> <%= activeFilters === 1 ? 'filter' : 'filters' %> on</span>
+      <a class="clear-filters" href="<%= clearHref %>">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12"></path></svg>
+        Clear filters
+      </a>
+    </div>
+  <% } %>
+
   <div class="quick-picks">
     <span class="quick-label">Quick pick</span>
     <% quick.forEach(function(p) { %>
@@ -55,7 +65,6 @@
   </div>
 </form>
 
-<% if (age) { %><p class="scorecard-note">Category: <%= age %> — <a href="<%= clearAgeHref %>">clear</a></p><% } %>
 
 <% if (view === 'open') { %>
   <p class="scorecard-note">Events you can enter now, closing soonest first. Events whose entries have not opened yet are under <a href="/events">All events</a>.</p>

@@ -120,7 +120,10 @@ router.get('/', asyncHandler(async (req, res) => {
   );
 
   res.render('events/index', {
-    grouped, tourGroups, byTour, view, openEvents, tabs, quick, clearAgeHref: hrefWith({ age: '' }),
+    grouped, tourGroups, byTour, view, openEvents, tabs, quick,
+    // Filters in use (the view tab is not one): drives the Clear filters button
+    activeFilters: [q, region, county, age, from || to].filter(Boolean).length,
+    clearHref: hrefWith({ q: '', region: '', county: '', age: '', from: '', to: '' }),
     ageOptions: ageOptions.map(r => r.age_category),
     totalCount: view === 'open' ? openEvents.length : events.length,
     region, age, q, county, from, to

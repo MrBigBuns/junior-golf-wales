@@ -777,3 +777,11 @@ body {
 }
 .filter-row .filter-field select { max-width: 170px; }
 @media (max-width: 640px) { .filter-row .filter-field select { max-width: none; } }
+
+/* Clear filters: shown whenever a filter is on */
+.filter-status { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px 16px; padding: 10px 14px; background: #fdf1ec; border: 1px solid #f1c9b9; border-radius: 10px; }
+.filter-status-text { font-size: 0.95rem; color: var(--text-primary); }
+.clear-filters { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; box-sizing: border-box; padding: 0 18px; border: 2px solid var(--wales-red); border-radius: 8px; background: white; color: var(--wales-red); font-weight: 700; text-decoration: none; }
+.clear-filters:hover, .clear-filters:focus-visible { background: var(--wales-red); color: white; }
+.clear-filters:focus-visible { outline: 3px solid #1d1f1a; outline-offset: 2px; }
+@media (max-width: 640px) { .clear-filters { width: 100%; justify-content: center; } }
