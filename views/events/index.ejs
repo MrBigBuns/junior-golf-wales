@@ -57,8 +57,10 @@
 </form>
 
 <% if (activeFilters > 0) { %>
+  <% const niceDay = function(iso) { return new Date(iso + 'T00:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }); };
+     const range = from && to ? niceDay(from) + ' to ' + niceDay(to) : (from ? 'from ' + niceDay(from) : (to ? 'up to ' + niceDay(to) : '')); %>
   <div class="filter-status" role="status">
-    <span class="filter-status-text"><strong><%= totalCount %></strong> <%= totalCount === 1 ? 'event matches' : 'events match' %> · <%= activeFilters %> <%= activeFilters === 1 ? 'filter' : 'filters' %> on</span>
+    <span class="filter-status-text"><strong><%= totalCount %></strong> <%= totalCount === 1 ? 'event matches' : 'events match' %><% if (range) { %> · <%= range %><% } %> · <span class="nowrap"><%= activeFilters %> <%= activeFilters === 1 ? 'filter' : 'filters' %> on</span></span>
     <a class="clear-filters" href="<%= clearHref %>">
       <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12"></path></svg>
       Clear filters
