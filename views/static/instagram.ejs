@@ -1,0 +1,33 @@
+<%- include('../partials/head', {
+  pageTitle: 'Events from our Instagram — Wales Junior Golf',
+  pageDescription: 'The junior golf events we have posted recently, with dates, entry fees and how to enter.',
+  noIndex: true
+}) %>
+
+<h1>Events we have posted</h1>
+<p class="subtitle">Tap an event for the date, entry fee and how to enter. Newest first.</p>
+
+<% if (events.length === 0) { %>
+  <p>No upcoming events yet. <a href="/events">See all events</a>.</p>
+<% } %>
+
+<div class="ig-list">
+  <% events.forEach(function(ev, i) { %>
+    <% const isNew = (Date.now() - new Date(ev.added).getTime()) < 7 * 86400000; %>
+    <a class="ig-card" href="/events/<%= ev.slug %>">
+      <p class="ig-meta">
+        <% if (isNew) { %><span class="ig-new">New</span><% } %>
+        Added <%= new Date(ev.added).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) %>
+      </p>
+      <h2 class="ig-title"><%= ev.title %></h2>
+      <p class="ig-club"><%= ev.club_name %></p>
+      <p class="ig-date"><%= ev.card.dateLine %></p>
+      <% if (ev.card.chips.length) { %><p class="ig-chips"><%= ev.card.chips.join(' · ') %></p><% } %>
+      <span class="ig-button">Details and how to enter</span>
+    </a>
+  <% }); %>
+</div>
+
+<p class="ig-all"><a class="ig-all-button" href="/events">See every upcoming event</a></p>
+
+<%- include('../partials/foot') %>

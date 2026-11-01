@@ -71,10 +71,15 @@
 
     <div class="social-captions">
       <div>
-        <label for="cap-r-long"><strong>Caption for Facebook and Instagram</strong></label>
+        <label for="cap-r-long"><strong>Caption for Facebook</strong></label>
         <textarea id="cap-r-long" rows="<%= Math.min(18, events.length + 9) %>" readonly><%= roundupCaptions.long %></textarea>
         <button type="button" class="copy-button" data-copy="cap-r-long">Copy</button>
-        <span class="muted small">Instagram does not make links clickable; put the address in your profile.</span>
+        <span class="muted small">Set your Instagram bio link to <%= PUBLIC_URL %>/instagram. The Instagram caption points people there.</span>
+      </div>
+      <div>
+        <label for="cap-r-ig"><strong>Caption for Instagram</strong> <span class="muted small">says "link in bio"</span></label>
+        <textarea id="cap-r-ig" rows="10" readonly><%= roundupCaptions.instagram %></textarea>
+        <button type="button" class="copy-button" data-copy="cap-r-ig">Copy</button>
       </div>
       <div>
         <label for="cap-r-short"><strong>Caption for X</strong> <span class="muted small">fits 280 characters</span></label>
@@ -161,9 +166,14 @@
 
     <div class="social-captions">
       <div>
-        <label for="cap-e-long"><strong>Caption for Facebook and Instagram</strong></label>
+        <label for="cap-e-long"><strong>Caption for Facebook</strong></label>
         <textarea id="cap-e-long" rows="10" readonly><%= eventCaptions.long %></textarea>
         <button type="button" class="copy-button" data-copy="cap-e-long">Copy</button>
+      </div>
+      <div>
+        <label for="cap-e-ig"><strong>Caption for Instagram</strong> <span class="muted small">says "link in bio"</span></label>
+        <textarea id="cap-e-ig" rows="10" readonly><%= eventCaptions.instagram %></textarea>
+        <button type="button" class="copy-button" data-copy="cap-e-ig">Copy</button>
       </div>
       <div>
         <label for="cap-e-short"><strong>Caption for X</strong> <span class="muted small">fits 280 characters</span></label>
@@ -255,10 +265,15 @@
 
     <div class="social-captions">
       <div>
-        <label for="cap-g-long"><strong>Caption for Facebook and Instagram</strong></label>
+        <label for="cap-g-long"><strong>Caption for Facebook</strong></label>
         <textarea id="cap-g-long" rows="<%= Math.min(16, dayEvents.length + 8) %>" readonly><%= goodLuckCaptions.long %></textarea>
         <button type="button" class="copy-button" data-copy="cap-g-long">Copy</button>
         <span class="muted small">@ names are the clubs' Instagram accounts. On Facebook, type @ and the club's name to tag its page.</span>
+      </div>
+      <div>
+        <label for="cap-g-ig"><strong>Caption for Instagram</strong> <span class="muted small">says "link in bio"</span></label>
+        <textarea id="cap-g-ig" rows="10" readonly><%= goodLuckCaptions.instagram %></textarea>
+        <button type="button" class="copy-button" data-copy="cap-g-ig">Copy</button>
       </div>
       <div>
         <label for="cap-g-short"><strong>Caption for X</strong> <span class="muted small">fits 280 characters</span></label>
@@ -288,10 +303,15 @@
 <% const captions = function (id, caps, longRows, note) { %>
   <div class="social-captions">
     <div>
-      <label for="cap-<%= id %>-long"><strong>Caption for Facebook and Instagram</strong></label>
+      <label for="cap-<%= id %>-long"><strong>Caption for Facebook</strong></label>
       <textarea id="cap-<%= id %>-long" rows="<%= longRows %>" readonly><%= caps.long %></textarea>
       <button type="button" class="copy-button" data-copy="cap-<%= id %>-long">Copy</button>
       <% if (note) { %><span class="muted small"><%= note %></span><% } %>
+    </div>
+    <div>
+      <label for="cap-<%= id %>-ig"><strong>Caption for Instagram</strong> <span class="muted small">says "link in bio"</span></label>
+      <textarea id="cap-<%= id %>-ig" rows="<%= longRows %>" readonly><%= caps.instagram %></textarea>
+      <button type="button" class="copy-button" data-copy="cap-<%= id %>-ig">Copy</button>
     </div>
     <div>
       <label for="cap-<%= id %>-short"><strong>Caption for X</strong> <span class="muted small">fits 280 characters</span></label>
