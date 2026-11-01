@@ -735,3 +735,18 @@ body {
 .admin-table th a.sort-link { color: inherit; text-decoration: none; font-weight: 600; white-space: nowrap; }
 .admin-table th a.sort-link:hover { text-decoration: underline; }
 .admin-table th .sort-idle { color: var(--text-secondary); opacity: 0.55; font-weight: 400; }
+
+/* Instagram bio landing page (/instagram) */
+.ig-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; margin-top: 1.25rem; }
+.ig-card { display: flex; flex-direction: column; gap: 8px; background: white; border: 1px solid var(--border); border-radius: 14px; padding: 16px; color: inherit; text-decoration: none; }
+.ig-card:hover, .ig-card:focus-visible { border-color: var(--wales-green); }
+.ig-meta { margin: 0; font-size: 0.8rem; color: var(--text-secondary); display: flex; align-items: center; gap: 8px; }
+.ig-new { background: var(--wales-red); color: white; font-weight: 700; font-size: 0.75rem; padding: 2px 9px; border-radius: 999px; }
+.ig-title { margin: 0; font-size: 1.15rem; line-height: 1.25; }
+.ig-club { margin: 0; color: var(--text-secondary); }
+.ig-date { margin: 0; font-weight: 600; }
+.ig-chips { margin: 0; font-size: 0.9rem; color: var(--text-secondary); }
+.ig-button { margin-top: auto; min-height: 48px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; background: var(--wales-green); color: white; border-radius: 10px; font-weight: 600; }
+.ig-all { margin: 1.5rem 0 0.5rem; }
+.ig-all-button { display: flex; min-height: 48px; box-sizing: border-box; align-items: center; justify-content: center; border: 2px solid var(--wales-green); border-radius: 10px; color: var(--wales-green); font-weight: 600; text-decoration: none; }
+@media (min-width: 640px) { .ig-all-button { display: inline-flex; padding: 0 28px; } }

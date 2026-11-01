@@ -26,4 +26,14 @@ router.get('/sponsorship', asyncHandler(async (req, res) => {
   });
 }));
 
+// The link in the Instagram bio: the events added most recently, each one
+// tap away from its details. Not indexed; it exists for the bio link.
+router.get('/instagram', asyncHandler(async (req, res) => {
+  const social = require('../lib/social');
+  const events = (await social.recentEvents(pool, 12)).map(ev => ({
+    ...ev, card: social.eventCardData(ev), added: ev.created_at
+  }));
+  res.render('static/instagram', { events, noIndex: true });
+}));
+
 module.exports = router;

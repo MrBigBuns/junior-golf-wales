@@ -1171,6 +1171,7 @@ router.get('/social', asyncHandler(async (req, res) => {
   const goodPhoto = goodPhotoClub ? await chosenGoodLuckPhoto(goodPhotoClub.club_id, req.query.gphoto) : null;
 
   res.render('admin/social', {
+    PUBLIC_URL: social.PUBLIC_URL,
     eventPhotos, eventPhoto, goodPhotos, goodPhoto, goodPhotoClub,
     period, events, upcoming, recent, tag, event, day, dayEvents, clubs, spot, tip, tips: social.TIPS,
     spotPhotos, spotPhoto,
