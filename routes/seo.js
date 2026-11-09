@@ -7,7 +7,21 @@ const { SITE_URL, COUNTIES } = require('../lib/site');
 
 router.get('/robots.txt', (req, res) => {
   res.type('text/plain').send(
-    ['User-agent: *', 'Disallow: /admin', 'Disallow: /club-portal', 'Allow: /', '', `Sitemap: ${SITE_URL}/sitemap.xml`, ''].join('\n')
+    [
+      'User-agent: *',
+      'Disallow: /admin',
+      'Disallow: /club-portal',
+      // Calendar downloads are files, not pages
+      'Disallow: /*calendar.ics',
+      // Events page view tabs and date ranges: endless variations of one page
+      'Disallow: /*?*view=',
+      'Disallow: /*?*from=',
+      'Disallow: /*?*to=',
+      'Allow: /',
+      '',
+      `Sitemap: ${SITE_URL}/sitemap.xml`,
+      ''
+    ].join('\n')
   );
 });
 

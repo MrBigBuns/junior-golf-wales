@@ -11,7 +11,7 @@
 
 <h1><%= event.title %> <span class="h1-club">at <%= event.club_name %></span></h1>
 <p class="subtitle"><%= event.region %> Wales<% if (event.address) { %> · <%= event.address %><% } %></p>
-<p><a class="calendar-link" href="/events/<%= event.slug %>/calendar.ics"><i class="cal-icon">&#128197;</i> Add to calendar</a></p>
+<p><a class="calendar-link" href="/events/<%= event.slug %>/calendar.ics" rel="nofollow"><i class="cal-icon">&#128197;</i> Add to calendar</a></p>
 
 <div class="event-detail-grid">
   <div>

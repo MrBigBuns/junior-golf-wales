@@ -218,6 +218,7 @@ router.get('/:slug/calendar.ics', asyncHandler(async (req, res) => {
     [req.params.slug]
   );
   if (!rows.length) return res.status(404).send('Event not found');
+  res.set('X-Robots-Tag', 'noindex');
 
   const e = rows[0];
   const dateStr = new Date(e.date_start).toISOString().slice(0, 10).replace(/-/g, '');
