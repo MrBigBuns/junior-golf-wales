@@ -170,8 +170,21 @@ function eventFromSubmission(sub, clubs) {
   // Standard format: a bare "Junior Open" becomes "<Club> Junior Open".
   let title = String(d.event_title || '').trim();
   const shortClub = club ? club.name.replace(/\s+(Golf\s+(Club|Course|Links)|Golf\s*&\s*Country\s+Club)\s*$/i, '').trim() : '';
-  if (shortClub && /^juniors?\s+open\b/i.test(title)) {
+  // "Junior Open 9 Hole Competition" -> "Mold Junior Open (9 holes)": the club can run
+  // a 9 and an 18 hole round on the same day, so the titles must tell them apart.
+  const titleHoles = title.match(/\b(\d{1,2})[\s-]*holes?\b/i);
+  if (shortClub && titleHoles && /^juniors?\s+open\b/i.test(title)) {
+    title = `${shortClub} Junior Open (${titleHoles[1]} holes)`;
+  } else if (shortClub && /^juniors?\s+open\b/i.test(title)) {
     title = title.replace(/^juniors?\s+open\b/i, `${shortClub} Junior Open`);
+  }
+  // Start time from "Time: 11:30 am - 12:00 pm" in the BRS notes
+  const t = notes.match(/Time:\s*(\d{1,2}):(\d{2})\s*(am|pm)/i);
+  let startTime = '';
+  if (t) {
+    let h = Number(t[1]) % 12;
+    if (/pm/i.test(t[3])) h += 12;
+    startTime = String(h).padStart(2, '0') + ':' + t[2];
   }
   return {
     submission_id: sub.id,
@@ -181,7 +194,9 @@ function eventFromSubmission(sub, clubs) {
     entry_fee: d.entry_fee || '',
     entry_url: /^https?:\/\//i.test(d.entry_info || '') ? d.entry_info : '',
     format: type && type.length < 80 ? type : '',
-    holes: holes ? Number(holes[1]) : null
+    start_time: startTime,
+    // The title's hole count wins: BRS often says 18 on a 9 hole round
+    holes: titleHoles ? Number(titleHoles[1]) : (holes ? Number(holes[1]) : null)
   };
 }
 
