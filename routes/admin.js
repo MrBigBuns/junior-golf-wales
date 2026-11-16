@@ -1370,7 +1370,24 @@ router.get('/submissions', asyncHandler(async (req, res) => {
      FROM submissions s LEFT JOIN events e ON e.id = s.linked_event_id
      ORDER BY s.created_at DESC LIMIT 100`
   );
-  res.render('admin/submissions', { submissions, removed: req.query.removed === '1' });
+  res.render('admin/submissions', { submissions, removed: req.query.removed === '1', deleted: req.query.deleted ? Number(req.query.deleted) : 0 });
+}));
+
+// Permanently delete rejected submissions (one, or all of them). Rows linked to
+// an event are never touched.
+router.post('/submissions/:id/delete', asyncHandler(async (req, res) => {
+  await pool.query(
+    `DELETE FROM submissions WHERE id = $1 AND status = 'rejected' AND linked_event_id IS NULL`,
+    [Number(req.params.id) || 0]
+  );
+  res.redirect('/admin/submissions?deleted=1');
+}));
+
+router.post('/submissions/delete-rejected', asyncHandler(async (req, res) => {
+  const { rowCount } = await pool.query(
+    `DELETE FROM submissions WHERE status = 'rejected' AND linked_event_id IS NULL`
+  );
+  res.redirect('/admin/submissions?deleted=' + rowCount);
 }));
 
 // Delete the event made from a submission and put the submission back in the queue
