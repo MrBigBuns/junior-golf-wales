@@ -19,6 +19,8 @@ const adminAuth = require('./lib/adminAuth');
 const { SITE_URL, seasonYear, COUNTIES } = require('./lib/site');
 
 const app = express();
+// Behind Render's proxy: use the real client IP (needed for the submit form rate limit)
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 
 app.set('view engine', 'ejs');
