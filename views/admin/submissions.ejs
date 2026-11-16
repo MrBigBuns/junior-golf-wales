@@ -2,7 +2,15 @@
 
 <h1>Submissions</h1>
 <% if (typeof removed !== 'undefined' && removed) { %><p class="success-message">Event removed. The submission is back in the queue.</p><% } %>
+<% if (typeof deleted !== 'undefined' && deleted) { %><p class="success-message"><%= deleted === 1 ? 'Submission deleted.' : 'Rejected submissions deleted.' %></p><% } %>
 <p><a href="/admin">&larr; Dashboard</a></p>
+<% const rejectedCount = submissions.filter(function(s) { return s.status === 'rejected' && !s.linked_event_id; }).length; %>
+<% if (rejectedCount > 0) { %>
+  <form method="post" action="/admin/submissions/delete-rejected"
+        onsubmit="return confirm('Permanently delete all rejected submissions? This cannot be undone.')">
+    <button type="submit" class="admin-delete-button">Delete all rejected (<%= rejectedCount %>)</button>
+  </form>
+<% } %>
 
 <% if (submissions.length === 0) { %>
   <p>No submissions yet.</p>
@@ -27,7 +35,12 @@
             onsubmit="return confirm('Delete this event from the site and put the submission back in the queue?')">
         <button type="submit" class="admin-delete-button">Remove event</button>
       </form>
-    <% } else if (s.status !== 'rejected') { %>
+    <% } else if (s.status === 'rejected') { %>
+      <form method="post" action="/admin/submissions/<%= s.id %>/delete" style="display:inline"
+            onsubmit="return confirm('Permanently delete this submission? This cannot be undone.')">
+        <button type="submit" class="admin-delete-button">Delete</button>
+      </form>
+    <% } else { %>
       <a class="admin-button" href="/admin/events/new?submission=<%= s.id %>">Create event</a>
       <% if (s.status === 'pending') { %>
         <form method="post" action="/admin/submissions/<%= s.id %>/status" style="display:inline">
