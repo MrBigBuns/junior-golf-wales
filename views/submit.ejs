@@ -36,6 +36,9 @@
     <label>Notes (format, age category, anything else)
       <textarea name="notes" rows="4"><%= v.notes || '' %></textarea>
     </label>
+    <div style="position:absolute;left:-9999px;" aria-hidden="true">
+      <label>Leave this empty <input type="text" name="website" tabindex="-1" autocomplete="off"></label>
+    </div>
     <button type="submit">Submit event</button>
   </form>
 <% } %>
