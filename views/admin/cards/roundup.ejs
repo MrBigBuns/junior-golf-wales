@@ -8,7 +8,7 @@
 </head>
 <body class="card-page size-<%= sizes[size].layout || size %><%= sizes[size].layout ? ' size-' + size : '' %><%= embed ? ' embed' : '' %>">
 
-<div class="card roundup-card">
+<div class="card roundup-card"<%- typeof headStyle !== 'undefined' && headStyle ? ' style="' + headStyle + '"' : '' %>>
   <div class="stripe"><i></i><i></i><i></i></div>
 
   <div class="head">

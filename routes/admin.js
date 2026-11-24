@@ -1178,6 +1178,8 @@ router.get('/social', asyncHandler(async (req, res) => {
   const spotPhotos = spot ? await social.spotlightPhotos(pool, spot.id) : [];
   const spotPhoto = spot ? await chosenPhoto(spot.id, req.query.photo) : null;
   const tip = social.tipByNumber(req.query.tip);
+  const tours = await social.tourList(pool);
+  const tour = req.query.tour ? await social.tourData(pool, req.query.tour) : null;
   // Club photos to choose from on the single event card and the Good luck card
   const eventPhotos = event ? await social.spotlightPhotos(pool, event.club_id) : [];
   const eventPhoto = event ? await chosenPhoto(event.club_id, req.query.eventphoto) : null;
@@ -1189,6 +1191,10 @@ router.get('/social', asyncHandler(async (req, res) => {
     PUBLIC_URL: social.PUBLIC_URL,
     eventPhotos, eventPhoto, goodPhotos, goodPhoto, goodPhotoClub,
     period, events, upcoming, recent, tag, event, day, dayEvents, clubs, spot, tip, tips: social.TIPS,
+    tours, tour: tour && tour.events.length ? tour : null, tourPick: req.query.tour ? Number(req.query.tour) || 0 : 0,
+    tourPages: tour && tour.events.length ? Object.fromEntries(Object.keys(social.SIZES).map(k => [k, social.tourPages(tour, k)])) : null,
+    tourCaptions: tour && tour.events.length ? social.tourCaptions(tour) : null,
+    tourHead: tour && tour.events.length ? social.tourHead(tour) : null,
     spotPhotos, spotPhoto,
     spotCaptions: spot ? social.spotlightCaptions(spot) : null,
     tipCaptions: social.tipCaptions(tip),
@@ -1215,6 +1221,23 @@ router.get('/social/roundup', asyncHandler(async (req, res) => {
     selfUrl: (sz, pg) => `/admin/social/roundup?${base}&size=${sz}&page=${pg || 1}`,
     backUrl: `/admin/social?${base}`,
     fileName: `wales-junior-golf-${period.period}-${period.start}${period.region ? '-' + period.region.toLowerCase() : ''}-${size}-${card.page}.png`
+  });
+}));
+
+// The tour card itself: every upcoming event of one tour (same look as the round-up)
+router.get('/social/tour/:id', asyncHandler(async (req, res) => {
+  const tour = await social.tourData(pool, req.params.id);
+  if (!tour || !tour.events.length) return res.status(404).send('No upcoming events for this tour');
+  const size = cardSize(req.query.size);
+  const card = social.tourPage(tour, size, req.query.page);
+  const head = social.tourHead(tour);
+  const px = social.tourHeadingPx(head.title, size);
+  res.render('admin/cards/roundup', {
+    layout: false, period: head, card, size, sizes: social.SIZES, host: social.PUBLIC_HOST, embed: !!req.query.embed,
+    headStyle: px ? `--heading-size: ${px}px` : '',
+    selfUrl: (sz, pg) => `/admin/social/tour/${tour.organiser.id}?size=${sz}&page=${pg || 1}`,
+    backUrl: `/admin/social?tour=${tour.organiser.id}#tour`,
+    fileName: `${tour.organiser.slug}-${size}-${card.page}.png`
   });
 }));
 
