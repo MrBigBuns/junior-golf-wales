@@ -31,7 +31,8 @@ services:
         sync: false
 
   # Weekly checks, Mondays 06:00 UTC (7am in summer, 6am in winter):
-  # clubs' opens/junior pages for changes, then the BRS opens scan.
+  # clubs' opens/junior pages for changes, then the BRS opens scan, then the
+  # Faldo Futures qualifier directory (Welsh venues we don't hold yet).
   # Results appear in admin under Page changes and Submissions.
   - type: cron
     name: junior-golf-wales-weekly-checks
@@ -40,7 +41,7 @@ services:
     plan: starter
     schedule: "0 6 * * 1"
     buildCommand: npm install
-    startCommand: node scripts/watch-club-pages.js; node scripts/scan-brs-opens.js --save
+    startCommand: node scripts/watch-club-pages.js; node scripts/scan-brs-opens.js --save; node scripts/scan-faldo-qualifiers.js --save
     envVars:
       - key: DATABASE_URL
         fromDatabase:
