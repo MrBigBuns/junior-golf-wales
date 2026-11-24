@@ -365,6 +365,46 @@
   <% } %>
 </div>
 
+<div class="detail-card" id="tour">
+  <h3 class="detail-card-heading">Tour card</h3>
+  <p class="course-address">Every upcoming event of one tour on a single card (a long tour runs over two). Good for the start of a season and for reminding people what is left.</p>
+  <form method="get" action="/admin/social#tour" class="social-form">
+    <%- hidden() %>
+    <label>Tour
+      <select name="tour" required>
+        <option value="">Choose a tour</option>
+        <% tours.forEach(function(t) { %><option value="<%= t.id %>" <%= tourPick === t.id ? 'selected' : '' %>><%= t.name %> (<%= t.upcoming %>)</option><% }); %>
+      </select>
+    </label>
+    <button type="submit" class="admin-button">Show</button>
+  </form>
+  <% if (tourPick && !tour) { %>
+    <p class="scorecard-note">That tour has no upcoming events, so there is no card to make.</p>
+  <% } %>
+  <% if (tour) { %>
+    <h3 class="social-sub"><%= tour.organiser.name %> <span class="muted">· <%= tourHead.subtitle %></span></h3>
+    <div class="social-grid">
+      <% sizeKeys.forEach(function(key) { %>
+        <div class="social-size social-<%= key %>">
+          <p class="social-size-label"><strong><%= sizes[key].label %></strong> <span class="muted small"><%= sizes[key].px %> · <%= sizes[key].use %></span></p>
+          <% for (let pg = 1; pg <= tourPages[key]; pg++) { %>
+            <% const src = '/admin/social/tour/' + tour.organiser.id + '?size=' + key + '&page=' + pg; %>
+            <% const scale = key === 'landscape' ? 0.3333 : 0.26; %>
+            <a class="card-preview" href="<%= src %>" target="_blank" style="width: <%= Math.round(sizes[key].w * scale) %>px; height: <%= Math.round(sizes[key].h * scale) %>px;" title="Open full size">
+              <iframe loading="lazy" tabindex="-1" src="<%= src %>&embed=1" width="<%= sizes[key].w %>" height="<%= sizes[key].h %>" style="transform: scale(<%= scale %>);"></iframe>
+            </a>
+            <p class="small"><a href="<%= src %>" target="_blank">Open<%= tourPages[key] > 1 ? ' card ' + pg + ' of ' + tourPages[key] : '' %> to download</a></p>
+          <% } %>
+        </div>
+      <% }); %>
+    </div>
+    <% if (sizeKeys.some(function(k) { return tourPages[k] > 1; })) { %>
+      <p class="scorecard-note">Where the events do not fit on one card they run over several. Post them together as a carousel on Instagram or a multi-image post on Facebook and X.</p>
+    <% } %>
+    <% captions('t', tourCaptions, Math.min(18, tour.events.length + 9), 'The @ name is the club\'s Instagram account. The link goes to the tour\'s page on the site.'); %>
+  <% } %>
+</div>
+
 <div class="detail-card" id="tip">
   <h3 class="detail-card-heading">Golf tip</h3>
   <p class="course-address">Etiquette, rules and match-day tips for juniors and parents. There are <%= tips.length %>; the list is in <code>lib/tips.js</code>, and new ones go at the end.</p>
