@@ -30,7 +30,14 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 async function fetchJson(url) {
   const res = await fetch(url, {
-    headers: { 'Accept': 'application/json', 'User-Agent': 'WalesJuniorGolf/0.1 (junior event listings)' }
+    headers: {
+      'Accept': 'application/json',
+      'User-Agent': 'WalesJuniorGolf/0.1 (junior event listings)',
+      // The directory only lists events when it is embedded on the Faldo site
+      // (opened on its own it says "No events found"), so say where we came from
+      'Referer': 'https://www.faldoseries.com/the-faldo-futures/',
+      'Origin': 'https://www.faldoseries.com'
+    }
   });
   if (!res.ok) throw new Error(`HTTP ${res.status} for the directory data`);
   return res.json();
