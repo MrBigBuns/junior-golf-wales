@@ -17,8 +17,24 @@ const fs = require('fs');
 const pool = require('../db/pool');
 
 const DIRECTORY = 'https://www.golfgenius.com/leagues/8621276101123018309/v2_customer_directories/13187760618590998347';
-const DATA_URL = page =>
-  `${DIRECTORY}/fetch_initial_data_for_directories?filter_options%5Btour%5D=all&filter_options%5BadvancedFiltersOn%5D=true&page=${page}`;
+// The directory is embedded on the Faldo site for the 2027 season; this is the
+// request the embed makes (events come back 20 at a time, keyed by event id)
+const SEASON_ID = '12549381471338532540';
+const STATUSES = ['my_registrations', 'registration_open', 'past_events', 'upcoming_events'];
+const DATA_URL = page => {
+  const p = new URLSearchParams();
+  p.set('filters', 'show'); p.set('header', 'false'); p.set('leaderboards', 'false');
+  p.set('season_id', SEASON_ID); p.set('sort', 'descending');
+  p.set('filter_options[leagueName]', '');
+  STATUSES.forEach(s => p.append('filter_options[status][]', s));
+  p.set('filter_options[tour]', 'all'); p.set('filter_options[startDate]', ''); p.set('filter_options[endDate]', '');
+  p.set('filter_options[location][coords][lat]', ''); p.set('filter_options[location][coords][lng]', '');
+  p.set('filter_options[location][radius]', ''); p.set('filter_options[currentLocation]', '');
+  p.set('filter_options[viewType]', 'condensed'); p.set('filter_options[advancedFiltersOn]', 'true');
+  STATUSES.forEach(s => p.append('filter_options[defaultStatusFilters][]', s));
+  p.set('selected_tour_id', ''); p.set('page', String(page));
+  return `${DIRECTORY}/fetch_initial_data_for_directories?${p.toString()}`;
+};
 const MAX_PAGES = 20;
 
 const argv = process.argv.slice(2);
@@ -33,10 +49,7 @@ async function fetchJson(url) {
     headers: {
       'Accept': 'application/json',
       'User-Agent': 'WalesJuniorGolf/0.1 (junior event listings)',
-      // The directory only lists events when it is embedded on the Faldo site
-      // (opened on its own it says "No events found"), so say where we came from
-      'Referer': 'https://www.faldoseries.com/the-faldo-futures/',
-      'Origin': 'https://www.faldoseries.com'
+      'Referer': 'https://www.faldoseries.com/the-faldo-futures/'
     }
   });
   if (!res.ok) throw new Error(`HTTP ${res.status} for the directory data`);
@@ -51,34 +64,21 @@ const clubKey = s => String(s || '').toLowerCase()
 const shortName = s => String(s || '').replace(/\s+(Golf\s+(Club|Course|Links)|GC|G\.C\.)\s*$/i, '').trim();
 const titleCase = s => s.toLowerCase().replace(/\b[a-z]/g, c => c.toUpperCase());
 
-// First string under any key whose name matches, searching nested objects too
-function pick(obj, keyRe, valueRe) {
-  if (!obj || typeof obj !== 'object') return null;
-  for (const [k, v] of Object.entries(obj)) {
-    if (typeof v === 'string' && keyRe.test(k) && (!valueRe || valueRe.test(v))) return v;
-  }
-  for (const v of Object.values(obj)) {
-    if (v && typeof v === 'object') {
-      const found = pick(v, keyRe, valueRe);
-      if (found) return found;
-    }
-  }
-  return null;
-}
-
 const ISO = /\d{4}-\d{2}-\d{2}/;
-function normalise(item) {
-  const name = pick(item, /^(name|league_?name|title|display_?name)$/i);
-  const start = pick(item, /start/i, ISO) || pick(item, /date/i, ISO);
-  const close = pick(item, /(close|deadline|registration_?end|end)/i, ISO);
-  const status = pick(item, /status/i);
-  const url = pick(item, /(url|link|path)/i, /^https?:\/\//) || null;
-  const id = item.id != null ? String(item.id) : (pick(item, /^(id|league_?id|slug)$/i) || null);
+function normalise(l) {
+  const info = l.registrationInfo || {};
+  const type = Array.isArray(l.registrationTypes) ? l.registrationTypes[0] : null;
+  const fee = type && type.priceText ? (type.priceText.match(/£\s?(\d+(?:\.\d+)?)/) || [])[1] : null;
+  const day = v => (v && String(v).match(ISO) ? String(v).match(ISO)[0] : null);
   return {
-    id, name: name ? name.replace(/\s+/g, ' ').trim() : null,
-    date: start ? start.match(ISO)[0] : null,
-    closes: close && close !== start ? close.match(ISO)[0] : null,
-    status, url
+    id: l.id != null ? String(l.id) : null,
+    name: l.name ? String(l.name).replace(/\s+/g, ' ').trim() : null,
+    date: day(l.startDate),
+    opens: day(info.starts_at),
+    closes: day(info.ends_at),
+    status: info.status || null,
+    fee: fee ? Number(fee) : null,
+    url: l.id != null ? `https://www.golfgenius.com/register?league_id=${l.id}` : null
   };
 }
 
@@ -88,7 +88,7 @@ async function loadAll() {
   for (let p = 1; p <= MAX_PAGES; p++) {
     const j = await fetchJson(DATA_URL(p));
     pages.push(j);
-    if (!j.misc || j.misc.noMoreData || !(j.leagues && j.leagues.length)) break;
+    if (!j.misc || j.misc.noMoreData || !Object.keys(j.leagues || {}).length) break;
     await sleep(1000);
   }
   return pages;
@@ -97,7 +97,7 @@ async function loadAll() {
 async function run() {
   console.log(`Mode: ${SAVE ? 'SAVE' : 'dry run'}${FILE ? ` (file ${FILE})` : ''}`);
   const pages = await loadAll();
-  const leagues = pages.flatMap(p => Array.isArray(p.leagues) ? p.leagues : []);
+  const leagues = pages.flatMap(p => Object.values(p.leagues || {}));
   console.log(`Directory: ${(pages[0].misc && pages[0].misc.directoryName) || 'unknown'}, ${leagues.length} event(s) returned`);
 
   if (RAW) {
@@ -144,11 +144,12 @@ async function run() {
               event_title: `Faldo Futures Qualifier: ${titleCase(shortName(e.name))}`,
               club_name: club.name,
               event_date: e.date,
-              entry_fee: '',
+              entry_fee: e.fee != null ? `£${e.fee}` : '',
               entry_info: e.url || 'https://www.faldoseries.com/the-faldo-futures/',
-              notes: `Faldo Futures qualifier (Golf Genius directory). Status: ${e.status || 'unknown'}.` +
-                (e.closes ? ` Registration closes: ${e.closes}.` : '') +
-                ` Fee is set by the host club. Series organiser id ${organisers[0] ? organisers[0].id : 'unknown'}.`,
+              notes: `Faldo Futures qualifier (Golf Genius directory). Registration: ${e.status || 'unknown'}.` +
+                (e.opens ? ` Opened ${e.opens}.` : '') + (e.closes ? ` Closes ${e.closes}.` : '') +
+                (e.fee == null ? ' Fee not shown (set by the host club).' : '') +
+                ` Series organiser id ${organisers[0] ? organisers[0].id : 'unknown'}.`,
               source: 'faldo-genius',
               source_id: e.id
             }),
@@ -158,7 +159,7 @@ async function run() {
         queued++;
       }
     }
-    console.log(`  ${e.date || 'no date'} | ${e.name || 'no name'} | ${e.status || ''}${e.closes ? ` | closes ${e.closes}` : ''}  ${note}`);
+    console.log(`  ${e.date || 'no date'} | ${e.name || 'no name'} | ${e.status || ''}${e.fee != null ? ` | £${e.fee}` : ''}${e.closes ? ` | closes ${e.closes}` : ''}  ${note}`);
   }
 
   console.log(`\n${events.length} event(s) in the directory: ${welsh} at Welsh clubs we hold, ${unmatched} elsewhere.`);
